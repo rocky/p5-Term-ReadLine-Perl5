@@ -18,13 +18,23 @@ sub readline {
   #$in;
 }
 
-#sub addhistory {}
-*addhistory = \&AddHistory;
+# add_history is what GNU ReadLine defines. AddHistory is what we have
+# below.
+*add_history = \&AddHistory;
+
+# Not sure if addhistory() is needed. It is possible it was misspelling
+# of add_history. 
+*addhistory = \&AddHistory; 
+
+# for backward compatibility: StifleHistory is the old name.
+*StifleHistory = \&stifle_history;
 
 #$term;
-$readline::minlength = 1;	# To peacify -w
-$readline::rl_readline_name = undef; # To peacify -w
-$readline::rl_basic_word_break_characters = undef; # To peacify -w
+$readline::minlength = 1;	# To pacify -w
+$readline::rl_readline_name = undef; # To pacify -w
+$readline::rl_basic_word_break_characters = undef; # To pacify -w
+$readline::history_stifled = 0;
+
 
 sub new {
   if (defined $term) {
@@ -69,6 +79,7 @@ sub new {
     local $SIG{__WARN__} = sub {}; # With older Perls
     $term->ornaments(1);
   }
+  $attribs{history_length} = $attribs{max_input_history} = 0;
   return $term;
 }
 sub newTTY {
@@ -89,20 +100,107 @@ sub SetHistory {
   shift;
   @readline::rl_History = @_;
   $readline::rl_HistoryIndex = @readline::rl_History;
+  $attribs{history_length} = $attribs{max_input_history} = 
+      @readline::rl_History;
 }
 sub GetHistory {
   @readline::rl_History;
 }
+
+# Place @_ at the end of the history list.
 sub AddHistory {
   shift;
+  if ($readline::history_stifled && 
+      ($attribs{history_length} == $attribs{max_input_history})) {
+    # If the history is stifled, and history_length is zero,
+    # and it equals max_input_history, we don't save items.
+    return if $attribs{max_input_history} == 0;
+    shift @readline::rl_History;
+  }
+
   push @readline::rl_History, @_;
   $readline::rl_HistoryIndex = @readline::rl_History + @_;
+  $attribs{history_length} = scalar @readline::rl_History;
 }
-%features =  (appname => 1, minline => 1, autohistory => 1, getHistory => 1,
-	      setHistory => 1, addHistory => 1, preput => 1, 
-	      attribs => 1, 'newTTY' => 1,
+
+sub clear_history {
+  shift;
+  @readline::rl_History = ();
+  $readline::rl_HistoryIndex = $attribs{history_length} = 0;
+}
+
+sub history_list 
+{
+  @readline::rl_History[1..$#readline::rl_History]
+}
+
+
+# Remove history element WHICH from the history.  The removed
+# element is returned. 
+sub remove_history {
+  shift;
+  my $which = $_[0];
+  return undef if 
+      $which < 0 || $which >= $attribs{history_length} || 
+      $attribs{history_length} ==  0;
+  my $removed = splice @readline::rl_History, $which, 1;
+  $attribs{history_length} --;
+  $readline::rl_HistoryIndex = $attrib{history_length} if 
+      $attribs{history_length} < $readline::rl_HistoryIndex;
+  return $removed;
+}
+
+# Make the history entry at WHICH have DATA.  This returns the old
+# entry.  In the case of an invalid WHICH, UNDEF is returned.
+sub replace_history_entry {
+  shift;
+  my ($which, $data) = @_;
+  return undef if $which < 0 || $which >= $attribs{history_length};
+  my $replaced = splice @readline::rl_History, $which, 1, $data;
+  return $replaced;
+}
+
+# Stifle the history list, remembering only MAX number of lines.
+sub stifle_history
+{
+  shift;
+  my $max = shift;
+  $max = 0 if $max < 0;
+
+  if (scalar @readline::rl_History > $max) {
+      splice @readline::rl_History, $max;
+      $attribs{history_length} = scalar @readline::rl_History;
+  }
+
+  $readline::history_stifled = 1;
+  $attribs{max_input_history} = $max;
+}
+
+# Stop stifling the history.  This returns the previous maximum
+# number of history entries.  The value is positive if the history
+# was stifled,  negative if it wasn't.
+sub unstifle_history
+{
+  if ($readline::history_stifled) {
+    $readline::history_stifled = 0;
+    return (scalar @readline::rl_History);
+  } else {
+    return - scalar @readline::rl_History;
+  }
+}
+
+sub history_is_stifled {
+  shift;
+  $readline::history_stifled ? 1 : 0;
+}
+
+%features =  (appname => 1, minline => 1, autohistory => 1, 
+	      getHistory => 1, setHistory => 1, addHistory => 1, 
+	      readHistory => 1, writeHistory => 1,
+	      preput => 1, attribs => 1, newTTY => 1,
 	      tkRunning => Term::ReadLine::Stub->Features->{'tkRunning'},
 	      ornaments => Term::ReadLine::Stub->Features->{'ornaments'},
+	      stiflehistory => 1,
 	     );
 sub Features { \%features; }
 # my %attribs;
