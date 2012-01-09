@@ -34,6 +34,7 @@ $readline::minlength = 1;	# To pacify -w
 $readline::rl_readline_name = undef; # To pacify -w
 $readline::rl_basic_word_break_characters = undef; # To pacify -w
 $readline::history_stifled = 0;
+$readline::rl_history_length = 0;
 
 
 sub new {
@@ -134,7 +135,6 @@ sub history_list
   @readline::rl_History[1..$#readline::rl_History]
 }
 
-
 # Remove history element WHICH from the history.  The removed
 # element is returned. 
 sub remove_history {
@@ -161,8 +161,7 @@ sub replace_history_entry {
 }
 
 # Stifle the history list, remembering only MAX number of lines.
-sub stifle_history
-{
+sub stifle_history {
   shift;
   my $max = shift;
   $max = 0 if $max < 0;
@@ -179,8 +178,7 @@ sub stifle_history
 # Stop stifling the history.  This returns the previous maximum
 # number of history entries.  The value is positive if the history
 # was stifled,  negative if it wasn't.
-sub unstifle_history
-{
+sub unstifle_history {
   if ($readline::history_stifled) {
     $readline::history_stifled = 0;
     return (scalar @readline::rl_History);
@@ -192,6 +190,25 @@ sub unstifle_history
 sub history_is_stifled {
   shift;
   $readline::history_stifled ? 1 : 0;
+}
+
+sub ReadHistory {
+  my $self = shift;
+  my $filename = shift;
+  open(HISTORY, '<', $filename ) or return 0;
+  while (<HISTORY>) { chomp; push @history, $_} ;
+  SetHistory($self, @history);
+  close HISTORY;
+  return 1;
+}
+
+sub WriteHistory {
+  shift;
+  my $filename = shift;
+  open(HISTORY, '>', $filename ) or return 0;
+  for (@readline::rl_History) { print HISTORY $_, "\n"; }
+  close HISTORY;
+  return 1;
 }
 
 %features =  (appname => 1, minline => 1, autohistory => 1, 
