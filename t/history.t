@@ -1,5 +1,6 @@
 # -*- perl -*-
 #	history.t --- Term::ReadLine:GNU History Library Test Script
+#  Adapted from: 
 #
 #	$Id: history.t,v 1.11 2009/02/27 12:15:01 hiroo Exp $
 #
@@ -12,10 +13,11 @@
 # `make test'. After `make install' it should work as `perl t/history.t'
 
 BEGIN {
-    my $last = 15; #82
+    my $last = 17; #82
     print "1..$last\n"; $n = 1;
-    $ENV{PERL_RL} = 'Perl';	# force to use Term::ReadLine::Gnu
     $ENV{LANG} = 'C';
+    # force Term::ReadLine to use Term::ReadLine::Perl
+    $ENV{PERL_RL} = 'Perl';	
 }
 END {print "not ok $n\n" unless $loaded;}
 
@@ -156,111 +158,110 @@ print cmp_list(\@list_set, [$t->history_list])
 show_indices;
 
 # This is as far as I've gotten.
-exit;
 
-# at first where_history() returns 0
-print $t->where_history == 0		? "ok $n\n" : "not ok $n\n"; $n++;
+# # at first where_history() returns 0
+# print $t->where_history == 0		? "ok $n\n" : "not ok $n\n"; $n++;
 
-# current_history()
-#   history_base + 0 = 1
-print $t->current_history eq 'one'	? "ok $n\n" : "not ok $n\n"; $n++;
+# # current_history()
+# #   history_base + 0 = 1
+# print $t->current_history eq 'one'	? "ok $n\n" : "not ok $n\n"; $n++;
 
-# history_total_bytes()
-print $t->history_total_bytes == 15	? "ok $n\n" : "not ok $n\n"; $n++;
+# # history_total_bytes()
+# print $t->history_total_bytes == 15	? "ok $n\n" : "not ok $n\n"; $n++;
 
-########################################################################
-# 2.3.4 Moving Around the History List
+# ########################################################################
+# # 2.3.4 Moving Around the History List
 
-# history_set_pos()
-$t->history_set_pos(2);
-print $t->where_history == 2		? "ok $n\n" : "not ok $n\n"; $n++;
-#   history_base + 2 = 3
-print $t->current_history eq 'three'	? "ok $n\n" : "not ok $n\n"; $n++;
-show_indices;
+# # history_set_pos()
+# $t->history_set_pos(2);
+# print $t->where_history == 2		? "ok $n\n" : "not ok $n\n"; $n++;
+# #   history_base + 2 = 3
+# print $t->current_history eq 'three'	? "ok $n\n" : "not ok $n\n"; $n++;
+# show_indices;
 
-$t->history_set_pos(10000);	# should be ingored
-print $t->where_history == 2		? "ok $n\n" : "not ok $n\n"; $n++;
+# $t->history_set_pos(10000);	# should be ingored
+# print $t->where_history == 2		? "ok $n\n" : "not ok $n\n"; $n++;
 
-# previous_history()
-print $t->previous_history eq 'two'	? "ok $n\n" : "not ok $n\n"; $n++;
-print $t->where_history == 1		? "ok $n\n" : "not ok $n\n"; $n++;
-show_indices;
-print $t->previous_history eq 'one'	? "ok $n\n" : "not ok $n\n"; $n++;
-show_indices;
-$^W = 0;			# returns NULL
-print $t->previous_history eq ''	? "ok $n\n" : "not ok $n\n"; $n++;
-$^W = 1;
-show_indices;
+# # previous_history()
+# print $t->previous_history eq 'two'	? "ok $n\n" : "not ok $n\n"; $n++;
+# print $t->where_history == 1		? "ok $n\n" : "not ok $n\n"; $n++;
+# show_indices;
+# print $t->previous_history eq 'one'	? "ok $n\n" : "not ok $n\n"; $n++;
+# show_indices;
+# $^W = 0;			# returns NULL
+# print $t->previous_history eq ''	? "ok $n\n" : "not ok $n\n"; $n++;
+# $^W = 1;
+# show_indices;
 
-# next_history()
-print $t->next_history eq 'two'		? "ok $n\n" : "not ok $n\n"; $n++;
-show_indices;
-print $t->next_history eq 'three'	? "ok $n\n" : "not ok $n\n"; $n++;
-show_indices; 
-print $t->next_history eq 'four'	? "ok $n\n" : "not ok $n\n"; $n++;
-show_indices;
-$^W = 0;			# returns NULL
-print $t->next_history eq ''		? "ok $n\n" : "not ok $n\n"; $n++;
-$^W = 1;
-print $t->where_history == 4		? "ok $n\n" : "not ok $n\n"; $n++;
-show_indices;
+# # next_history()
+# print $t->next_history eq 'two'		? "ok $n\n" : "not ok $n\n"; $n++;
+# show_indices;
+# print $t->next_history eq 'three'	? "ok $n\n" : "not ok $n\n"; $n++;
+# show_indices; 
+# print $t->next_history eq 'four'	? "ok $n\n" : "not ok $n\n"; $n++;
+# show_indices;
+# $^W = 0;			# returns NULL
+# print $t->next_history eq ''		? "ok $n\n" : "not ok $n\n"; $n++;
+# $^W = 1;
+# print $t->where_history == 4		? "ok $n\n" : "not ok $n\n"; $n++;
+# show_indices;
 
 
-########################################################################
-# 2.3.5 Searching the History List
+# ########################################################################
+# # 2.3.5 Searching the History List
 
-@list_set = ('red yellow', 'green red', 'yellow blue', 'green blue');
-$t->SetHistory(@list_set);
+# @list_set = ('red yellow', 'green red', 'yellow blue', 'green blue');
+# $t->SetHistory(@list_set);
 
-$t->history_set_pos(1);
-#show_indices;
+# $t->history_set_pos(1);
+# #show_indices;
 
-# history_search()
-print($t->history_search('red',    -1) ==  6 && $t->where_history == 1
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search('blue',   -1) == -1 && $t->where_history == 1
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search('yellow', -1) ==  4 && $t->where_history == 0
-      ? "ok $n\n" : "not ok $n\n"); $n++;
+# # history_search()
+# print($t->history_search('red',    -1) ==  6 && $t->where_history == 1
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search('blue',   -1) == -1 && $t->where_history == 1
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search('yellow', -1) ==  4 && $t->where_history == 0
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
 
-print($t->history_search('red',     1) ==  0 && $t->where_history == 0
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search('blue',    1) ==  7 && $t->where_history == 2
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search('red',     1) == -1 && $t->where_history == 2
-      ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search('red',     1) ==  0 && $t->where_history == 0
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search('blue',    1) ==  7 && $t->where_history == 2
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search('red',     1) == -1 && $t->where_history == 2
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
 
-print($t->history_search('red')        ==  6 && $t->where_history == 1
-      ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search('red')        ==  6 && $t->where_history == 1
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
 
-# history_search_prefix()
-print($t->history_search_prefix('red',  -1) ==  0
-      && $t->where_history == 0 ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search_prefix('green', 1) ==  0
-      && $t->where_history == 1 ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search_prefix('red',   1) == -1
-      && $t->where_history == 1 ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search_prefix('red')      ==  0
-      && $t->where_history == 0 ? "ok $n\n" : "not ok $n\n"); $n++;
+# # history_search_prefix()
+# print($t->history_search_prefix('red',  -1) ==  0
+#       && $t->where_history == 0 ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search_prefix('green', 1) ==  0
+#       && $t->where_history == 1 ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search_prefix('red',   1) == -1
+#       && $t->where_history == 1 ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search_prefix('red')      ==  0
+#       && $t->where_history == 0 ? "ok $n\n" : "not ok $n\n"); $n++;
 
-# history_search_pos()
-$t->history_set_pos(3);
-print($t->history_search_pos('red',    -1, 1) ==  1
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search_pos('red',    -1, 3) ==  1
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search_pos('black',  -1, 3) == -1
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search_pos('yellow', -1)    ==  2
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search_pos('green')         ==  3
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search_pos('yellow',  1, 1) ==  2
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search_pos('yellow',  1)    == -1
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-print($t->history_search_pos('red',     1, 2) == -1
-      ? "ok $n\n" : "not ok $n\n"); $n++;
+# # history_search_pos()
+# $t->history_set_pos(3);
+# print($t->history_search_pos('red',    -1, 1) ==  1
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search_pos('red',    -1, 3) ==  1
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search_pos('black',  -1, 3) == -1
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search_pos('yellow', -1)    ==  2
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search_pos('green')         ==  3
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search_pos('yellow',  1, 1) ==  2
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search_pos('yellow',  1)    == -1
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
+# print($t->history_search_pos('red',     1, 2) == -1
+#       ? "ok $n\n" : "not ok $n\n"); $n++;
 
 ########################################################################
 # 2.3.6 Managing the History File
@@ -280,6 +281,7 @@ $n++;
 @list_write = qw(0 1 2 3 4);
 $t->SetHistory(@list_write);
 # write_history()
+exit;
 ! $t->write_history($hfile) || warn "error at write_history: $!\n";
 $t->SetHistory();		# clear history list
 # read_history()
@@ -289,6 +291,7 @@ $n++;
 
 # read_history() with range
 ! $t->read_history($hfile, 1, 3) || warn "error at read_history: $!\n";
+exit;
 print cmp_list([0,1,2,3,4,1,2], [$t->GetHistory])
     ? "ok $n\n" : "not ok $n\n"; $n++;
 #print "@{[$t->GetHistory]}\n";

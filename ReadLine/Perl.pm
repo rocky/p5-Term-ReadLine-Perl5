@@ -21,6 +21,8 @@ sub readline {
 # add_history is what GNU ReadLine defines. AddHistory is what we have
 # below.
 *add_history = \&AddHistory;
+*read_history = \&ReadHistory;
+*write_history = \&WriteHistory;
 
 # Not sure if addhistory() is needed. It is possible it was misspelling
 # of add_history. 
@@ -164,7 +166,7 @@ sub replace_history_entry {
 sub stifle_history {
   shift;
   my $max = shift;
-  $max = 0 if $max < 0;
+  $max = 0 if !defined($max) || $max < 0;
 
   if (scalar @readline::rl_History > $max) {
       splice @readline::rl_History, $max;
