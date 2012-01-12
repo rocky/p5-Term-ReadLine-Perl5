@@ -13,7 +13,7 @@
 # `make test'. After `make install' it should work as `perl t/history.t'
 
 BEGIN {
-    my $last = 17; #82
+    my $last = 18; #82
     print "1..$last\n"; $n = 1;
     $ENV{LANG} = 'C';
     # force Term::ReadLine to use Term::ReadLine::Perl
@@ -157,8 +157,6 @@ print cmp_list(\@list_set, [$t->history_list])
     ? "ok $n\n" : "not ok $n\n"; $n++;
 show_indices;
 
-# This is as far as I've gotten.
-
 # # at first where_history() returns 0
 # print $t->where_history == 0		? "ok $n\n" : "not ok $n\n"; $n++;
 
@@ -281,7 +279,6 @@ $n++;
 @list_write = qw(0 1 2 3 4);
 $t->SetHistory(@list_write);
 # write_history()
-exit;
 ! $t->write_history($hfile) || warn "error at write_history: $!\n";
 $t->SetHistory();		# clear history list
 # read_history()
@@ -289,9 +286,11 @@ $t->SetHistory();		# clear history list
 print cmp_list(\@list_write, [$t->GetHistory]) ? "ok $n\n" : "not ok $n\n";
 $n++;
 
+# This is as far as I've gotten.
+exit 0;
+
 # read_history() with range
 ! $t->read_history($hfile, 1, 3) || warn "error at read_history: $!\n";
-exit;
 print cmp_list([0,1,2,3,4,1,2], [$t->GetHistory])
     ? "ok $n\n" : "not ok $n\n"; $n++;
 #print "@{[$t->GetHistory]}\n";
