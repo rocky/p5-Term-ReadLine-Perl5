@@ -17,7 +17,7 @@ $OUT = $term->OUT || STDOUT;
 if (%features) {
   @f = %features;
   print $OUT "Features present: @f\n";
-  $term->ornaments(1) if $features{ornaments};
+  #$term->ornaments(1) if $features{ornaments};
 } else {
   print $OUT "No additional features present.\n";
 }

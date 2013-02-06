@@ -59,6 +59,12 @@ sub new {
   # The following is here since it is mostly used for perl input:
   # $readline::rl_basic_word_break_characters .= '-:+/*,[])}';
   $term = bless [$readline::term_IN,$readline::term_OUT];
+  unless ($ENV{PERL_RL} and $ENV{PERL_RL} =~ /\bo\w*=0/) {
+    local $Term::ReadLine::termcap_nowarn = 1; # With newer Perls
+    local $SIG{__WARN__} = sub {}; # With older Perls
+    $term->ornaments(1);
+  }
+  return $term;
 }
 sub newTTY {
   my ($self, $in, $out) = @_;
