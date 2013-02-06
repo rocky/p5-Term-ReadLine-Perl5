@@ -16,6 +16,10 @@ if ($ENV{AUTOMATED_TESTING}) {
 
 if (!@ARGV) {
   $term = new Term::ReadLine 'Simple Perl calc';
+} elsif (@ARGV == 2) {
+  open(IN,"<$ARGV[0]");
+  open(OUT,">$ARGV[1]");
+  $term = new Term::ReadLine 'Simple Perl calc', \*IN, \*OUT;
 } elsif ($ARGV[0] =~ m|^/dev|) {
   open(IN,"<$ARGV[0]");
   open(OUT,">$ARGV[0]");

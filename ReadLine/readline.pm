@@ -49,7 +49,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.0207';
+$VERSION = $VERSION = '1.0208';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -722,18 +722,18 @@ sub preinit
 		  qq/"\0\4"/,  'YankClipboard',    # 4: <Shift>+<Insert>
 		  qq/"\0\5"/,  'KillRegionClipboard',    # 5: <Shift>+<Delete>
 		  qq/"\0\16"/, 'Undo', # 14: <Alt>+<Backspace>
-		  qq/"\0\23"/, 'RevertLine', # 19: <Alt>+<R>
-		  qq/"\0\24"/, 'TransposeWords', # 20: <Alt>+<T>
-		  qq/"\0\25"/, 'YankPop', # 21: <Alt>+<Y>
-		  qq/"\0\26"/, 'UpcaseWord', # 22: <Alt>+<U>
-		  qq/"\0\31"/, 'ReverseSearchHistory', # 25: <Alt>+<P>
-		  qq/"\0\40"/, 'KillWord', # 32: <Alt>+<D>
-		  qq/"\0\41"/, 'ForwardWord', # 33: <Alt>+<F>
-		  qq/"\0\46"/, 'DownCaseWord', # 38: <Alt>+<L>
+#		  qq/"\0\23"/, 'RevertLine', # 19: <Alt>+<R>
+#		  qq/"\0\24"/, 'TransposeWords', # 20: <Alt>+<T>
+#		  qq/"\0\25"/, 'YankPop', # 21: <Alt>+<Y>
+#		  qq/"\0\26"/, 'UpcaseWord', # 22: <Alt>+<U>
+#		  qq/"\0\31"/, 'ReverseSearchHistory', # 25: <Alt>+<P>
+#		  qq/"\0\40"/, 'KillWord', # 32: <Alt>+<D>
+#		  qq/"\0\41"/, 'ForwardWord', # 33: <Alt>+<F>
+#		  qq/"\0\46"/, 'DownCaseWord', # 38: <Alt>+<L>
 		  #qq/"\0\51"/, 'TildeExpand', # 41: <Alt>+<\'>
-		  qq/"\0\56"/, 'CapitalizeWord', # 46: <Alt>+<C>
-		  qq/"\0\60"/, 'BackwardWord', # 48: <Alt>+<B>
-		  qq/"\0\61"/, 'ForwardSearchHistory', # 49: <Alt>+<N>
+#		  qq/"\0\56"/, 'CapitalizeWord', # 46: <Alt>+<C>
+#		  qq/"\0\60"/, 'BackwardWord', # 48: <Alt>+<B>
+#		  qq/"\0\61"/, 'ForwardSearchHistory', # 49: <Alt>+<N>
 		  #qq/"\0\64"/, 'YankLastArg', # 52: <Alt>+<.>
 		  qq/"\0\65"/, 'PossibleCompletions', # 53: <Alt>+</>
 		  qq/"\0\107"/, 'BeginningOfLine', # 71: <Home>
@@ -767,6 +767,11 @@ sub preinit
       next if  # defined($KeyMap[27]) && defined (%{"$KeyMap{name}_27"}) &&
 	defined $ {"$KeyMap{name}_27"}[ord $_];
       push(@add_bindings, "M-$_", 'DoLowercaseVersion');
+    }
+    if ($inDOS) {
+	# Default translation of Alt-char
+	$ {"$KeyMap{name}_0"}{'Esc'} = *{"$KeyMap{name}_27"};
+	$ {"$KeyMap{name}_0"}{'default'} = 'F_DoEscVersion';
     }
     &rl_bind(@add_bindings);
     
@@ -1556,6 +1561,7 @@ sub readline
 	    $D = 0;
 	    $cmd = 'F_BackwardDeleteChar' if $cmd eq 'F_DeleteChar';
 	}
+	undef $doingNumArg;
 	&$cmd(1, ord($input));			## actually execute input
 	$rl_first_char = 0;
 	*KeyMap = $var_EditingMode;           # JP: added
@@ -2624,7 +2630,10 @@ sub changecase
     $D = $olddot if defined($olddot);
 }
 
-sub F_TransposeWords { } ## not implemented yet
+sub F_TransposeWords {
+    1;
+    ## not implemented yet
+}
 
 ##
 ## Switch char at dot with char before it.
@@ -2835,8 +2844,15 @@ sub F_Yank
     &TextInsert($_[0], $KillBuffer);
 }
 
-sub F_YankPop    { } ## not implemented yet
-sub F_YankNthArg { } ## not implemented yet
+sub F_YankPop    {
+   1;
+   ## not implemented yet
+}
+
+sub F_YankNthArg {
+   1;
+   ## not implemented yet
+}
 
 ##
 ## Kill to the end of the current word. If not on a word, kill to
@@ -2889,6 +2905,25 @@ sub F_DoLowercaseVersion
     } else {
 	&F_Ding;
     }
+}
+
+##
+## If the character that got us here is Alt-Char,
+## do the Esc Char equiv...
+##
+sub F_DoEscVersion
+{
+    my ($ord, $t) = $_[1];
+    &F_Ding unless $KeyMap{'Esc'};
+    for $t (([ord 'w', '`1234567890-='],
+		   [ord ',', 'zxcvbnm,./\\'],
+		   [16,      'qwertyuiop[]'],
+		   [ord(' ') - 2, 'asdfghjkl;\''])) {
+      next unless $ord >= $t->[0] and $ord < $t->[0] + length($t->[1]);
+      $ord = ord substr $t->[1], $ord - $t->[0], 1;
+      return &do_command($KeyMap{'Esc'}, $_[0], $ord);
+    }
+    &F_Ding;
 }
 
 ##
@@ -2963,29 +2998,31 @@ sub F_UniversalArgument
 sub F_DigitArgument
 {
     my $in = chr $_[1];
-    my ($NumericArg, $sign, $explicit) = (1, 1, 0);
+    my ($NumericArg, $sawDigit) = (1, 0);
     my ($increment, $ord);
+    ($NumericArg, $sawDigit) = ($_[0], $_[0] !~ /e0$/i)
+	if $doingNumArg;	# XXX What if Esc-- 1 ?
 
     do
     {
 	$ord = ord $in;
 	if (defined($KeyMap[$ord]) && $KeyMap[$ord] eq 'F_UniversalArgument') {
 	    $NumericArg *= 4;
-	} elsif ($ord == ord('-') && !$explicit) {
-	    $sign = -$sign;
-	    $NumericArg = $sign;
+	} elsif ($ord == ord('-') && !$sawDigit) {
+	    $NumericArg = -$NumericArg;
 	} elsif ($ord >= ord('0') && $ord <= ord('9')) {
-	    $increment = ($ord - ord('0')) * $sign;
-	    if ($explicit) {
+	    $increment = ($ord - ord('0')) * ($NumericArg < 0 ? -1 : 1);
+	    if ($sawDigit) {
 		$NumericArg = $NumericArg * 10 + $increment;
 	    } else {
 		$NumericArg = $increment;
-		$explicit = 1;
+		$sawDigit = 1;
 	    }
 	} else {
 	    local(*KeyMap) = $var_EditingMode;
 	    &redisplay();
-	    &do_command(*KeyMap, $NumericArg, $ord);
+	    $doingNumArg = 1;		# Allow NumArg inside NumArg
+	    &do_command(*KeyMap, $NumericArg . ($sawDigit ? '': 'e0'), $ord);
 	    return;
 	}
 	## make sure it's not toooo big.

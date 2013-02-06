@@ -163,3 +163,9 @@ After 0.91:
 	Untested Win32 support for cut&paste.
 	Alias $var_DeleteSelection for $rl_delete_selection (thus accessible
 		via .inputrc).
+1.0208:	Allow 2-arg form for test.pl
+	Open CONIN$ on Win (if asked for CON), and open RW (bug in Win devdriver).
+	Allow non-first Digit-Arguments to be escaped too.
+	Allow Alt-char translation to \M-char on DOSISH.
+	Apparently, self-loaded empty subroutines are still crashing.
+		Work-around: put "1;" into non-implemented stuff.

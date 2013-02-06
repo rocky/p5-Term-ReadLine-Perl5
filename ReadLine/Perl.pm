@@ -3,7 +3,7 @@ use Carp;
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Compa Term::ReadLine::Perl::AU);
 #require 'readline.pl';
 
-$VERSION = $VERSION = 0.99;
+$VERSION = $VERSION = 1.0208;
 
 sub readline {
   shift; 
@@ -43,7 +43,12 @@ sub new {
   if (!@_) {
     if (!defined $term) {
       ($IN,$OUT) = Term::ReadLine->findConsole();
-      open(IN,"<$IN") || croak "Cannot open $IN for read";
+      # Old Term::ReadLine did not have a workaround for a bug in Win devdriver
+      $IN = 'CONIN$' if $^O eq 'MSWin32' and "\U$IN" eq 'CON';
+      open IN,
+	# A workaround for another bug in Win device driver
+	(($IN eq 'CONIN$' and $^O eq 'MSWin32') ? "+< $IN" : "< $IN")
+	  or croak "Cannot open $IN for read";
       open(OUT,">$OUT") || croak "Cannot open $OUT for write";
       $readline::term_IN = \*IN;
       $readline::term_OUT = \*OUT;
