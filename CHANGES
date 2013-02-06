@@ -210,3 +210,13 @@ After 0.91:
 		if $inDOS too.
 	Bind C-x @ c and C-x @ m too (as in Emacs).
 
+1.0303: Would not allow macros with space in them.
+	Never try to display the whole prompt unless it is shorter than
+		screen width ;-).
+	Test supports PERL_RL_TEST_PROMPT_MINLEN in environment.
+	Test hints at special significance of the word `exit'.
+	Avoid a warning on unexpected variable assign (thanks to Robin Barker).
+	Change error message for unknown method.
+	Protect global variables during WINCH processing.
+	F_ReverseSearchHistory was not -w-safe (thanks to Peter Valdemar)
+	Test for $ENV{PERL_MM_NONINTERACTIVE} also to abort tests.

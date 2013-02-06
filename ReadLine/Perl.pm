@@ -3,7 +3,7 @@ use Carp;
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Compa Term::ReadLine::Perl::AU);
 #require 'readline.pl';
 
-$VERSION = $VERSION = 1.0302;
+$VERSION = $VERSION = 1.0303;
 
 sub readline {
   shift; 
@@ -117,7 +117,7 @@ package Term::ReadLine::Perl::AU;
 sub AUTOLOAD {
   { $AUTOLOAD =~ s/.*:://; }		# preserve match data
   my $name = "readline::rl_$AUTOLOAD";
-  die "Cannot do `$AUTOLOAD' in Term::ReadLine::Perl" 
+  die "Unknown method `$AUTOLOAD' in Term::ReadLine::Perl" 
     unless exists $readline::{"rl_$AUTOLOAD"};
   *$AUTOLOAD = sub { shift; &$name };
   goto &$AUTOLOAD;

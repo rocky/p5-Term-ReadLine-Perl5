@@ -52,7 +52,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.0302';
+$VERSION = $VERSION = '1.0303';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -403,6 +403,7 @@ $rl_getc = \&rl_getc;
 sub get_window_size
 {
     my $sig = shift;
+    local($., $@, $!, $^E, $?);		# Preserve $! etc; the rest for hooks
     my ($num_cols,$num_rows);
 
     if (defined $term_readkey) {
@@ -1438,7 +1439,7 @@ sub read_an_init_file {
 	    &rl_set($1, $2, $file);
 	} elsif (m/^\s*(\S+):\s+("(?:\\.|[^\\\"])*"|'(\\.|[^\\\'])*')/) {	# Allow trailing comment
 	    &rl_bind($1, $2);
-	} elsif (m/^\s*(\S+):\s+(\S+)/) {	# Allow trailing comment
+	} elsif (m/^\s*(\S+|"[^\"]+"):\s+(\S+)/) { # Allow trailing comment
 	    &rl_bind($1, $2);
 	} else {
 	    chomp;
@@ -1909,7 +1910,8 @@ sub redisplay
     }
 
     ##
-    ## Now $dline is what we'd like to display.
+    ## Now $dline is what we'd like to display (with a prepended prompt)
+    ## $D is the position of the cursor on it.
     ##
     ## If it's too long to fit on the line, we must decide what we can fit.
     ##
@@ -1924,13 +1926,15 @@ sub redisplay
     ## Similarly, if the line needs chopped off, we make sure that the
     ## placement of the tailing '>' won't screw up any 2-byte character in
     ## the vicinity.
-    ##
-    if ($D == length($prompt)) {
-	$si = 0;   ## display from the beginning....
-    } elsif ($si >= $D) {	# point to the left
+
+    # Now $si keeps the value from previous display
+    if ($D == length($prompt)	# If prompts fits exactly, show only if need not show trailing '>'
+	and length($prompt) < $rl_screen_width - (0 != length $dline)) {
+	$si = 0;   ## prefer displaying the whole prompt
+    } elsif ($si >= $D) {	# point to the left of what was displayed
 	$si = &max(0, $D - $rl_margin);
 	$si-- if $si > 0 && $si != length($prompt) && !&OnSecondByte($si);
-    } elsif ($si + $rl_screen_width <= $D) { # Point to the right
+    } elsif ($si + $rl_screen_width <= $D) { # Point to the right of ...
 	$si = &min(length($dline), ($D - $rl_screen_width) + $rl_margin);
 	$si-- if $si > 0 && $si != length($prompt) && !&OnSecondByte($si);
     } elsif (length($dline) - $si < $rl_screen_width - $rl_margin and $si) {
@@ -1957,7 +1961,7 @@ sub redisplay
     ##
     $dline = substr($dline, $si, $thislen);
     $delta = $D - $si;	## delta is cursor distance from beginning of $dline.
-    if (defined $bsel) {
+    if (defined $bsel) {	# Highlight the selected part
       $bsel -= $si;
       $esel = $delta;
       ($bsel, $esel) = ($esel, $bsel) if $bsel > $esel;
@@ -2346,7 +2350,8 @@ sub rl_set
 
     # Skip unknown variables: 
     return unless defined $ {'readline::'}{"var_$_"};
-    local(*V) = $ {'readline::'}{"var_$_"};
+    local(*V);    # avoid <Undefined value assign to typeglob> warning
+    { local $^W; *V = $ {'readline::'}{"var_$_"}; }
     if (!defined($V)) {			# XXX Duplicate check?
 	warn("Warning$InputLocMsg:\n".
 	     "  Invalid variable `$var'\n") if $^W;
@@ -2904,7 +2909,7 @@ sub DoSearch
 	&redisplay( '('.($reverse?'reverse-':'') ."i-search) `$searchstr': ");
 
 	$c = &getc_with_pending;
-	if ($KeyMap[ord($c)] eq 'F_ReverseSearchHistory') {
+	if (($KeyMap[ord($c)] || 0) eq 'F_ReverseSearchHistory') {
 	    if ($reverse && $I != -1) {
 		if ($tmp = &search($I-1,$searchstr), $tmp >= 0) {
 		    $I = $tmp;
@@ -2913,7 +2918,7 @@ sub DoSearch
 		}
 	    }
 	    $reverse = 1;
-	} elsif ($KeyMap[ord($c)] eq 'F_ForwardSearchHistory') {
+	} elsif (($KeyMap[ord($c)] || 0) eq 'F_ForwardSearchHistory') {
 	    if (!$reverse && $I != -1) {
 		if ($tmp = &search($I+1,$searchstr), $tmp >= 0) {
 		    $I = $tmp;

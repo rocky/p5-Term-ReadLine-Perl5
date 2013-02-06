@@ -9,8 +9,9 @@ use Term::ReadLine;
 use Carp;
 $SIG{__WARN__} = sub { warn Carp::longmess(@_) };
 
-if ($ENV{AUTOMATED_TESTING}) {
-  print "1..0 # skip: \$ENV{AUTOMATED_TESTING} is TRUE\n";
+my $ev;
+if ($ENV{$ev = 'AUTOMATED_TESTING'} or $ENV{$ev = 'PERL_MM_NONINTERACTIVE'}) {
+  print "1..0 # skip: \$ENV{$ev} is TRUE\n";
   exit;
 }
 
@@ -29,6 +30,9 @@ if (!@ARGV) {
   $no_print = $ARGV[0] eq '--no-print';
 }
 $prompt = "Enter arithmetic or Perl expression: ";
+if ((my $l = $ENV{PERL_RL_TEST_PROMPT_MINLEN} | 0) > length $prompt) {
+  $prompt =~ s/(?=:)/ ' ' x ($l - length $prompt)/e;
+}
 $OUT = $term->OUT || STDOUT;
 %features = %{ $term->Features };
 if (%features) {
@@ -38,7 +42,15 @@ if (%features) {
 } else {
   print $OUT "No additional features present.\n";
 }
-print $OUT "Flipping rl_default_selected each line.\n";
+print $OUT "\n  Flipping rl_default_selected each line.\n";
+print $OUT <<EOP;
+
+	Hint: Entering the word
+		exit
+	would exit the test. ;-)  (If feature 'preput' is present,
+	this word should be already entered.)
+
+EOP
 while ( defined ($_ = $term->readline($prompt, "exit")) ) {
   $res = eval($_);
   warn $@ if $@;
