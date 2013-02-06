@@ -9,9 +9,14 @@ use Term::ReadLine;
 use Carp;
 $SIG{__WARN__} = sub { warn Carp::longmess(@_) };
 
-my $ev;
-if ($ENV{$ev = 'AUTOMATED_TESTING'} or $ENV{$ev = 'PERL_MM_NONINTERACTIVE'}) {
-  print "1..0 # skip: \$ENV{$ev} is TRUE\n";
+my $non_interactive = 
+    (defined($ENV{PERL_MM_NONINTERACTIVE}))
+    ? $ENV{PERL_MM_NONINTERACTIVE} : 
+     ($ENV{PERL_MM_USE_DEFAULT} || $ENV{AUTOMATED_TESTING});
+if ($non_interactive) {
+    no strict; no warnings;
+    print "1..0 # skip: not interactive; " . 
+    "\$ENV{PERL_MM_NONINTERACTIVE}='$ENV{PERL_MM_NONINTERCTIVE}' \$ENV{AUTOMATED_TESTING}='$ENV{AUTOMATED_TESTING}'\n";
   exit;
 }
 
