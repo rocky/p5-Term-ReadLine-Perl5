@@ -49,7 +49,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.0206';
+$VERSION = $VERSION = '1.0207';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -455,6 +455,10 @@ sub preinit
     $var_CompleteAddsuffix{'On'} = 1;
     $var_CompleteAddsuffix{'Off'} = 0;
 
+    $var_DeleteSelection = $var_DeleteSelection{'On'} = 1;
+    $var_DeleteSelection{'Off'} = 0;
+    *rl_delete_selection = \$var_DeleteSelection; # Alias
+
     ## not yet supported... always on
     for ('InputMeta', 'OutputMeta') {
 	${"var_$_"} = 1;
@@ -591,7 +595,7 @@ sub preinit
     $line='';
     $D = 0;
     $InputLocMsg = ' [initialization]';
-    
+
     &InitKeymap(*emacs_keymap, 'SelfInsert', 'emacs_keymap',
 		($inDOS ? () : ('C-@',	'SetPoint') ),
 		'C-a',	'BeginningOfLine',
@@ -1024,6 +1028,12 @@ sub preinit
     my $default_mode = 'emacs';
 
     *KeyMap = $var_EditingMode = $var_EditingMode{$default_mode};
+
+##    my $name;
+##    for $name ( keys %{'readline::'} ) {
+##      # Create aliases accessible via tied interface
+##      *{"rl_$1"} = \$ {"var_$1"} if $name =~ /$var_(.*)/;
+##    }
 
     1;				# Returning a glob causes a bug in db5.001m
 }
@@ -2017,6 +2027,7 @@ sub F_AcceptLine
     local $\ = '';
     print $term_OUT "\r\n";
     $force_redraw = 0;
+    (pos $line) = undef;	# Another way to force redraw...
 }
 
 sub add_line_to_history
@@ -4193,8 +4204,14 @@ sub clipboard_set {
     if ($^O eq 'os2') {
       eval {
 	require OS2::Process;
-	OS2::Process::ClipbrdText_set($in);
+	OS2::Process::ClipbrdText_set($in); # Do not disable \r\n-conversion
 	1
+      } and return;
+    } elsif ($^O eq 'MSWin32') {
+      eval {
+        require Win32::Clipboard;
+        Win32::Clipboard::Set($in);
+        1
       } and return;
     }
     my $mess;
@@ -4230,8 +4247,13 @@ sub F_YankClipboard
       eval {
 	require OS2::Process;
 	$in = OS2::Process::ClipbrdText();
-	$in =~ s/\n+$//;
 	$in =~ s/\r\n/\n/g;		# With old versions, or what?
+      }
+    } elsif ($^O eq 'MSWin32') {
+      eval {
+        require Win32::Clipboard;
+        $in = Win32::Clipboard::GetText();
+        $in =~ s/\r\n/\n/g;  # is this needed?
       }
     } else {
       my $mess;
@@ -4248,7 +4270,10 @@ sub F_YankClipboard
 	close PASTE or warn("$mess, closing: $!");
       }
     }
-    return &TextInsert($_[0], $in) if defined $in;
+    if (defined $in) {
+	$in =~ s/\n+$//;
+	return &TextInsert($_[0], $in);
+    }
     &TextInsert($_[0], $KillBuffer);
 }
 

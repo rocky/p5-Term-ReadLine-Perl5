@@ -159,3 +159,7 @@ After 0.91:
 	Commands SelfInsert, Yank*, *DeleteChar remove this region
 		if $rl_delete_selection is TRUE (default).
 			(Set mark again to insert without removing.)
+1.0207:	If mark was active, redraw could be performed after Enter.
+	Untested Win32 support for cut&paste.
+	Alias $var_DeleteSelection for $rl_delete_selection (thus accessible
+		via .inputrc).
