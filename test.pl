@@ -1,3 +1,4 @@
+#! /usr/bin/perl -w
 # Give an argument to use stdin, stdout instead of console
 # If argument starts with /dev, use it as console
 # If argument is '--no-print', do not print the result.
@@ -7,6 +8,11 @@ use Term::ReadLine;
 
 use Carp;
 $SIG{__WARN__} = sub { warn Carp::longmess(@_) };
+
+if ($ENV{AUTOMATED_TESTING}) {
+  print "1..0 # skip: \$ENV{AUTOMATED_TESTING} is TRUE\n";
+  exit;
+}
 
 if (!@ARGV) {
   $term = new Term::ReadLine 'Simple Perl calc';

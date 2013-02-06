@@ -144,3 +144,5 @@ After 0.91:
 	New command: PrintHistory (on M-h),
 	PreviousHistory and NextHistory take count.
 	The edited line is saved when one moves to history.
+1.0205: Do not touch $ENV{HOME} unless defined.
+	$ENV{AUTOMATED_TESTING} to skip interactive tests.

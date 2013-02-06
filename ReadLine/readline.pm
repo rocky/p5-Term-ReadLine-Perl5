@@ -49,7 +49,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.0204';
+$VERSION = $VERSION = '1.0205';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -1336,7 +1336,10 @@ sub read_an_init_file {
 sub F_ReReadInitFile
 {
     my ($file) = $ENV{'INPUTRC'};
-    $file = "$ENV{'HOME'}/.inputrc" unless defined $file;
+    unless (defined $file) {
+	return unless defined $ENV{'HOME'};
+	$file = "$ENV{'HOME'}/.inputrc";
+    }
     read_an_init_file($file, 0);
 }
 
@@ -1650,7 +1653,7 @@ sub substr_with_props {
   defined $from or $from = 0;
   defined $len or $len = length($p) + length($s) - $from;
   unless (defined $ket) {
-    warn "bug in Term::ReadLine::Perl, please report to its author";
+    warn 'bug in Term::ReadLine::Perl, please report to its author cpan@ilyaz.org';
     $ket = '';
   }
   $ket = '' if $len < length($p) + length($s) - $from; # Not redrawn
@@ -1946,7 +1949,7 @@ sub savestate
 sub F_SelfInsert
 {
     my ($count, $ord) = @_;
-    my $text2add = pack('c', $ord) x $count;
+    my $text2add = pack('C', $ord) x $count;
     if ($InsertMode) {
 	substr($line,$D,0) .= $text2add;
     } else {
