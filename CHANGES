@@ -70,3 +70,6 @@ After 0.91:
 	Bindings to \C-letter work again.
 0.99:
 	Buglet with -w corrected.
+0.9901:
+	Support for ornaments busted editing of long lines.
+
