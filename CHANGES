@@ -167,5 +167,25 @@ After 0.91:
 	Open CONIN$ on Win (if asked for CON), and open RW (bug in Win devdriver).
 	Allow non-first Digit-Arguments to be escaped too.
 	Allow Alt-char translation to \M-char on DOSISH.
-	Apparently, self-loaded empty subroutines are still crashing.
+	Apparently, self-loaded empty subroutines crash 5.8.2; 5.8.7 OK.
 		Work-around: put "1;" into non-implemented stuff.
+
+1.03:   Support for numeric arguments missed setting $lastcommand.
+	MinLine would not return the old value etc.
+	On MSWin32 without ReadKey, but with cygwin stty.exe:
+		do binmode (since Enter sends \r in these settings)
+			(XXXX we don't undo binmode; is it needed?)
+			(Only Control-Key work; do "Control-[ key" for Meta)
+	When optimizing "cursor" movement, take into account ornaments.
+	Optimize "cursor" movement even if we redraw the line.
+	Would display the string twice, even if cursor was at the end of
+			the line.
+	Add key binding for Control-Movement keys in xterm; and some OSX xterm.
+	Do not prefer HPUX xterm bindings to "normal" XTerm bindings.
+	New functions F_BeginUndoGroup F_EndUndoGroup F_DoNothing
+		F_MemorizeDigitArgument F_ForceMemorizeDigitArgument
+		F_UnmemorizeDigitArgument F_ResetDigitArgument
+		F_MergeInserts F_MemorizePos
+			(for better mouse support; untested)
+	Undo list merges together states where the only change is position
+

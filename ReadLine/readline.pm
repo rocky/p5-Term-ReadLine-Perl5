@@ -25,6 +25,9 @@
 ##
 ##
 
+# Wrap the code below (initially Perl4, now partially Perl4) into a fake
+# Perl5 pseudo-module; mismatch of package and file name is intentional
+# to make is harder to abuse this (very fragile) code...
 package readline;
 
 my $autoload_broken = 1;	# currently: defined does not work with a-l
@@ -49,7 +52,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.0208';
+$VERSION = $VERSION = '1.03';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -668,11 +671,41 @@ sub preinit
 		qq/"\eOB"/,  'next-history',
 		qq/"\eOC"/,  'forward-char',
 		qq/"\eOD"/,  'backward-char',
+		qq/"\eOy"/,  'HistorySearchBackward',	# vt: PageUp
+		qq/"\eOs"/,  'HistorySearchForward',	# vt: PageDown
 		qq/"\e[[A"/,  'previous-history',
 		qq/"\e[[B"/,  'next-history',
 		qq/"\e[[C"/,  'forward-char',
 		qq/"\e[[D"/,  'backward-char',
 		qq/"\e[2~"/,   'ToggleInsertMode', # X: <Insert>
+		# Mods: 1 + bitmask: 1 Shift, 2 Alt, 4 Control, 8 (sometimes) Meta
+		qq/"\e[2;2~"/,  'YankClipboard',    # <Shift>+<Insert>
+		qq/"\e[3;2~"/,  'KillRegionClipboard',    # <Shift>+<Delete>
+		#qq/"\0\16"/, 'Undo', # <Alt>+<Backspace>
+		qq/"\eO5D"/, 'BackwardWord', # <Ctrl>+<Left arrow>
+		qq/"\eO5C"/, 'ForwardWord', # <Ctrl>+<Right arrow>
+		qq/"\e[5D"/, 'BackwardWord', # <Ctrl>+<Left arrow>
+		qq/"\e[5C"/, 'ForwardWord', # <Ctrl>+<Right arrow>
+		qq/"\eO5F"/, 'KillLine', # <Ctrl>+<End>
+		qq/"\e[5F"/, 'KillLine', # <Ctrl>+<End>
+		qq/"\e[4;5~"/, 'KillLine', # <Ctrl>+<End>
+		qq/"\eO5s"/, 'EndOfHistory', # <Ctrl>+<Page Down>
+		qq/"\e[6;5~"/, 'EndOfHistory', # <Ctrl>+<Page Down>
+		qq/"\e[5H"/, 'BackwardKillLine', # <Ctrl>+<Home>
+		qq/"\eO5H"/, 'BackwardKillLine', # <Ctrl>+<Home>
+		qq/"\e[1;5~"/, 'BackwardKillLine', # <Ctrl>+<Home>
+		qq/"\eO5y"/, 'BeginningOfHistory', # <Ctrl>+<Page Up>
+		qq/"\e[5;5y"/, 'BeginningOfHistory', # <Ctrl>+<Page Up>
+		qq/"\e[2;5~"/, 'CopyRegionAsKillClipboard', # <Ctrl>+<Insert>
+		qq/"\e[3;5~"/, 'KillWord', # <Ctrl>+<Delete>
+
+		# OSX xterm:
+		# OSX xterm: home \eOH end \eOF delete \e[3~ help \e[28~ f13 \e[25~
+		# gray- \eOm gray+ \eOk gray-enter \eOM gray* \eOj gray/ \eOo gray= \eO
+		# grayClear \e\e.
+
+		qq/"\eOH"/,   'BeginningOfLine',        # home
+		qq/"\eOF"/,   'EndOfLine',        	# end
 
 		# HP xterm
 		#qq/"\e[A"/,   'PreviousHistory',	# up    arrow
@@ -680,13 +713,21 @@ sub preinit
 		#qq/"\e[C"/,   'ForwardChar',		# right arrow
 		#qq/"\e[D"/,   'BackwardChar',		# left  arrow
 		qq/"\e[H"/,   'BeginningOfLine',        # home
-		qq/"\e[1~"/,  'HistorySearchForward',   # find
-		qq/"\e[3~"/,  'ToggleInsertMode',	# insert char
-		qq/"\e[4~"/,  'ToggleInsertMode',	# select
+		#'C-k',        'KillLine',		# clear display
 		qq/"\e[5~"/,  'HistorySearchBackward',	# prev
 		qq/"\e[6~"/,  'HistorySearchForward',	# next
 		qq/"\e[\0"/,  'BeginningOfLine',	# home
-		#'C-k',        'KillLine',		# clear display
+
+		# These contradict:
+		($^O =~ /^hp\W?ux/i ? (
+		  qq/"\e[1~"/,  'HistorySearchForward',   # find
+		  qq/"\e[3~"/,  'ToggleInsertMode',	# insert char
+		  qq/"\e[4~"/,  'ToggleInsertMode',	# select
+		 ) : (		# "Normal" xterm
+		  qq/"\e[1~"/,  'BeginningOfLine',	# home
+		  qq/"\e[3~"/,  'DeleteChar',		# delete
+		  qq/"\e[4~"/,  'EndOfLine',	# end
+		)),
 
 		# hpterm
 
@@ -735,7 +776,7 @@ sub preinit
 #		  qq/"\0\60"/, 'BackwardWord', # 48: <Alt>+<B>
 #		  qq/"\0\61"/, 'ForwardSearchHistory', # 49: <Alt>+<N>
 		  #qq/"\0\64"/, 'YankLastArg', # 52: <Alt>+<.>
-		  qq/"\0\65"/, 'PossibleCompletions', # 53: <Alt>+</>
+		  qq/"\0\65"/,  'PossibleCompletions', # 53: <Alt>+</>
 		  qq/"\0\107"/, 'BeginningOfLine', # 71: <Home>
 		  qq/"\0\110"/, 'previous-history', # 72: <Up arrow>
 		  qq/"\0\111"/, 'HistorySearchBackward', # 73: <Page Up>
@@ -1487,6 +1528,9 @@ sub readline
     undef($ReturnEOF);		## ...unless this on, then return undef.
     @Pending = ();		## Contains characters to use as input.
     @undo = ();			## Undo history starts empty for each line.
+    @undoGroupS = ();		## Undo groups start empty for each line.
+    undef $memorizedArg;	## No digitArgument memorized
+    undef $memorizedPos;	## No position memorized
 
     undef $Vi_undo_state;
     undef $Vi_undo_all_state;
@@ -1549,7 +1593,7 @@ sub readline
 	  $AcceptLine = $ReturnEOF = 1;
 	  last;
 	}
-	push(@undo, &savestate) unless $Vi_mode; ## save state so we can undo.
+	preserve_state();
 
 	$ThisCommandKilledText = 0;
 	##print "\n\rline is @$D:[$line]\n\r"; ##DEBUG
@@ -1564,6 +1608,7 @@ sub readline
 	undef $doingNumArg;
 	&$cmd(1, ord($input));			## actually execute input
 	$rl_first_char = 0;
+	$lastcommand = $cmd;
 	*KeyMap = $var_EditingMode;           # JP: added
 
 	# In Vi command mode, don't position the cursor beyond the last
@@ -1576,6 +1621,7 @@ sub readline
     }
 
     undef @undo; ## Release the memory.
+    undef @undoGroupS; ## Release the memory.
     &ResetTTY;   ## Restore the tty state.
     $| = $oldbar;
     select $old;
@@ -1629,6 +1675,12 @@ EOW
 					# '; # For Emacs. 
      $useioctl = 0;
      system 'stty raw -echo' and ($usestty = 0, die "Cannot call `stty': $!");
+     if ($^O eq 'MSWin32') {
+	# If we reached this, Perl isn't cygwin, but STTY is present ==> cygwin
+	# The symptoms: now Enter sends \r; thus we need binmode
+	# XXXX Do we need to undo???  $term_IN is most probably private now...
+	binmode $term_IN;
+     }
   }
   return 1;
 }
@@ -1840,7 +1892,7 @@ sub redisplay
     ## with the cursor at $D-$si characters from the left edge.
     ##
     $dline = substr($dline, $si, $thislen);
-    $delta = $D - $si;	## delta is cursor distance from left margin.
+    $delta = $D - $si;	## delta is cursor distance from beginning of $dline.
     if (defined $bsel) {
       $bsel -= $si;
       $esel = $delta;
@@ -1864,7 +1916,7 @@ sub redisplay
     # Now $dline is the part after the prompt...
 
     ##
-    ## Now must output $dline, with cursor $delta spaces from left margin.
+    ## Now must output $dline, with cursor $delta spaces from left of TTY
     ##
 
     local ($\, $,) = ('','');
@@ -1890,11 +1942,11 @@ sub redisplay
 		## Two ways to move back... use the fastest. One is to just
 		## backspace the proper amount. The other is to jump to the
 		## the beginning of the line and overwrite from there....
-		if ($lastdelta - $delta < $delta) {
+		my $out = substr_with_props($prompt, $dline, 0, $delta, $have_ket);
+		if ($lastdelta - $delta <= length $out) {
 		    print $term_OUT "\b" x ($lastdelta - $delta);
 		} else {
-		    print $term_OUT "\r",
-		      substr_with_props($prompt, $dline, 0, $delta, $have_ket);
+		    print $term_OUT "\r", $out;
 		}
 	    }
 	    ($lastlen, $lastredisplay, $lastdelta, $lastpromptlen)
@@ -1927,10 +1979,18 @@ sub redisplay
     ##
 
     print $term_OUT "\r", substr_with_props($prompt, $dline, 0, undef, $have_ket, $bsel, $esel);
-    print $term_OUT ' ' x ($lastlen - $thislen) if $lastlen > $thislen;
+    my $back = length ($dline) + length ($prompt) - $delta;
+    $back += $lastlen - $thislen,
+	print $term_OUT ' ' x ($lastlen - $thislen) if $lastlen > $thislen;
 
-    print $term_OUT "\r",substr_with_props($prompt, $dline, 0, $delta, $have_ket, $bsel, $esel)
-	if $delta != length ($dline) || $lastlen > $thislen;
+    if ($back) {
+	my $out = substr_with_props($prompt, $dline, 0, $delta, $have_ket, $bsel, $esel);
+	if ($back <= length $out and not defined $bsel) {
+	    print $term_OUT "\b" x $back;
+	} else {
+	    print $term_OUT "\r", $out;
+	}
+    }
 
     ($lastlen, $lastredisplay, $lastdelta, $lastpromptlen)
       = ($thislen, $dline, $delta, length $prompt);
@@ -1998,13 +2058,28 @@ sub do_command
 
 ##
 ## Save whatever state we wish to save as an anonymous array.
-## The only other function that needs to know about its encoding is getstate.
+## The only other function that needs to know about its encoding is getstate/preserve_state.
 ##
 sub savestate
 {
-    [$D, $si, $LastCommandKilledText, $KillBuffer, $line];
+    [$D, $si, $LastCommandKilledText, $KillBuffer, $line, @_];
 }
 
+# consolidate only-movement changes together...
+sub preserve_state {
+    return if $Vi_mode;
+    push(@undo, savestate()), return unless @undo;
+    my $last = $undo[-1];
+    my @only_movement;
+    if ( #$last->[1] == $si and $last->[2] eq $LastCommandKilledText
+	 # and $last->[3] eq $KillBuffer and
+	 $last->[4] eq $line ) {
+	# Only position changed; remove old only-position-changed records
+	pop @undo if $undo[-1]->[5];
+	@only_movement = 1;
+    }
+    push(@undo, savestate(@only_movement));
+}
 
 ##
 ## $_[1] is an ASCII ordinal; inserts as per $count.
@@ -2128,6 +2203,15 @@ sub F_YankClipboard;
 sub F_CopyRegionAsKillClipboard;
 sub F_KillRegionClipboard;
 sub clipboard_set;
+sub F_BeginUndoGroup;
+sub F_EndUndoGroup;
+sub F_DoNothing;
+sub F_ForceMemorizeDigitArgument;
+sub F_MemorizeDigitArgument;
+sub F_UnmemorizeDigitArgument;
+sub F_ResetDigitArgument;
+sub F_MergeInserts;
+sub F_MemorizePos;
 
 # Comment next line and __DATA__ line below to disable the selfloader.
 
@@ -2633,6 +2717,8 @@ sub changecase
 sub F_TransposeWords {
     1;
     ## not implemented yet
+## Exchange words: C-Left, C-right, C-right, C-left.  If positions do
+## not overlap, we get two things to transpose.  Repeat count?
 }
 
 ##
@@ -2916,9 +3002,9 @@ sub F_DoEscVersion
     my ($ord, $t) = $_[1];
     &F_Ding unless $KeyMap{'Esc'};
     for $t (([ord 'w', '`1234567890-='],
-		   [ord ',', 'zxcvbnm,./\\'],
-		   [16,      'qwertyuiop[]'],
-		   [ord(' ') - 2, 'asdfghjkl;\''])) {
+	     [ord ',', 'zxcvbnm,./\\'],
+	     [16,      'qwertyuiop[]'],
+	     [ord(' ') - 2, 'asdfghjkl;\''])) {
       next unless $ord >= $t->[0] and $ord < $t->[0] + length($t->[1]);
       $ord = ord substr $t->[1], $ord - $t->[0], 1;
       return &do_command($KeyMap{'Esc'}, $_[0], $ord);
@@ -2931,7 +3017,7 @@ sub F_DoEscVersion
 ##
 sub F_Undo
 {
-    pop(@undo); ## get rid of the state we just put on, so we can go back one.
+    pop(@undo); # unless $undo[-1]->[5]; ## get rid of the state we just put on, so we can go back one.
     if (@undo) {
 	&getstate(pop(@undo));
     } else {
@@ -3566,7 +3652,7 @@ sub start_dot_buf {
     my($count, $ord) = @_;
     $Dot_buf = [pack('c', $ord)];
     unshift(@$Dot_buf, split(//, $count)) if $count > 1;
-    $Dot_state = &savestate;
+    $Dot_state = savestate();
 }
 
 sub end_dot_buf {
@@ -3591,7 +3677,7 @@ sub save_dot_buf {
 
 sub F_ViUndo {
     return &F_Ding unless defined $Vi_undo_state;
-    my $state = &savestate;
+    my $state = savestate();
     &getstate($Vi_undo_state);
     $Vi_undo_state = $state;
 }
@@ -3784,7 +3870,7 @@ sub get_line_from_history {
     $D = $Vi_mode ? 0 : length $line;
 
     # Subsequent 'U' will bring us back to this point.
-    $Vi_undo_all_state = &savestate if $Vi_mode;
+    $Vi_undo_all_state = savestate() if $Vi_mode;
 
     $rl_HistoryIndex = $n;
 }
@@ -4156,7 +4242,7 @@ sub F_ViDigit {
 sub F_ViComplete {
     my($n, $ord) = @_;
 
-    $Dot_state = &savestate;     # Completion is undo-able
+    $Dot_state = savestate();     # Completion is undo-able
     undef $Dot_buf;              #       but not redo-able
 
     my $ch;
@@ -4184,7 +4270,7 @@ sub F_ViComplete {
 }
 
 sub F_ViInsertPossibleCompletions {
-    $Dot_state = &savestate;     # Completion is undo-able
+    $Dot_state = savestate();     # Completion is undo-able
     undef $Dot_buf;              #       but not redo-able
 
     &complete_internal('*') or return;
@@ -4312,6 +4398,65 @@ sub F_YankClipboard
 	return &TextInsert($_[0], $in);
     }
     &TextInsert($_[0], $KillBuffer);
+}
+
+sub F_BeginUndoGroup {
+    push @undoGroupS, $#undo;
+}
+
+sub F_EndUndoGroup {
+    return F_Ding unless @undoGroupS;
+    my $last = pop @undoGroupS;
+    return unless $#undo > $last + 1;
+    my $now = pop @undo;
+    $#undo = $last;
+    push @undo, $now;
+}
+
+sub F_DoNothing {		# E.g., reset digit-argument
+    1;
+}
+
+sub F_ForceMemorizeDigitArgument {
+    $memorizedArg = shift;
+}
+
+sub F_MemorizeDigitArgument {
+    return if defined $memorizedArg;
+    $memorizedArg = shift;
+}
+
+sub F_UnmemorizeDigitArgument {
+    $memorizedArg = undef;
+}
+
+sub F_MemorizePos {
+    $memorizedPos = $D;
+}
+
+# It is assumed that F_MemorizePos was called, then something was inserted,
+# then F_MergeInserts is called with a prefix argument to multiply
+# insertion by
+
+sub F_MergeInserts {
+    my $n = shift;
+    return F_Ding unless defined $memorizedPos and $n > 0;
+    my ($b, $e) = ($memorizedPos, $D);
+    ($b, $e) = ($e, $b) if $e < $b;
+    if ($n) {
+	substr($line, $e, 0) = substr($line, $b, $e - $b) x ($n - 1);
+    } else {
+	substr($line, $b, $e - $b) = '';
+    }
+    $D = $b + ($e - $b) * $n;
+}
+
+sub F_ResetDigitArgument {
+    return F_Ding unless defined $memorizedArg;
+    my $in = &getc_with_pending;
+    return unless defined $in;
+    my $ord = ord $in;
+    &do_command(*KeyMap, $memorizedArg, $ord);
 }
 
 1;

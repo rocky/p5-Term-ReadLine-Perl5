@@ -3,7 +3,7 @@ use Carp;
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Compa Term::ReadLine::Perl::AU);
 #require 'readline.pl';
 
-$VERSION = $VERSION = 1.0208;
+$VERSION = $VERSION = 1.03;
 
 sub readline {
   shift; 
@@ -80,7 +80,11 @@ sub newTTY {
   select($sel);
 }
 sub ReadLine {'Term::ReadLine::Perl'}
-sub MinLine { shift; $readline::minlength = shift }
+sub MinLine {
+  my $old = $readline::minlength;
+  $readline::minlength = $_[1] if @_ == 2;
+  return $old;
+}
 sub SetHistory {
   shift;
   @readline::rl_History = @_;
