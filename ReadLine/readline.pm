@@ -16,6 +16,11 @@
 ## Call rl_set to set mode variables yourself, as in
 ##	&readline'rl_set('TcshCompleteMode', 'On');
 ##
+## If $ENV{EDITOR} is a string containing the substring 'vi', we start in vi
+## input mode; otherwise start in emacs mode.  To override this behavior, do
+## 	   &readline::rl_set('EditingMode', 'vi');
+## 	or &readline::rl_set('EditingMode', 'emacs');
+##
 ## Call rl_basic_commands to set your own command completion, as in
 ##      &readline'rl_basic_commands('print', 'list', 'quit', 'run', 'status');
 ##
@@ -39,8 +44,104 @@ my $useioctl = 1;
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = 0.9907;
+$VERSION = $VERSION = '0.9908';
 
+# 1000510.010 - Changes from Joe Petolino (petolino@eng.sun.com), requested
+##              by Ilya:
+##
+##              * Make it compatible with perl 5.003.
+##              * Rename getc() to getc_with_pending().
+##              * Change unshift(@Pending) to push(@Pending).
+##
+## 991109.009 - Changes from Joe Petolino (petolino@eng.sun.com):
+##              Added vi mode.  Also added a way to set the keymap default
+##      	action for multi-character keymaps, so that a 2-character
+##      	sequence (e.g. <esc>A) can be treated as two one-character
+##      	commands (<esc>, then A) if the sequence is not explicitly
+##              mapped.
+##      
+##              Changed subs:
+##
+##              * preinit(): Initialize new keymaps and other data structures.
+##		             Use $ENV{EDITOR} to set startup mode.
+##
+##              * init():    Sets the global *KeyMap, since &F_ReReadInitFile
+##                           may have changed the key map.
+##
+##		* InitKeymap(): $KeyMap{default} is now optional - don't
+##			     set it if $_[1] eq '';
+##
+##		* actually_do_binding(): Set $KeyMap{default} for '\*' key;
+##			     warning if double-defined.
+##
+##		* rl_bind(): Implement \* to set the keymap default.  Also fix
+##			     some existing regex bugs that I happened to notice.
+##
+##		* readline(): No longer takes input from $pending before
+##                           calling &$rl_getc(); instead, it calls getc_with_pending(),
+##                           which takes input from the new array @Pending
+##			     before calling &$rl_getc().  Sets the global
+##			     *KeyMap after do_command(), since do_command()
+##			     may change the keymap now.  Does some cursor
+##			     manipulation after do_command() when at the end
+##			     of the line in vi command mode, to match the
+##			     behavior of vi.
+##
+##		* rl_getc(): Added a my declaration for $key, which was
+##			     apparently omitted by the author.  rl_getc() is 
+##			     no longer called directly; instead, getc_with_pending() calls
+##			     it only after exhausting any requeued characters
+##			     in @Pending.  @Pending is used to implement the
+##			     vi '.' command, as well as the emacs DoSearch
+##			     functionality.
+##
+##		* do_command(): Now defaults the command to 'F_Ding' if
+##			     $KeyMap{default} is undefined.  This is part
+##			     of the new \* feature.
+##
+##		* savestate()/getstate(): Now use an anonymous array instead
+##		             of packing the fields into a string.
+##
+##		* F_AcceptLine(): Code moved to new sub add_line_to_history(),
+##			     so that it may be called by F_ViSaveLine()
+##			     as well as by F_AcceptLine().
+##
+##		* F_QuotedInsert(): Calls getc_with_pending() instead of &$rl_getc().
+##
+##		* F_UnixWordRubout(): Fixed bug: changed 'my' declaration of
+##		             global $rl_basic_word_break_characters to 'local'.
+##
+##		* DoSearch(): Calls getc_with_pending() instead of &$rl_getc().  Ungets
+##			     character onto @Pending instead of $pending.
+##
+##		* F_EmacsEditingMode(): Resets global $Vi_mode;
+##
+##		* F_ToggleEditingMode(): Deleted.  We use F_ViInput() and
+##                           F_EmacsEditingMode() instead.
+##
+##		* F_PrefixMeta(): Calls getc_with_pending() instead of &$rl_getc().
+##
+##		* F_DigitArgument(): Calls getc_with_pending() instead of &$rl_getc().
+##
+##		* F_Ding(): Returns undef, for testing by vi commands.
+##
+##		* F_Complete(): Returns true if a completion was done, false
+##                           otherwise, so vi completion routines can test it.
+##
+##		* complete_internal(): Returns true if a completion was done,
+##                           false otherwise, so vi completion routines can
+##                           test it.  Does a little cursor massaging in vi
+##                           mode, to match the behavior of ksh vi mode.
+##
+##              Disclaimer: the original code dates from the perl 4 days, and
+##              isn't very pretty by today's standards (for example,
+##              extensive use of typeglobs and localized globals).  In the
+##              interests of not breaking anything, I've tried to preserve
+##              the old code as much as possible, and I've avoided making
+##              major stylistic changes.  Since I'm not a regular emacs user,
+##              I haven't done much testing to see that all the emacs-mode
+##              features still work.
+##
 ## 940817.008 - Added $var_CompleteAddsuffix.
 ##		Now recognizes window-change signals (at least on BSD).
 ##              Various typos and bug fixes.
@@ -125,6 +226,35 @@ $rl_getc = \&rl_getc;
 # # # #     $termios, $termios_t, $winsz, $winsz_t);
 # # # # my ($line, $initialized, $term_readkey);
 
+
+# # # # # Global variables added for vi mode (I'm leaving them all commented
+# # # # #     out, like the declarations above, until SelfLoader issues
+# # # # #     are resolved).
+
+# # # # # True when we're in one of the vi modes.
+# # # # my $Vi_mode;
+
+# # # # # Array refs: saves keystrokes for '.' command.  Undefined when we're
+# # # # #     not doing a '.'-able command.
+# # # # my $Dot_buf;                # Working buffer
+# # # # my $Last_vi_command;        # Gets $Dot_buf when a command is parsed
+
+# # # # # These hold state for vi 'u' and 'U'.
+# # # # my($Dot_state, $Vi_undo_state, $Vi_undo_all_state);
+
+# # # # # Refs to hashes used for cursor movement
+# # # # my($Vi_delete_patterns, $Vi_move_patterns,
+# # # #    $Vi_change_patterns, $Vi_yank_patterns);
+
+# # # # # Array ref: holds parameters from the last [fFtT] command, for ';'
+# # # # #     and ','.
+# # # # my $Last_findchar;
+
+# # # # # Globals for history search commands (/, ?, n, N)
+# # # # my $Vi_search_re;       # Regular expression (compiled by qr{})
+# # # # my $Vi_search_reverse;  # True for '?' search, false for '/'
+
+
 ##
 ## What's Cool
 ## ----------------------------------------------------------------------
@@ -172,7 +302,10 @@ $rl_getc = \&rl_getc;
 ##	@emacs_keymap - bindings indexed by ASCII ordinal
 ##      $emacs_keymap{'name'} = "emacs_keymap"
 ##      $emacs_keymap{'default'} = "SelfInsert"  (default binding)
-##   *vi_keymap -- keymap for vi-mode bindings
+##   *vi_keymap -- keymap for vi input mode bindings
+##   *vicmd_keymap -- keymap for vi command mode bindings
+##   *vipos_keymap -- keymap for vi positioning command bindings
+##   *visearch_keymap -- keymap for vi search pattern input mode bindings
 ##   *KeyMap -- current keymap in effect.
 ##   $LastCommandKilledText -- needed so that subsequent kills accumulate
 ##   $lastcommand -- name of command previously run
@@ -181,14 +314,14 @@ $rl_getc = \&rl_getc;
 ##   $force_redraw -- if set to true, causes &redisplay to be verbose.
 ##   $AcceptLine -- when set, its value is returned from &readline.
 ##   $ReturnEOF -- unless this also set, in which case undef is returned.
-##   $pending -- if set, value is to be used as input.
+##   @Pending -- characters to be used as input.
 ##   @undo -- array holding all states of current line, for undoing.
 ##   $KillBuffer -- top of kill ring (well, don't have a kill ring yet)
 ##   @tcsh_complete_selections -- for tcsh mode, possible selections
 ##
 ## Some internal variables modified by &rl_set (see comment at &rl_set for
 ## info about how these set'able variables work)
-##   $var_EditingMode -- either *emacs_map or *vi_map
+##   $var_EditingMode -- a keymap typeglob like *emacs_keymap or *vi_keymap
 ##   $var_TcshCompleteMode -- if true, the completion function works like
 ##      in tcsh.  That is, the first time you try to complete something,
 ##	the common prefix is completed for you. Subsequent completion tries
@@ -271,10 +404,11 @@ sub preinit
     $var_HorizontalScrollMode{'On'} = 1;
     $var_HorizontalScrollMode{'Off'} = 0;
 
-    $var_EditingMode{'emacs'} = *emacs_keymap;
-    #$var_EditingMode{'vi'} = *vi_keymap;
-    $var_EditingMode{'vi'} = *emacs_keymap;
-    $var_EditingMode = $var_EditingMode{'emacs'};
+    $var_EditingMode{'emacs'}    = *emacs_keymap;
+    $var_EditingMode{'vi'}       = *vi_keymap;
+    $var_EditingMode{'vicmd'}    = *vicmd_keymap;
+    $var_EditingMode{'vipos'}    = *vipos_keymap;
+    $var_EditingMode{'visearch'} = *visearch_keymap;
 
     ## not yet supported... always on
     $var_InputMeta = 1;
@@ -426,6 +560,7 @@ sub preinit
     $InsertMode=1;
     $KillBuffer='';
     $line='';
+    $D = 0;
     $InputLocMsg = ' [initialization]';
     
     &InitKeymap(*emacs_keymap, 'SelfInsert', 'emacs_keymap',
@@ -471,7 +606,7 @@ sub preinit
 		'M->',	'EndOfHistory',
 		'M-DEL',	'BackwardKillWord',
 		'M-C-h',	'BackwardKillWord',
-		'M-C-j',	'ToggleEditingMode',
+		'M-C-j',	'ViInput',
 		'M-C-v',	'QuotedInsert',
 		'M-b',	'BackwardWord',
 		'M-c',	'CapitalizeWord',
@@ -589,14 +724,265 @@ sub preinit
     }
     &rl_bind(@add_bindings);
     
-    ## Vi keymap not yet supported...
-    &InitKeymap(*vi_keymap, 'Ding', 'vi_keymap',
-		' ',	'EmacsEditingMode',
-		"\n",	'EmacsEditingMode',
-		"\r",	'EmacsEditingMode',
+    # Vi input mode.
+    &InitKeymap(*vi_keymap, 'SelfInsert', 'vi_keymap',
+
+		"\e",	'ViEndInsert',
+		'C-c',	'Interrupt',
+		'C-h',	'BackwardDeleteChar',
+		'C-w',	'UnixWordRubout',
+		'C-u',	'UnixLineDiscard',
+		'C-v',	'QuotedInsert',
+		'DEL',	'BackwardDeleteChar',
+		"\n",	'ViAcceptInsert',
+		"\r",	'ViAcceptInsert',
 	       );
 
-    *KeyMap = $var_EditingMode;
+    # Vi command mode.
+    &InitKeymap(*vicmd_keymap, 'Ding', 'vicmd_keymap',
+
+		'C-c',	'Interrupt',
+		'C-e',	'EmacsEditingMode',
+		'M-C-j','EmacsEditingMode',
+		'C-h',	'ViMoveCursor',
+		'C-l',	'ClearScreen',
+		"\n",	'ViAcceptLine',
+		"\r",	'ViAcceptLine',
+
+		' ',	'ViMoveCursor',
+		'#',	'ViSaveLine',
+		'$',	'ViMoveCursor',
+		'%',	'ViMoveCursor',
+		'*',    'ViInsertPossibleCompletions',
+		'+',	'ViNextHistory',
+		',',	'ViMoveCursor',
+		'-',	'ViPreviousHistory',
+		'.',	'ViRepeatLastCommand',
+		'/',	'ViSearch',
+
+		'0',	'ViMoveCursor',
+		'1',	'ViDigit',
+		'2',	'ViDigit',
+		'3',	'ViDigit',
+		'4',	'ViDigit',
+		'5',	'ViDigit',
+		'6',	'ViDigit',
+		'7',	'ViDigit',
+		'8',	'ViDigit',
+		'9',	'ViDigit',
+
+		';',	'ViMoveCursor',
+		'=',    'ViPossibleCompletions',
+		'?',	'ViSearch',
+
+		'A',	'ViAppendLine',
+		'B',	'ViMoveCursor',
+		'C',	'ViChangeLine',
+		'D',	'ViDeleteLine',
+		'E',	'ViMoveCursor',
+		'F',	'ViMoveCursor',
+		'G',	'ViHistoryLine',
+		'H',	'ViPrintHistory',
+		'I',	'ViBeginInput',
+		'N',	'ViRepeatSearch',
+		'P',	'ViPutBefore',
+		'R',	'ViReplaceMode',
+		'S',	'ViChangeEntireLine',
+		'T',	'ViMoveCursor',
+		'U',	'ViUndoAll',
+		'W',	'ViMoveCursor',
+		'X',	'ViBackwardDeleteChar',
+		'Y',	'ViYankLine',
+
+		'\\',   'ViComplete',
+		'^',	'ViMoveCursor',
+
+		'a',	'ViAppend',
+		'b',	'ViMoveCursor',
+		'c',	'ViChange',
+		'd',	'ViDelete',
+		'e',	'ViMoveCursor',
+		'f',	'ViMoveCursorFind',
+		'h',	'ViMoveCursor',
+		'i',	'ViInput',
+		'j',	'ViNextHistory',
+		'k',	'ViPreviousHistory',
+		'l',	'ViMoveCursor',
+		'n',	'ViRepeatSearch',
+		'p',	'ViPut',
+		'r',	'ViReplaceChar',
+		's',	'ViChangeChar',
+		't',	'ViMoveCursorTo',
+		'u',	'ViUndo',
+		'w',	'ViMoveCursor',
+		'x',	'ViDeleteChar',
+		'y',	'ViYank',
+
+		'|',	'ViMoveCursor',
+		'~',	'ViToggleCase',
+
+		($inDOS ?
+		 (
+		  qq/"\0\110"/, 'ViPreviousHistory',   # 72: <Up arrow>
+		  qq/"\0\120"/, 'ViNextHistory',       # 80: <Down arrow>
+		  qq/"\0\113"/, 'BackwardChar',        # 75: <Left arrow>
+		  qq/"\0\115"/, 'ForwardChar',         # 77: <Right arrow>
+		  "\e",	        'ViCommandMode',
+		 ) :
+
+		($ENV{'TERM'} eq 'hpterm') ?
+		 (
+		  qq/"\eA"/,    'ViPreviousHistory',   # up    arrow
+		  qq/"\eB"/,    'ViNextHistory',       # down  arrow
+		  qq/"\eC"/,    'ForwardChar',	       # right arrow
+		  qq/"\eD"/,    'BackwardChar',	       # left  arrow
+		  qq/"\e\\*"/,  'ViAfterEsc',
+		 ) :
+
+		# Default
+		 (
+		  qq/"\e[A"/,   'ViPreviousHistory',	# up    arrow
+		  qq/"\e[B"/,   'ViNextHistory',	# down  arrow
+		  qq/"\e[C"/,   'ForwardChar',		# right arrow
+		  qq/"\e[D"/,   'BackwardChar',		# left  arrow
+		  qq/"\e\\*"/,  'ViAfterEsc', 
+		  qq/"\e[\\*"/, 'ViAfterEsc', 
+		 )
+		),
+	       );
+
+    # Vi positioning commands (suffixed to vi commands like 'd').
+    &InitKeymap(*vipos_keymap, 'ViNonPosition', 'vipos_keymap',
+
+		'^',	'ViFirstWord',
+		'0',	'BeginningOfLine',
+		'1',	'ViDigit',
+		'2',	'ViDigit',
+		'3',	'ViDigit',
+		'4',	'ViDigit',
+		'5',	'ViDigit',
+		'6',	'ViDigit',
+		'7',	'ViDigit',
+		'8',	'ViDigit',
+		'9',	'ViDigit',
+		'$',	'EndOfLine',
+		'h',	'BackwardChar',
+		'l',	'ForwardChar',
+		' ',	'ForwardChar',
+		'C-h',	'BackwardChar',
+		'f',	'ViForwardFindChar',
+		'F',	'ViBackwardFindChar',
+		't',	'ViForwardToChar',
+		'T',	'ViBackwardToChar',
+		';',	'ViRepeatFindChar',
+		',',	'ViInverseRepeatFindChar',
+		'%',	'ViFindMatchingParens',
+		'|',	'ViMoveToColumn',
+
+		# Arrow keys
+		($inDOS ?
+		 (
+		  qq/"\0\115"/, 'ForwardChar',         # 77: <Right arrow>
+		  qq/"\0\113"/, 'BackwardChar',        # 75: <Left arrow>
+		  "\e",	        'ViPositionEsc',
+		 ) :
+
+		($ENV{'TERM'} eq 'hpterm') ?
+		 (
+		  qq/"\eC"/,    'ForwardChar',	       # right arrow
+		  qq/"\eD"/,    'BackwardChar',	       # left  arrow
+		  qq/"\e\\*"/,  'ViPositionEsc',
+		 ) :
+
+		# Default
+		 (
+		  qq/"\e[C"/,   'ForwardChar',		# right arrow
+		  qq/"\e[D"/,   'BackwardChar',		# left  arrow
+		  qq/"\e\\*"/,  'ViPositionEsc',
+		  qq/"\e[\\*"/, 'ViPositionEsc',
+		 )
+		),
+	       );
+
+    # Vi search string input mode for '/' and '?'.
+    &InitKeymap(*visearch_keymap, 'SelfInsert', 'visearch_keymap',
+
+		"\e",	'Ding',
+		'C-c',	'Interrupt',
+		'C-h',	'ViSearchBackwardDeleteChar',
+		'C-w',	'UnixWordRubout',
+		'C-u',	'UnixLineDiscard',
+		'C-v',	'QuotedInsert',
+		'DEL',	'ViSearchBackwardDeleteChar',
+		"\n",	'ViEndSearch',
+		"\r",	'ViEndSearch',
+	       );
+
+    # These constant hashes hold the arguments to &forward_scan() or
+    #     &backward_scan() for vi positioning commands, which all
+    #     behave a little differently for delete, move, change, and yank.
+    #
+    # Note: I originally coded these as qr{}, but changed them to q{} for
+    #       compatibility with older perls at the expense of some performance.
+    #
+    # Note: Some of the more obscure key combinations behave slightly
+    #       differently in different vi implementation.  This module matches
+    #       the behavior of /usr/ucb/vi, which is different from the
+    #       behavior of vim, nvi, and the ksh command line.  One example is
+    #       the command '2de', when applied to the string ('^' represents the
+    #       cursor, not a character of the string):
+    #
+    #           ^5.6   7...88888888
+    #
+    #       With /usr/ucb/vi and with this module, the result is
+    #
+    #           ^...88888888
+    #
+    #       but with the other three vi implementations, the result is
+    #
+    #           ^   7...88888888
+
+    $Vi_delete_patterns = {
+	ord('w')  =>  q{(?:\w+|[^\w\s]+|)\s*},
+	ord('W')  =>  q{\S*\s*},
+	ord('b')  =>  q{\w+\s*|[^\w\s]+\s*|^\s+},
+	ord('B')  =>  q{\S+\s*|^\s+},
+	ord('e')  =>  q{.\s*\w+|.\s*[^\w\s]+|.\s*$},
+	ord('E')  =>  q{.\s*\S+|.\s*$},
+    };
+
+    $Vi_move_patterns = {
+	ord('w')  =>  q{(?:\w+|[^\w\s]+|)\s*},
+	ord('W')  =>  q{\S*\s*},
+	ord('b')  =>  q{\w+\s*|[^\w\s]+\s*|^\s+},
+	ord('B')  =>  q{\S+\s*|^\s+},
+	ord('e')  =>  q{.\s*\w*(?=\w)|.\s*[^\w\s]*(?=[^\w\s])|.?\s*(?=\s$)},
+	ord('E')  =>  q{.\s*\S*(?=\S)|.?\s*(?=\s$)},
+    };
+
+    $Vi_change_patterns = {
+	ord('w')  =>  q{\w+|[^\w\s]+|\s},
+	ord('W')  =>  q{\S+|\s},
+	ord('b')  =>  q{\w+\s*|[^\w\s]+\s*|^\s+},
+	ord('B')  =>  q{\S+\s*|^\s+},
+	ord('e')  =>  q{.\s*\w+|.\s*[^\w\s]+|.\s*$},
+	ord('E')  =>  q{.\s*\S+|.\s*$},
+    };
+
+    $Vi_yank_patterns = {
+	ord('w')  =>  q{(?:\w+|[^\w\s]+|)\s*},
+	ord('W')  =>  q{\S*\s*},
+	ord('b')  =>  q{\w+\s*|[^\w\s]+\s*|^\s+},
+	ord('B')  =>  q{\S+\s*|^\s+},
+	ord('e')  =>  q{.\s*\w*(?=\w)|.\s*[^\w\s]*(?=[^\w\s])|.?\s*(?=\s$)},
+	ord('E')  =>  q{.\s*\S*(?=\S)|.?\s*(?=\s$)},
+    };
+
+    my $default_mode =
+	(defined $ENV{EDITOR} and $ENV{EDITOR} =~ /vi/) ? 'vi' : 'emacs';
+
+    *KeyMap = $var_EditingMode = $var_EditingMode{$default_mode};
+
     1;				# Returning a glob causes a bug in db5.001m
 }
 
@@ -610,7 +996,9 @@ sub init
 	&get_window_size;
 	&F_ReReadInitFile if !defined($rl_NoInitFromFile);
 	$InputLocMsg = '';
+	*KeyMap = $var_EditingMode;
     }
+
     $initialized = 1;
 }
 
@@ -621,11 +1009,19 @@ sub init
 sub InitKeymap
 {
     local(*KeyMap) = shift(@_);
-    my $func = $KeyMap{'default'} = 'F_'.shift(@_);
-    $KeyMap{'name'} = shift(@_);
-    ### Temporarily disabled
-    die qq/Bad default function [$func] for keymap "$KeyMap{'name'}"/
-      if !$autoload_broken and !defined(&$func);
+    my $default = shift(@_);
+    my $name = $KeyMap{'name'} = shift(@_);
+
+    # 'default' is now optional - if '', &do_command() defaults it to
+    #     'F_Ding'.  Meta-maps now don't set a default - this lets
+    #     us detect multiple '\*' default declarations.              JP
+    if ($default ne '') {
+	my $func = $KeyMap{'default'} = "F_$default";
+	### Temporarily disabled
+	die qq/Bad default function [$func] for keymap "$name"/
+	  if !$autoload_broken and !defined(&$func);
+    }
+
     &rl_bind if @_ > 0;	## The rest of @_ gets passed silently.
 }
 
@@ -703,18 +1099,30 @@ sub actually_do_binding
       }
       $KeyMap[$key] = 'F_PrefixMeta';
       $map = "$KeyMap{'name'}_$key";
-      InitKeymap(*$map, 'Ding', $map) if !(%$map);
+      InitKeymap(*$map, '', $map) if !(%$map);
       *KeyMap = *$map;
       $key = shift @keys;
       #&actually_do_binding($func, \@keys);
     }
-    if (defined($KeyMap[$key]) && $KeyMap[$key] eq 'F_PrefixMeta'
-	&& $func ne 'PrefixMeta')
-      {
+
+    my $name = $KeyMap{'name'};
+    if ($key eq 'default') {      # JP: added
 	warn "Warning$InputLocMsg: ".
-	  " Re-binding char #$key to non-meta ($func)\n" if $^W;
-      }
-    $KeyMap[$key] = "F_$func";
+	  " changing default action to $func in $name key map\n"
+	  if $^W && defined $KeyMap{'default'};
+
+	$KeyMap{'default'} = "F_$func";
+    }
+    else {
+	if (defined($KeyMap[$key]) && $KeyMap[$key] eq 'F_PrefixMeta'
+	    && $func ne 'PrefixMeta')
+	  {
+	    warn "Warning$InputLocMsg: ".
+	      " Re-binding char #$key to non-meta ($func) in $name key map\n"
+	      if $^W;
+	  }
+	$KeyMap[$key] = "F_$func";
+    }
   }
 }
 
@@ -751,20 +1159,29 @@ sub rl_bind
 	    ##    \C-x    Control x (for any x)
 	    ##    \M-x    Meta x (for any x)
 	    ##    \e	  Escape
+	    ##    \*      Set the keymap default   (JP: added this)
+	    ##               (must be the last character of the sequence)
+	    ##
 	    ##    \x      x  (unless it fits the above pattern)
+	    ##
 	    ## Look for special case of "\C-\M-x", which should be treated
 	    ## like "\M-\C-x".
 	    
 	    while (length($key) > 0) {
-		if ($key =~ s#\\C-\\M-(.)##) {
+
+		# JP: fixed regex bugs below: changed all 's#' to 's#^'
+
+		if ($key =~ s#^\\C-\\M-(.)##) {
 		   push(@keys, ord("\e"), &ctrl(ord($1)));
-		} elsif ($key =~ s#\\(M-|e)##) {
+		} elsif ($key =~ s#^\\(M-|e)##) {
 		   push(@keys, ord("\e"));
-		} elsif ($key =~ s#\\C-(.)##) {
+		} elsif ($key =~ s#^\\C-(.)##) {
 		   push(@keys, &ctrl(ord($1)));
-		} elsif ($key =~ s#\\x([0-9a-fA-F]{2})##) {
+		} elsif ($key =~ s#^\\x([0-9a-fA-F]{2})##) {
 		   push(@keys, eval('0x'.$1));
-		} elsif ($key =~ s#\\(.)##) {
+		} elsif ($key =~ s#^\\\*$##) {    # JP: added
+		   push(@keys, 'default');
+		} elsif ($key =~ s#^\\(.)##) {
 		   push(@keys, ord($1));
 		} else {
 		   push(@keys, ord($key));
@@ -805,7 +1222,8 @@ sub rl_bind
 
 sub F_ReReadInitFile
 {
-    my ($file) = $ENV{'HOME'}."/.inputrc";
+    my ($file) = $ENV{'INPUTRC'};
+    $file = $ENV{'HOME'}."/.inputrc" unless defined $file;
     return if !open(RC, $file);
     my (@action) = ('exec'); ## exec, skip, ignore (until appropriate endif)
     my (@level) = ();        ## if, else
@@ -925,7 +1343,7 @@ sub readline
 #	local($n_chars_available) = unpack ($fionread_t, $fion);
 #	## print "n_chars = $n_chars_available\n";
 #	last if $n_chars_available == 0;
-#	$line .= getc;  # should we prepend if $rl_start_default_at_beginning?
+#	$line .= getc_with_pending;  # should we prepend if $rl_start_default_at_beginning?
 #    }
 
     $D = $rl_start_default_at_beginning ? 0 : length($line); ## set dot.
@@ -950,27 +1368,34 @@ sub readline
     *KeyMap = $var_EditingMode;
     undef($AcceptLine);		## When set, will return its value.
     undef($ReturnEOF);		## ...unless this on, then return undef.
-    undef($pending);		## If set, contains text to use as input.
+    @Pending = ();		## Contains characters to use as input.
     @undo = ();			## Undo history starts empty for each line.
+
+    undef $Vi_undo_state;
+    undef $Vi_undo_all_state;
+
+    # We need to do some additional initialization for vi mode.
+    &F_ViInput() if $KeyMap{'name'} eq 'vi_keymap';
 
     # pretend input if we 'Operate' on more than one line
     &F_OperateAndGetNext($rl_OperateCount) if $rl_OperateCount > 0;
 
     while (!defined($AcceptLine)) {
 	## get a character of input
-	if (!defined($pending)) {
-	    $input = &$rl_getc(); # bug in debugger, returns 42. - No more!
-	} else {
-	    $input = substr($pending, 0, 1);
-	    substr($pending, 0, 1) = '';
-	    undef($pending) if length($pending) == 0;
-	}
+	$input = &getc_with_pending(); # bug in debugger, returns 42. - No more!
 
-	push(@undo, &savestate); ## save state so we can undo.
+	push(@undo, &savestate) unless $Vi_mode; ## save state so we can undo.
 
 	$ThisCommandKilledText = 0;
 	##print "\n\rline is @$D:[$line]\n\r"; ##DEBUG
-	&do_command(*KeyMap, 1, ord($input)); ## actually execute input
+	&do_command($var_EditingMode, 1, ord($input)); ## actually execute input
+	*KeyMap = $var_EditingMode;           # JP: added
+
+	# In Vi command mode, don't position the cursor beyond the last
+	#     character of the line buffer.
+	&F_BackwardChar(1) if $Vi_mode and $line ne ''
+	    and &at_end_of_line and $KeyMap{'name'} eq 'vicmd_keymap';
+
 	&redisplay();
 	$LastCommandKilledText = $ThisCommandKilledText;
     }
@@ -1208,7 +1633,7 @@ sub redisplay
 	if ($lastredisplay eq $line) {
 	    ## If we need to move forward, just overwrite as far as we need.
 	    if ($lastdelta < $delta) {
-		print $term_OUT substr_with_props($prompt, $oline, $lastdelta, $delta-$lastdelta);
+		print $term_OUT (substr_with_props($prompt, $oline, $lastdelta, $delta-$lastdelta));
 
 	    ## Need to move back.
 	    } elsif($lastdelta > $delta) {
@@ -1231,7 +1656,7 @@ sub redisplay
 	    $delta == $thislen &&
 	    substr($line, 0, $lastlen) eq $lastredisplay)
 	{
-	    print $term_OUT substr_with_props($prompt, $oline, $lastdelta);
+	    print $term_OUT (substr_with_props($prompt, $oline, $lastdelta));
 	    ($lastlen, $lastredisplay, $lastdelta) = ($thislen, $line, $delta);
 	    return;
 	}
@@ -1257,7 +1682,18 @@ sub redisplay
 
 sub min     { $_[0] < $_[1] ? $_[0] : $_[1]; }
 
+sub getc_with_pending {
+
+    my $key = @Pending ? shift(@Pending) : &$rl_getc;
+
+    # Save keystrokes for vi '.' command
+    push(@$Dot_buf, $key) if $Dot_buf;
+
+    $key;
+}
+
 sub rl_getc {
+	  my $key;                        # JP: Added missing declaration
 	  if (defined $term_readkey) { # XXXX ???
 	    $Term::ReadLine::Perl::term->Tk_loop 
 	      if $Term::ReadLine::toloop && defined &Tk::DoOneEvent;
@@ -1277,7 +1713,8 @@ sub do_command
 {
     local *KeyMap = shift;
     my ($count, $key) = @_;
-    my $cmd = defined($KeyMap[$key]) ? $KeyMap[$key] : $KeyMap{'default'};
+    my $cmd = defined($KeyMap[$key]) ? $KeyMap[$key]
+                                     : ($KeyMap{'default'} || 'F_Ding');
     if (!defined($cmd) || $cmd eq ''){
 	warn "internal error (key=$key)";
     } else {
@@ -1288,12 +1725,12 @@ sub do_command
 }
 
 ##
-## Save whatever state we wish to save as a string.
-## Only other function that needs to know about it's encoded is getstate.
+## Save whatever state we wish to save as an anonymous array.
+## The only other function that needs to know about its encoding is getstate.
 ##
 sub savestate
 {
-    join("\0", $D, $si, $LastCommandKilledText, $KillBuffer, $line);
+    [$D, $si, $LastCommandKilledText, $KillBuffer, $line];
 }
 
 
@@ -1318,7 +1755,13 @@ sub F_SelfInsert
 ##
 sub F_AcceptLine
 {
-    ##
+    &add_line_to_history;
+    $AcceptLine = $line;
+    print $term_OUT "\r\n";
+}
+
+sub add_line_to_history
+{
     ## Insert into history list if:
     ##	 * bigger than the minimal length
     ##   * not same as last entry
@@ -1331,10 +1774,9 @@ sub F_AcceptLine
 	    shift(@rl_History);
 	    $rl_HistoryIndex--;
 	}
+
 	push(@rl_History, $line); ## tack new one on the end
     }
-    $AcceptLine = $line;
-    print $term_OUT "\r\n";
 }
 
 #sub F_ReReadInitFile;
@@ -1381,7 +1823,6 @@ sub F_DoLowercaseVersion;
 sub F_Undo;
 sub F_RevertLine;
 sub F_EmacsEditingMode;
-sub F_ToggleEditingMode;
 sub F_Interrupt;
 sub F_PrefixMeta;
 sub F_UniversalArgument;
@@ -1393,12 +1834,13 @@ sub F_Suspend;
 sub F_Ding;
 sub F_PossibleCompletions;
 sub F_Complete;
-# Comment these 2 lines and __DATA__ line somewhere below to disable
-# selfloader.
+
+# Comment next line and __DATA__ line below to disable the selfloader.
 
 use SelfLoader;
 
 1;
+
 __DATA__
 
 # From here on anything may be autoloaded
@@ -1594,7 +2036,7 @@ sub WordBreak
 
 sub getstate
 {
-    ($D, $si, $LastCommandKilledText, $KillBuffer, $line) = split(/\0/, $_[0]);
+    ($D, $si, $LastCommandKilledText, $KillBuffer, $line) = @{$_[0]};
     $ThisCommandKilledText = $LastCommandKilledText;
 }
 
@@ -1740,7 +2182,7 @@ sub F_ClearScreen
 sub F_QuotedInsert
 {
     my $count = shift;
-    &F_SelfInsert($count, ord(&$rl_getc));
+    &F_SelfInsert($count, ord(&getc_with_pending));
 }
 
 ##
@@ -1817,7 +2259,8 @@ sub F_DeleteChar
 sub F_UnixWordRubout
 {
     return &F_Ding if $D == 0;
-    my ($oldD, $rl_basic_word_break_characters) = ($D, "\t ");
+    (my $oldD, local $rl_basic_word_break_characters) = ($D, "\t ");
+			     # JP:  Fixed a bug here - both were 'my'
     F_BackwardWord(1);
     kill_text($D, $oldD, 1);
 }
@@ -1995,7 +2438,7 @@ sub DoSearch
 	}
 	&redisplay( '('.($reverse?'reverse-':'') ."i-search) `$searchstr': ");
 
-	$c = &$rl_getc;
+	$c = &getc_with_pending;
 	if ($KeyMap[ord($c)] eq 'F_ReverseSearchHistory') {
 	    if ($reverse && $I != -1) {
 		if ($tmp = &search($I-1,$searchstr), $tmp >= 0) {
@@ -2019,7 +2462,7 @@ sub DoSearch
 	    $D = $oldD;
 	    return;
         } elsif (ord($c) < 32 || ord($c) > 126) {
-	    $pending = $c if $c ne "\e";
+	    push(@Pending, $c) if $c ne "\e";
 	    if ($I < 0) {
 		## just restore
 		$line = $oldline;
@@ -2200,15 +2643,7 @@ sub F_RevertLine
 sub F_EmacsEditingMode
 {
     $var_EditingMode = $var_EditingMode{'emacs'};
-}
-
-sub F_ToggleEditingMode
-{
-    if ($var_EditingMode{$var_EditingMode} eq $var_EditingMode{'emacs'}) {
-        $var_EditingMode = $var_EditingMode{'vi'};
-    } else {
-        $var_EditingMode = $var_EditingMode{'emacs'};
-    }
+    $Vi_mode = 0;
 }
 
 ###########################################################################
@@ -2236,7 +2671,7 @@ sub F_PrefixMeta
     my($count, $keymap) = ($_[0], "$KeyMap{'name'}_$_[1]");
     ##print "F_PrefixMeta [$keymap]\n\r";
     die "<internal error, $_[1]>" unless %$keymap;
-    do_command(*$keymap, $count, ord(&$rl_getc));
+    do_command(*$keymap, $count, ord(&getc_with_pending));
 }
 
 sub F_UniversalArgument
@@ -2281,7 +2716,7 @@ sub F_DigitArgument
 	    $NumericArg = -$rl_max_numeric_arg;
 	}
 	&redisplay(sprintf("(arg %d) ", $NumericArg));
-    } while $ord = ord(&$rl_getc);
+    } while $ord = ord(&getc_with_pending);
 }
 
 sub F_OverwriteMode
@@ -2322,6 +2757,7 @@ sub F_Suspend
 ##
 sub F_Ding {
     print $term_OUT "\007";
+    return;    # Undefined return value
 }
 
 ##########################################################################
@@ -2406,6 +2842,9 @@ sub F_InsertPossibleCompletions
 ## Under TcshCompleteMode, each contiguous subsequent completion operation
 ## lists another of the possible options.
 ##
+## Returns true if a completion was done, false otherwise, so vi completion
+##     routines can test it.
+##
 sub F_Complete
 {
     if ($lastcommand eq 'F_Complete') {
@@ -2417,12 +2856,14 @@ sub F_Complete
 	    $D += $tcsh_complete_len;
 	    push(@tcsh_complete_selections, shift(@tcsh_complete_selections));
 	} else {
-	    &complete_internal('?');
+	    &complete_internal('?') or return;
 	}
     } else {
 	@tcsh_complete_selections = ();
-	&complete_internal("\t");
+	&complete_internal("\t") or return;
     }
+
+    1;
 }
 
 ##
@@ -2440,10 +2881,17 @@ sub F_Complete
 ##   $rl_special_prefixes
 ##	-- but if in this string as well, remain part of that word.
 ##
+## Returns true if a completion was done, false otherwise, so vi completion
+##     routines can test it.
+##
 sub complete_internal
 {
     my $what_to_do = shift;
     my ($point, $end) = ($D, $D);
+
+    # In vi mode, complete if the cursor is at the *end* of a word, not
+    #     after it.
+    ($point++, $end++) if $Vi_mode;
 
     if ($point)
     {
@@ -2465,7 +2913,7 @@ sub complete_internal
     @matches = &completion_matches($rl_completion_function,$text,$line,$point);
 
     if (@matches == 0) {
-	&F_Ding;
+	return &F_Ding;
     } elsif ($what_to_do eq "\t") {
 	my $replacement = shift(@matches);
 	$replacement .= $rl_completer_terminator_character if @matches == 1;
@@ -2493,7 +2941,10 @@ sub complete_internal
 	$D = $D - ($end - $point) + length($replacement);
     } else {
 	warn "\r\n[Internal error]";
+	return &F_Ding;
     }
+
+    1;
 }
 
 ##
@@ -2620,6 +3071,817 @@ sub pretty_print_list
    	print $term_OUT $list[$index] if $index <= $#list;
 	print $term_OUT "\n\r";
     }
+}
+
+##----------------- Vi Routines --------------------------------
+
+sub F_ViAcceptLine
+{
+    &F_AcceptLine();
+    &F_ViInput();
+}
+
+# Repeat the most recent one of these vi commands:
+#
+#   a A c C d D i I p P r R s S x X ~ 
+#
+sub F_ViRepeatLastCommand {
+    my($count) = @_;
+    return &F_Ding if !$Last_vi_command;
+
+    my @lastcmd = @$Last_vi_command;
+
+    # Multiply @lastcmd's numeric arg by $count.
+    unless ($count == 1) {
+
+	my $n = '';
+	while (@lastcmd and $lastcmd[0] =~ /^\d$/) {
+	    $n *= 10;
+	    $n += shift(@lastcmd);
+	}
+	$count *= $n unless $n eq '';
+	unshift(@lastcmd, split(//, $count));
+    }
+
+    push(@Pending, @lastcmd);
+}
+
+sub F_ViMoveCursor
+{
+    my($count, $ord) = @_;
+
+    my $new_cursor = &get_position($count, $ord, undef, $Vi_move_patterns);
+    return &F_Ding if !defined $new_cursor;
+
+    $D = $new_cursor;
+}
+
+sub F_ViFindMatchingParens {
+
+    # Move to the first parens at or after $D
+    my $old_d = $D;
+    &forward_scan(1, q/[^[\](){}]*/);
+    my $parens = substr($line, $D, 1);
+
+    my $mate_direction = {
+		    '('  =>  [ ')',  1 ],
+		    '['  =>  [ ']',  1 ],
+		    '{'  =>  [ '}',  1 ],
+		    ')'  =>  [ '(', -1 ],
+		    ']'  =>  [ '[', -1 ],
+		    '}'  =>  [ '{', -1 ],
+
+		}->{$parens};
+
+    return &F_Ding() unless $mate_direction;
+
+    my($mate, $direction) = @$mate_direction;
+
+    my $lvl = 1;
+    while ($lvl) {
+	last if !$D && ($direction < 0);
+	&F_ForwardChar($direction);
+	last if &at_end_of_line;
+	my $c = substr($line, $D, 1);
+	if ($c eq $parens) {
+	    $lvl++;
+	}
+	elsif ($c eq $mate) {
+	    $lvl--;
+	}
+    }
+
+    if ($lvl) {
+	# We didn't find a match
+	$D = $old_d;
+	return &F_Ding();
+    }
+}
+
+sub F_ViForwardFindChar {
+    &do_findchar(1, 1, @_);
+}
+
+sub F_ViBackwardFindChar {
+    &do_findchar(-1, 0, @_);
+}
+
+sub F_ViForwardToChar {
+    &do_findchar(1, 0, @_);
+}
+
+sub F_ViBackwardToChar {
+    &do_findchar(-1, 1, @_);
+}
+
+sub F_ViMoveCursorTo
+{
+    &do_findchar(1, -1, @_);
+}
+
+sub F_ViMoveCursorFind
+{
+    &do_findchar(1, 0, @_);
+}
+
+
+sub F_ViRepeatFindChar {
+    my($n) = @_;
+    return &F_Ding if !defined $Last_findchar;
+    &findchar(@$Last_findchar, $n);
+}
+
+sub F_ViInverseRepeatFindChar {
+    my($n) = @_;
+    return &F_Ding if !defined $Last_findchar;
+    my($c, $direction, $offset) = @$Last_findchar;
+    &findchar($c, -$direction, $offset, $n);
+}
+
+sub do_findchar {
+    my($direction, $offset, $n) = @_;
+    my $c = &getc_with_pending;
+    $c = &getc_with_pending if $c eq "\cV";
+    return &F_ViCommandMode if $c eq "\e";
+    $Last_findchar = [$c, $direction, $offset];
+    &findchar($c, $direction, $offset, $n);
+}
+
+sub findchar {
+    my($c, $direction, $offset, $n) = @_;
+    my $old_d = $D;
+    while ($n) {
+	last if !$D && ($direction < 0);
+	&F_ForwardChar($direction);
+	last if &at_end_of_line;
+	my $char = substr($line, $D, 1);
+	$n-- if substr($line, $D, 1) eq $c;
+    }
+    if ($n) {
+	# Not found
+	$D = $old_d;
+	return &F_Ding;
+    }
+    &F_ForwardChar($offset);
+}
+
+sub F_ViMoveToColumn {
+    my($n) = @_;
+    $D = 0;
+    my $col = 1;
+    while (!&at_end_of_line and $col < $n) {
+	my $c = substr($line, $D, 1);
+	if ($c eq "\t") {
+	    $col += 7;
+	    $col -= ($col % 8) - 1;
+	}
+	else {
+	    $col++;
+	}
+	$D += &CharSize($D);
+    }
+}
+
+sub start_dot_buf {
+    my($count, $ord) = @_;
+    $Dot_buf = [pack('c', $ord)];
+    unshift(@$Dot_buf, split(//, $count)) if $count > 1;
+    $Dot_state = &savestate;
+}
+
+sub end_dot_buf {
+    # We've recognized an editing command
+
+    # Save the command keystrokes for use by '.'
+    $Last_vi_command = $Dot_buf;
+    undef $Dot_buf;
+
+    # Save the pre-command state for use by 'u' and 'U';
+    $Vi_undo_state     = $Dot_state;
+    $Vi_undo_all_state = $Dot_state if !$Vi_undo_all_state;
+
+    # Make sure the current line is treated as new line for history purposes.
+    $rl_HistoryIndex = $#rl_History + 1;
+}
+
+sub save_dot_buf {
+    &start_dot_buf(@_);
+    &end_dot_buf;
+}
+
+sub F_ViUndo {
+    return &F_Ding unless defined $Vi_undo_state;
+    my $state = &savestate;
+    &getstate($Vi_undo_state);
+    $Vi_undo_state = $state;
+}
+
+sub F_ViUndoAll {
+    $Vi_undo_state = $Vi_undo_all_state;
+    &F_ViUndo;
+}
+
+sub F_ViChange
+{
+    my($count, $ord) = @_;
+    &start_dot_buf(@_);
+    &do_delete($count, $ord, $Vi_change_patterns) || return();
+    &vi_input_mode;
+}
+
+sub F_ViDelete
+{
+    my($count, $ord) = @_;
+    &start_dot_buf(@_);
+    &do_delete($count, $ord, $Vi_delete_patterns);
+    &end_dot_buf;
+}
+
+sub do_delete {
+
+    my($count, $ord, $poshash) = @_;
+
+    my $other_end = &get_position($count, undef, $ord, $poshash);
+    return &F_Ding if !defined $other_end;
+
+    if ($other_end < 0) {
+	# dd - delete entire line
+	&kill_text(0, length($line), 1);
+    }
+    else {
+	&kill_text($D, $other_end, 1);
+    }
+
+    1;    # True return value
+}
+
+sub F_ViDeleteChar {
+    my($count) = @_;
+    &save_dot_buf(@_);
+    my $other_end = $D + $count;
+    $other_end = length($line) if $other_end > length($line);
+    &kill_text($D, $other_end, 1);
+}
+
+sub F_ViBackwardDeleteChar {
+    my($count) = @_;
+    &save_dot_buf(@_);
+    my $other_end = $D - $count;
+    $other_end = 0 if $other_end < 0;
+    &kill_text($other_end, $D, 1);
+    $D = $other_end;
+}
+
+##
+## Prepend line with '#', add to history, and clear the input buffer
+##     (this feature was borrowed from ksh).
+##
+sub F_ViSaveLine
+{
+    $line = '#'.$line;
+    &redisplay();
+    print $term_OUT "\r\n";
+    &add_line_to_history;
+    $line_for_revert = '';
+    &get_line_from_history(scalar @rl_History);
+    &F_ViInput();
+}
+
+#
+# Come here if we see a non-positioning keystroke when a positioning
+#     keystroke is expected.
+#
+sub F_ViNonPosition {
+    # Not a positioning command - undefine the cursor to indicate the error
+    #     to get_position().
+    undef $D;
+}
+
+#
+# Come here if we see <esc><char>, but *not* an arrow key or other
+#     mapped sequence, when a positioning keystroke is expected.
+#
+sub F_ViPositionEsc {
+    my($count, $ord) = @_;
+
+    # We got <esc><char> in vipos mode.  Put <char> back onto the
+    #     input stream and terminate the positioning command.
+    unshift(@Pending, pack('c', $ord));
+    &F_ViNonPosition;
+}
+
+# Interpret vi positioning commands
+sub get_position {
+    my ($count, $ord, $fullline_ord, $poshash) = @_;
+
+    # Manipulate a copy of the cursor, not the real thing
+    local $D = $D;
+
+    # $ord (first character of positioning command) is an optional argument.
+    $ord = ord(&getc_with_pending) if !defined $ord;
+
+    # Detect double character (for full-line operation, e.g. dd)
+    return -1 if defined $fullline_ord and $ord == $fullline_ord;
+
+    my $re = $poshash->{$ord};
+
+    if ($re) {
+	my $c = pack('c', $ord);
+	if (lc($c) eq 'b') {
+	    &backward_scan($count, $re);
+	}
+	else {
+	    &forward_scan($count, $re);
+	}
+    }
+    else {
+	# Move the local copy of the cursor
+	&do_command($var_EditingMode{'vipos'}, $count, $ord);
+    }
+
+    # Return the new cursor (undef if illegal command)
+    $D;
+}
+
+##
+## Go to first non-space character of line.
+##
+sub F_ViFirstWord
+{
+    $D = 0;
+    &forward_scan(1, q{\s+});
+}
+
+sub forward_scan {
+    my($count, $re) = @_;
+    while ($count--) {
+	last unless substr($line, $D) =~ m{^($re)};
+	$D += length($1);
+    }
+}
+
+sub backward_scan {
+    my($count, $re) = @_;
+    while ($count--) {
+	last unless substr($line, 0, $D) =~ m{($re)$};
+	$D -= length($1);
+    }
+}
+
+# Note: like the emacs case transforms, this doesn't work for
+#       two-byte characters.
+sub F_ViToggleCase {
+    my($count) = @_;
+    &save_dot_buf(@_);
+    while ($count-- > 0) {
+	substr($line, $D, 1) =~ tr/A-Za-z/a-zA-Z/;
+	&F_ForwardChar(1);
+	if (&at_end_of_line) {
+	    &F_BackwardChar(1);
+	    last;
+	}
+    }
+}
+
+sub F_ViPreviousHistory {
+    &get_line_from_history($rl_HistoryIndex - 1);
+}
+
+sub F_ViNextHistory {
+    &get_line_from_history($rl_HistoryIndex + 1);
+}
+
+# Go to the numbered history line, as listed by the 'H' command, i.e. the
+#     current $line is line 1, the youngest line in @rl_History is 2, etc.
+sub F_ViHistoryLine {
+    my($n) = @_;
+    &get_line_from_history(@rl_History - $n + 1);
+}
+
+sub get_line_from_history {
+    my($n) = @_;
+    return &F_Ding if $n < 0 or $n > @rl_History;
+    return if $n == $rl_HistoryIndex;
+
+    # If we're moving from the currently-edited line, save it for later.
+    $line_for_revert = $line if $rl_HistoryIndex == @rl_History;
+
+    # Get line from history buffer (or from saved edit line).
+    $line = ($n == @rl_History) ? $line_for_revert : $rl_History[$n];
+    $D = 0;
+
+    # Subsequent 'U' will bring us back to this point.
+    $Vi_undo_all_state = &savestate;
+
+    $rl_HistoryIndex = $n;
+}
+
+sub F_ViPrintHistory {
+    my($count) = @_;
+
+    $count = 20 if $count == 1;             # Default - assume 'H', not '1H'
+    my $end = $rl_HistoryIndex + $count/2;
+    $end = @rl_History if $end > @rl_History;
+    my $start = $end - $count + 1;
+    $start = 0 if $start < 0;
+
+    my $lmh = length $rl_MaxHistorySize;
+
+    my $lspace = ' ' x ($lmh+3);
+    my $hdr = "$lspace----- (Use '<num>G' to retrieve command <num>) -----\n";
+
+    print "\n", $hdr;
+    print $lspace, ". . .\n" if $start > 0;
+    my $i;
+    for $i ($start .. $end) {
+	print + ($i == $rl_HistoryIndex) ? '>' : ' ',
+
+		sprintf("%${lmh}d: ", @rl_History - $i + 1),
+
+		($i < @rl_History)       ? $rl_History[$i] :
+		($i == $rl_HistoryIndex) ? $line           :
+		                           $line_for_revert,
+
+		"\n";
+    }
+    print $lspace, ". . .\n" if $end < @rl_History;
+    print $hdr;
+
+    &force_redisplay();
+
+    &F_ViInput() if $line eq '';
+}
+
+# Redisplay the line, without attempting any optimization
+sub force_redisplay {
+    local $force_redraw = 1;
+    &redisplay(@_);
+}
+
+# Search history for matching string.  As with vi in nomagic mode, the
+#     ^, $, \<, and \> positional assertions, the \* quantifier, the \.
+#     character class, and the \[ character class delimiter all have special
+#     meaning here.
+sub F_ViSearch {
+    my($n, $ord) = @_;
+
+    my $c = pack('c', $ord);
+
+    my $str = &get_vi_search_str($c);
+    if (!defined $str) {
+	# Search aborted by deleting the '/' at the beginning of the line
+	return &F_ViInput() if $line eq '';
+	return();
+    }
+
+    # Null string repeats last search
+    if ($str eq '') {
+	return &F_Ding unless defined $Vi_search_re;
+    }
+    else {
+	# Convert to a regular expression.  Interpret $str Like vi in nomagic
+	#     mode: '^', '$', '\<', and '\>' positional assertions, '\*' 
+	#     quantifier, '\.' and '\[]' character classes.
+
+	my @chars = ($str =~ m{(\\?.)}g);
+	my(@re, @tail);
+	unshift(@re,   shift(@chars)) if @chars and $chars[0]  eq '^';
+	push   (@tail, pop(@chars))   if @chars and $chars[-1] eq '$';
+	my $in_chclass;
+	my %chmap = (
+	    '\<' => '\b(?=\w)',
+	    '\>' => '(?<=\w)\b',
+	    '\*' => '*',
+	    '\[' => '[',
+	    '\.' => '.',
+	);
+	my $ch;
+	foreach $ch (@chars) {
+	    if ($in_chclass) {
+		# Any backslashes in vi char classes are literal
+		push(@re, "\\") if length($ch) > 1;
+		push(@re, $ch);
+		$in_chclass = 0 if $ch =~ /\]$/;
+	    }
+	    else {
+		push(@re, (length $ch == 2) ? ($chmap{$ch} || $ch) :
+			  ($ch =~ /^\w$/)   ? $ch                  :
+			                      ("\\", $ch));
+		$in_chclass = 1 if $ch eq '\[';
+	    }
+	}
+	my $re = join('', @re, @tail);
+	$Vi_search_re = q{$re};
+    }
+
+    local $reverse = $Vi_search_reverse = ($c eq '/') ? 1 : 0;
+    &do_vi_search();
+}
+
+sub F_ViRepeatSearch {
+    my($n, $ord) = @_;
+    my $c = pack('c', $ord);
+    return &F_Ding unless defined $Vi_search_re;
+    local $reverse = $Vi_search_reverse;
+    $reverse ^= 1 if $c eq 'N';
+    &do_vi_search();
+}
+
+## returns a new $i or -1 if not found.
+sub vi_search { 
+    my ($i) = @_;
+    return -1 if $i < 0 || $i > $#rl_History; 	 ## for safety
+    while (1) {
+	return $i if $rl_History[$i] =~ /$Vi_search_re/;
+	if ($reverse) {
+	    return -1 if $i-- == 0;
+	} else {
+	    return -1 if $i++ == $#rl_History;
+	}
+    }
+}
+
+sub do_vi_search {
+    my $incr = $reverse ? -1 : 1;
+
+    my $i = &vi_search($rl_HistoryIndex + $incr);
+    return &F_Ding if $i < 0;                  # Not found.
+
+    $rl_HistoryIndex = $i;
+    ($D, $line) = (0, $rl_History[$rl_HistoryIndex]);
+}
+
+# Using local $line, $D, and $prompt, get and return the string to search for.
+sub get_vi_search_str {
+    my($c) = @_;
+
+    local $prompt = $prompt . $c;
+    local ($line, $D) = ('', 0);
+    &redisplay();
+
+    # Gather a search string in our local $line.
+    while ($lastcommand ne 'F_ViEndSearch') {
+	&do_command($var_EditingMode{'visearch'}, 1, ord(&getc_with_pending));
+	&redisplay();
+
+	# We've backspaced past beginning of line
+	return undef if !defined $line;
+    }
+    $line;
+}
+
+sub F_ViEndSearch {}
+
+sub F_ViSearchBackwardDeleteChar {
+    if ($line eq '') {
+	# Backspaced past beginning of line - terminate search mode
+	undef $line;
+    }
+    else {
+	&F_BackwardDeleteChar(@_);
+    }
+}
+
+##
+## Kill entire line and enter input mode
+##
+sub F_ViChangeEntireLine
+{
+    &start_dot_buf(@_);
+    kill_text(0, length($line), 1);
+    &vi_input_mode;
+}
+
+##
+## Kill characters and enter input mode
+##
+sub F_ViChangeChar
+{
+    &start_dot_buf(@_);
+    &F_DeleteChar(@_);
+    &vi_input_mode;
+}
+
+sub F_ViReplaceChar
+{
+    &start_dot_buf(@_);
+    my $c = &getc_with_pending;
+    $c = &getc_with_pending if $c eq "\cV";   # ctrl-V
+    return &F_ViCommandMode if $c eq "\e";
+    &end_dot_buf;
+
+    local $InsertMode = 0;
+    local $D = $D;                  # Preserve cursor position
+    &F_SelfInsert(1, ord($c));
+}
+
+##
+## Kill from cursor to end of line and enter input mode
+##
+sub F_ViChangeLine
+{
+    &start_dot_buf(@_);
+    &F_KillLine(@_);
+    &vi_input_mode;
+}
+
+sub F_ViDeleteLine
+{
+    &save_dot_buf(@_);
+    &F_KillLine(@_);
+}
+
+sub F_ViPut
+{
+    my($count) = @_;
+    &save_dot_buf(@_);
+    my $text2add = $KillBuffer x $count;
+    my $ll = length($line);
+    $D++;
+    $D = $ll if $D > $ll;
+    substr($line, $D, 0) = $KillBuffer x $count;
+    $D += length($text2add) - 1;
+}
+
+sub F_ViPutBefore
+{
+    &save_dot_buf(@_);
+    &TextInsert($_[0], $KillBuffer);
+}
+
+sub F_ViYank
+{
+    my($count, $ord) = @_;
+    my $pos = &get_position($count, undef, $ord, $Vi_yank_patterns);
+    &F_Ding if !defined $pos;
+    if ($pos < 0) {
+	# yy
+	&F_ViYankLine;
+    }
+    else {
+	my($from, $to) = ($pos > $D) ? ($D, $pos) : ($pos, $D);
+	$KillBuffer = substr($line, $from, $to-$from);
+    }
+}
+
+sub F_ViYankLine
+{
+    $KillBuffer = $line;
+}
+
+sub F_ViInput
+{
+    @_ = (1, ord('i')) if !@_;
+    &start_dot_buf(@_);
+    &vi_input_mode;
+}
+
+sub F_ViBeginInput
+{
+    &start_dot_buf(@_);
+    &F_BeginningOfLine;
+    &vi_input_mode;
+}
+
+sub F_ViReplaceMode
+{
+    &start_dot_buf(@_);
+    $InsertMode = 0;
+    $var_EditingMode = $var_EditingMode{'vi'};
+    $Vi_mode = 1;
+}
+
+sub vi_input_mode
+{
+    $InsertMode = 1;
+    $var_EditingMode = $var_EditingMode{'vi'};
+    $Vi_mode = 1;
+}
+
+# The previous keystroke was an escape, but the sequence was not recognized
+#     as a mapped sequence (like an arrow key).  Enter vi comand mode and
+#     process this keystroke.
+sub F_ViAfterEsc {
+    my($n, $ord) = @_;
+    &F_ViCommandMode;
+    &do_command($var_EditingMode, 1, $ord);
+}
+
+sub F_ViAppend
+{
+    &start_dot_buf(@_);
+    &vi_input_mode;
+    &F_ForwardChar;
+}
+
+sub F_ViAppendLine
+{
+    &start_dot_buf(@_);
+    &vi_input_mode;
+    &F_EndOfLine;
+}
+
+sub F_ViCommandMode
+{
+    $var_EditingMode = $var_EditingMode{'vicmd'};
+    $Vi_mode = 1;
+}
+
+sub F_ViAcceptInsert {
+    &F_ViEndInsert;
+    &F_ViAcceptLine;
+}
+
+sub F_ViEndInsert
+{
+    if ($Dot_buf) {
+	if ($line eq '' and $Dot_buf->[0] eq 'i') {
+	    # We inserted nothing into an empty $line - assume it was a
+	    #     &F_ViInput() call with no arguments, and don't save command.
+	    undef $Dot_buf;
+	}
+	else {
+	    # Regardless of which keystroke actually terminated this insert
+	    #     command, replace it with an <esc> in the dot buffer.
+	    @{$Dot_buf}[-1] = "\e";
+	    &end_dot_buf;
+	}
+    }
+    &F_ViCommandMode;
+    &F_BackwardChar;
+}
+
+sub F_ViDigit {
+    my($count, $ord) = @_;
+
+    my $n = 0;
+    my $ord0 = ord('0');
+    while (1) {
+
+	$n *= 10;
+	$n += $ord - $ord0;
+
+	my $c = &getc_with_pending;
+	return unless defined $c;
+	$ord = ord($c);
+	last unless $c =~ /^\d$/;
+    }
+
+    $n *= $count;                   # So  2d3w  deletes six words
+    $n = $rl_max_numeric_arg if $n > $rl_max_numeric_arg;
+
+    &do_command($var_EditingMode, $n, $ord);
+}
+
+sub F_ViComplete {
+    my($n, $ord) = @_;
+
+    $Dot_state = &savestate;     # Completion is undo-able
+    undef $Dot_buf;              #       but not redo-able
+
+    my $ch;
+    while (1) {
+
+	&F_Complete() or return;
+
+	# Vi likes the cursor one character right of where emacs like it.
+	&F_ForwardChar(1);
+	&force_redisplay();
+
+	# Look ahead to the next input keystroke.
+	$ch = &getc_with_pending();
+	last unless ord($ch) == $ord;   # Not a '\' - quit.
+
+	# Another '\' was typed - put the cursor back where &F_Complete left
+	#     it, and try again.
+	&F_BackwardChar(1);
+	$lastcommand = 'F_Complete';   # Play along with &F_Complete's kludge
+    }
+    unshift(@Pending, $ch);      # Unget the lookahead keystroke
+
+    # Successful completion - enter input mode with cursor beyond end of word.
+    &vi_input_mode;
+}
+
+sub F_ViInsertPossibleCompletions {
+    $Dot_state = &savestate;     # Completion is undo-able
+    undef $Dot_buf;              #       but not redo-able
+
+    &complete_internal('*') or return;
+
+    # Successful completion - enter input mode with cursor beyond end of word.
+    &F_ForwardChar(1);
+    &vi_input_mode;
+}
+
+sub F_ViPossibleCompletions {
+
+    # List possible completions
+    &complete_internal('?');
+
+    # Enter input mode with cursor where we left off.
+    &F_ForwardChar(1);
+    &vi_input_mode;
 }
 
 1;

@@ -86,3 +86,7 @@ After 0.91:
 	Fix reverse search.
 0.9906: $readline::rl_getc added with the default value \&readline::rl_getc
 0.9907: remove defined() noise.
+0.9908: support $ENV{INPUTRC}.
+	Advice users to look into *this* file for features...
+	Joe.Petolino@Eng.Sun.COM added vi support (untested).
+	Remove .gz-ness from Makefile.PL.

@@ -6,6 +6,6 @@ WriteMakefile(
 	      NAME	=> 'Term::ReadLine',
 	      VERSION_FROM => 'ReadLine/readline.pm',
 	      linkext => {LINKTYPE => '' },
-	      dist => {COMPRESS=>'gzip -9f', SUFFIX=>'gz', 
-			     DIST_DEFAULT => 'all uutardist'},
+	      # dist => {COMPRESS=>'gzip -9f', SUFFIX=>'gz', 
+	      #		     DIST_DEFAULT => 'all uutardist'},
 	     );
