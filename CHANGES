@@ -1,4 +1,4 @@
-1.0303: 
+1.0303: 2009-10-28
 
 - Would not allow macros with space in them.
 
@@ -19,7 +19,7 @@
 
 - Test for $ENV{PERL_MM_NONINTERACTIVE} also to abort tests.
 
-1.0302: 
+1.0302: 2006-05-23
 
 - C-@ was incorrectly bound to a missing function SetPoint.
 
@@ -28,7 +28,7 @@
 
 - Bind C-x @ c and C-x @ m too (as in Emacs).
 
-1.0301: 
+1.0301: 2006-05-23
 
 - F_TransposeWords implemented
 
@@ -59,7 +59,7 @@
      F_DoMetaVersion; F_DoControlVersion; 
      These are bound as in Emacs: C-x Esc m and C-x Esc c.
 
-1.03:   
+1.03: 2006-04-9
 
 - Support for numeric arguments missed setting $lastcommand.
 
@@ -84,7 +84,7 @@
 			(for better mouse support; untested)
 	Undo list merges together states where the only change is position
 
-1.0208:	
+1.0208:	2006-03-14
 
 - Allow 2-arg form for test.pl
 
@@ -97,7 +97,7 @@
 - Apparently, self-loaded empty subroutines crash 5.8.2; 5.8.7 OK.
   Work-around: put "1;" into non-implemented stuff.
 
-1.0207:	
+1.0207:	2006-03-03
 
 - If mark was active, redraw could be performed after Enter.
 
@@ -106,7 +106,7 @@
 - Alias $var_DeleteSelection for $rl_delete_selection (thus accessible
   via .inputrc).
 
-1.0206: 
+1.0206: 2006-03-03
 
 - Shift-Ins, Control-Ins, Shift-Del operate on clipboard (if available)
   (currently native on OS/2 only, otherwise uses commands
@@ -126,13 +126,13 @@
    if $rl_delete_selection is TRUE (the default).
    (Set mark again to insert without removing.)
 
-1.0205: 
+1.0205: 2006-03-02
 
 - Do not touch $ENV{HOME} unless defined.
 
 - $ENV{AUTOMATED_TESTING} to skip interactive tests.
 
-1.0204:	
+1.0204:	2006-03-02
 
 - Applied patches from Gurusamy and Slaven for vi mode:
     * Logic to move insertion point one char back was wrong;
@@ -159,12 +159,12 @@
 	PreviousHistory and NextHistory take count.
 	The edited line is saved when one moves to history.
 
-1.0203:	
+1.0203:	2002-05-24
 
 - Unconditional titlecasing of .inputrc "values" broke settings with
   values such as 'vi' etc (thanks to Russ Southern for a report).
 
-1.0202:	
+1.0202:	2002-04-19
 
 - Warnings on highlight of the right scroll mark '<' fixed
   (thanks to Slaven Rezic).
@@ -173,7 +173,7 @@
 
 - Warnings due to a misprint fixed (thanks to Tatsuhiko Miyagawa).
 
-1.02:	
+1.02: 2002-03-31
 
 -  Move reread-init to C-x C-r.  
 
@@ -222,7 +222,7 @@
 
 - Removed spurious warnings from failing ioctl and stty.
 
-0.9908: 
+0.9908: 2000-05-20
 
 - support $ENV{INPUTRC}.
 
@@ -232,44 +232,45 @@
 
 - Remove .gz-ness from Makefile.PL.
 
-0.9907: 
+0.9907: 1999-08-04
+
 - remove defined() noise.
 
-0.9906: 
+0.9906: 1998-11-29
 
 - $readline::rl_getc added with the default value \&readline::rl_getc
 
-0.9905: (thanks to Wilson P. Snyder II wsnyder@maker.com)
+0.9905: 1998-10-21 (thanks to Wilson P. Snyder II wsnyder@maker.com)
 
 - Fix reverse search.
 
-0.9904: (thanks to Alexander Kourakos <awk@bnt.com>)
+0.9904: 1998-04-05 (thanks to Alexander Kourakos <awk@bnt.com>)
 
 - gave warnings for blank lines in my .inputrc
 
 - showed underlined spaces in prompts (in xterm) which look ugly.
 
-0.9903:
+0.9903: 1998-02-20
 
 - Enable ornaments by default.
 
 - Disable explicit ornaments in the test.pl.
 
-0.9902:
+0.9902: 1997-12-08
 
 - Do not test TRL::Gnu in test.pl!
 
 - Allow control-? in assignments.  \M-\C- should work, as well as \x7F.
   (Thanks to Neil Bird!)
 
-0.9901:
+0.9901: 1997-09-08
 
 -  Support for ornaments busted editing of long lines.
 
-0.99:
+0.99: 1997-09-08
 - Buglet with -w corrected.
 
-0.98:
+0.98: 1997-08-23
 
 - newTTY added.
 
