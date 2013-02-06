@@ -39,7 +39,7 @@ my $useioctl = 1;
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = 0.9901;
+$VERSION = $VERSION = 0.9902;
 
 ## 940817.008 - Added $var_CompleteAddsuffix.
 ##		Now recognizes window-change signals (at least on BSD).
@@ -756,10 +756,12 @@ sub rl_bind
 	    while (length($key) > 0) {
 		if ($key =~ s#\\C-\\M-(.)##) {
 		   push(@keys, ord("\e"), &ctrl(ord($1)));
-		} elsif ($key =~ s#\\C-(.)##) {
-		   push(@keys, &ctrl(ord($1)));
 		} elsif ($key =~ s#\\(M-|e)##) {
 		   push(@keys, ord("\e"));
+		} elsif ($key =~ s#\\C-(.)##) {
+		   push(@keys, &ctrl(ord($1)));
+		} elsif ($key =~ s#\\x([0-9a-fA-F]{2})##) {
+		   push(@keys, eval('0x'.$1));
 		} elsif ($key =~ s#\\(.)##) {
 		   push(@keys, ord($1));
 		} else {
@@ -982,7 +984,7 @@ sub readline
 
 ## ctrl(ord('a')) will return the ordinal for Ctrl-A.
 sub ctrl {
-  $_[0] & ~ (($_[0]>=ord('a') && $_[0]<=ord('z')) ? 0x60 : 0x40);
+  $_[0] ^ (($_[0]>=ord('a') && $_[0]<=ord('z')) ? 0x60 : 0x40);
 }
 
 

@@ -72,4 +72,7 @@ After 0.91:
 	Buglet with -w corrected.
 0.9901:
 	Support for ornaments busted editing of long lines.
-
+0.9902:
+	Do not test TRL::Gnu in test.pl!
+	Allow control-? in assignments.  \M-\C- should work, as well as \x7F.
+	(Thanks to Neil Bird!)

@@ -1,5 +1,6 @@
 # Give an argument to use stdin, stdout instead of console
 # If argument starts with /dev, use it as console
+BEGIN{ $ENV{PERL_RL} = 'Perl' };	# Do not test TR::Gnu !
 use Term::ReadLine;
 if (!@ARGV) {
   $term = new Term::ReadLine 'Simple Perl calc';
