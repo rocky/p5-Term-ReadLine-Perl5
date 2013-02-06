@@ -39,7 +39,7 @@ my $useioctl = 1;
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = 0.9903;
+$VERSION = $VERSION = 0.9904;
 
 ## 940817.008 - Added $var_CompleteAddsuffix.
 ##		Now recognizes window-change signals (at least on BSD).
@@ -810,7 +810,7 @@ sub F_ReReadInitFile
 
     while (<RC>) {
 	s/^\s*//;
-	next if m/^#/;
+	next if m/^\s*(#|$)/;
 	$InputLocMsg = " [$file line $.]";
 	if (/^\$if\s+/) {
 	    my($test) = $';
@@ -1063,15 +1063,18 @@ sub substr_with_props {
   defined $from or $from = 0;
   defined $len or $len = length($p) + length($s) - $from;
 
+  $p =~ s/^(\s*)//; my $bs = $1;
+  $p =~ s/(\s*)$//; my $as = $1;
+
   if ($from >= $lp) {
     return $rl_term_set->[2] . substr($s, $from - $lp, $len) 
       . $rl_term_set->[3];
   } elsif ($from + $len <= $lp) {
-    return $rl_term_set->[0] . substr($prompt, $from, $len) 
-      . $rl_term_set->[1];
+    return $bs . $rl_term_set->[0] . substr($p, $from, $len) 
+      . $rl_term_set->[1] . $as;
   } else {
-    return $rl_term_set->[0] . substr($prompt, $from, $lp - $from) 
-      . $rl_term_set->[1]
+    return $bs . $rl_term_set->[0] . substr($p, $from, $lp - $from) 
+      . $rl_term_set->[1] . $as
 	. $rl_term_set->[2] . substr($s, 0, $from + $len - $lp) 
 	  . $rl_term_set->[3];
   }
@@ -2601,7 +2604,7 @@ sub pretty_print_list
     $columns = $maxwidth >= $rl_screen_width
 	       ? 1 : int($rl_screen_width / $maxwidth);
 
-    ## if there's enough margin to interspurse among the columsn, do so.
+    ## if there's enough margin to interspurse among the columns, do so.
     $maxwidth += int(($rl_screen_width % $maxwidth) / $columns);
 
     $lines = int((@list + $columns - 1) / $columns);

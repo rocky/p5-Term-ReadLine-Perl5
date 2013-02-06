@@ -79,3 +79,6 @@ After 0.91:
 0.9903:
 	Enable ornaments by default.
 	Disable explicit ornaments in the test.pl.
+0.9904: (thanks to Alexander Kourakos <awk@bnt.com>)
+        gave warnings for blank lines in my .inputrc
+        showed underlined spaces in prompts (in xterm) which look ugly.
