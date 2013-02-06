@@ -1,0 +1,70 @@
+0.2: Test added.
+0.3: Filehandles changed to \* from *, MinLine works, works with
+debugger.
+0.4: Some bugs with $| corrected. Application name is set. Works under
+OS/2 without ReadKey. Should work under DOS with minimal changes (see
+$inDOS in ReadLine/readline.pl).
+0.5: Code to support ReadLine'less debugger moved to debugger. One
+user reported that having .inputrc triggers the same bug that buggered
+earlier versions of the package. Request for a second readline is
+tried to be executed first, dying only if should work on a different terminal.
+0.6: The above bug was due to missing vi keymap. Dirty workaround
+added.
+0.7: We made ReadMode on term_OUT ;-(
+     Better workaround for return of globs from a sub.
+     Word break chars more suitable for Perl.
+0.8: Insert, Operate, HistorySearch added.
+     Rudimental support for tk being active during ReadLine.
+     Should work better if ReadKey is present, but did not bootstrap.
+     SelfLoader (and AutoLoader) supported (uncomment the lines
+	with SelfLoader, ISA, and __DATA__).
+0.9: tkRunning corrected. New attributes in Features: getHistory,
+	setHistory, and new methods: GetHistory and SetHistory.
+
+After 0.9:
+	Optional second argument to ->readline;
+	[sg]etHistory, tkRunning features documented;
+	Operate overwriting parameter fixed;
+	AddHistory copied to addhistory in T::R::Perl;
+	[SG]etHistory documented;
+	tkRunning feature documented.
+	eval "" => eval {}
+	local => my
+After 0.91:
+	Couple of bugs with my $var = @_;
+	use SelfLoader; moved to DATA.
+	Works in XTERM on OS/2.
+0.93:
+	Updates to Operate, couple of keybindings added.
+	$rl_completer_terminator_character, $rl_correct_sw added.
+	Reload-init-file moved to C-x C-x.
+	C-x ? and C-x * list/insert possible completions (similar to
+		tcsh globbing).
+	For a second ReadLine interface ReadLine::Stub is used (unsuccessfully)?
+	C-x * moves cursor correctly.
+0.94:
+	Should work everywhere where stty works (possibly with a warning).
+	Warning says where to find TRK, switchable off.
+	ReadLine.pm removed from distribution.
+0.95:
+		(from Jim Meyering):
+	* readline.pm (preinit): Recognize bash's `input-meta' as a
+	valid variable name.
+	(F_ReReadInitFile): Recognize key binding directives in which
+	the double-quoted RHS contains white space.
+	(rl_set): Treat bash's `visible-stats' as a synonym of
+	CompleteAddsuffix.
+	Workaround against Term::ReadKey::ReadMode returning undef
+		(thanks to Helmut Jarausch).
+0.96:
+	tkRunning support unrolled, now needs newer Term/ReadLine.pm to use it.
+	Warnings from inputrc come only if -w.
+0.97:
+	Wrong version of Perl.pm was included, did not work with older Perls.
+0.98:
+	newTTY added.
+	ornaments added.
+	no longer installs into PERL dirs.
+	Name of interface is now Term::ReadLine::Perl.
+	Meta-flag tolerated (thanks to Honza Pazdziora).
+	Bindings to \C-letter work again.
