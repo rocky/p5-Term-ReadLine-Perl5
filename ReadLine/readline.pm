@@ -39,7 +39,7 @@ my $useioctl = 1;
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = 0.9905;
+$VERSION = $VERSION = 0.9906;
 
 ## 940817.008 - Added $var_CompleteAddsuffix.
 ##		Now recognizes window-change signals (at least on BSD).
@@ -85,6 +85,8 @@ $VERSION = $VERSION = 0.9905;
 ## $rl_completer_terminator_character, $rl_correct_sw added.
 ## Reload-init-file moved to C-x C-x.
 ## C-x ? and C-x * list/insert possible completions.
+
+$rl_getc = \&rl_getc;
 
 &preinit;
 &init;
@@ -957,7 +959,7 @@ sub readline
     while (!defined($AcceptLine)) {
 	## get a character of input
 	if (!defined($pending)) {
-	    $input = rl_getc(); # bug in debugger, returns 42. - No more!
+	    $input = &$rl_getc(); # bug in debugger, returns 42. - No more!
 	} else {
 	    $input = substr($pending, 0, 1);
 	    substr($pending, 0, 1) = '';
@@ -1738,7 +1740,7 @@ sub F_ClearScreen
 sub F_QuotedInsert
 {
     my $count = shift;
-    &F_SelfInsert($count, ord(rl_getc));
+    &F_SelfInsert($count, ord(&$rl_getc));
 }
 
 ##
@@ -1993,7 +1995,7 @@ sub DoSearch
 	}
 	&redisplay( '('.($reverse?'reverse-':'') ."i-search) `$searchstr': ");
 
-	$c = rl_getc;
+	$c = &$rl_getc;
 	if ($KeyMap[ord($c)] eq 'F_ReverseSearchHistory') {
 	    if ($reverse && $I != -1) {
 		if ($tmp = &search($I-1,$searchstr), $tmp >= 0) {
@@ -2234,7 +2236,7 @@ sub F_PrefixMeta
     my($count, $keymap) = ($_[0], "$KeyMap{'name'}_$_[1]");
     ##print "F_PrefixMeta [$keymap]\n\r";
     die "<internal error, $_[1]>" unless defined(%$keymap);
-    do_command(*$keymap, $count, ord(rl_getc));
+    do_command(*$keymap, $count, ord(&$rl_getc));
 }
 
 sub F_UniversalArgument
@@ -2279,7 +2281,7 @@ sub F_DigitArgument
 	    $NumericArg = -$rl_max_numeric_arg;
 	}
 	&redisplay(sprintf("(arg %d) ", $NumericArg));
-    } while $ord = ord(rl_getc);
+    } while $ord = ord(&$rl_getc);
 }
 
 sub F_OverwriteMode
