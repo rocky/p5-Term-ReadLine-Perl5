@@ -189,3 +189,19 @@ After 0.91:
 			(for better mouse support; untested)
 	Undo list merges together states where the only change is position
 
+1.0301: F_TransposeWords implemented
+	Enable binmode() on MSWin32 if ReadMode succeeds.
+		Since "normal" getc() returns 0 on "special keys" (as opposed
+		to behaviour with reasonable CRT library, which would return
+		a pair of keypresses 0 "keynumber"), to access special keys
+		one needs something like C-[ for Esc, and C-[ c for Alt-c.
+	Support \key with key in "abfnrtvd" in init files (\b/\d as C-?/C-d)
+		and \ooo for octal.
+	Allow single quotes in macro specifications, and backwacked quotes.
+	Support macros (propagate numeric arguments).
+	New functions F_BeginPasteGroup; F_EndPasteGroup;
+		F_BeginEditGroup; F_EndEditGroup; bound to XTerm mouse editing
+	Support ~/ in INPUTRC name and $include;
+	$ENV{TRP_INPUTRC} overrides $ENV{INPUTRC}.
+	New functions F_DoMetaVersion; F_DoControlVersion; bound as in Emacs:
+		C-x Esc m and C-x Esc c.

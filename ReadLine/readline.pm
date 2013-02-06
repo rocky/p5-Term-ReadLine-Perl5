@@ -52,7 +52,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.03';
+$VERSION = $VERSION = '1.0301';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -630,10 +630,12 @@ sub preinit
 		qq/"\cX\cR"/,	'ReReadInitFile',
 		qq/"\cX?"/,	'PossibleCompletions',
 		qq/"\cX*"/,	'InsertPossibleCompletions',
-		qq/"\cX\cu"/,	'Undo',
+		qq/"\cX\cU"/,	'Undo',
 		qq/"\cXu"/,	'Undo',
-		qq/"\cX\cw"/,	'KillRegion',
+		qq/"\cX\cW"/,	'KillRegion',
 		qq/"\cXw"/,	'CopyRegionAsKill',
+		qq/"\cX\ec\\*"/,	'DoControlVersion',
+		qq/"\cX\em\\*"/,	'DoMetaVersion',
 		'C-y',	'Yank',
 		'C-z',	'Suspend',
 		'C-\\',	'Ding',
@@ -698,6 +700,15 @@ sub preinit
 		qq/"\e[5;5y"/, 'BeginningOfHistory', # <Ctrl>+<Page Up>
 		qq/"\e[2;5~"/, 'CopyRegionAsKillClipboard', # <Ctrl>+<Insert>
 		qq/"\e[3;5~"/, 'KillWord', # <Ctrl>+<Delete>
+
+		# XTerm mouse editing (f202/f203 not in mainstream yet):
+		# Paste may be:         move f200 STRING f201
+		# or		   f202 move f200 STRING f201 f203;
+		# and Cut may be   f202 move delete f203
+		qq/"\e[200~"/, 'BeginPasteGroup', # Pre-paste
+		qq/"\e[201~"/, 'EndPasteGroup', # Post-paste
+		qq/"\e[202~"/, 'BeginEditGroup', # Pre-edit
+		qq/"\e[203~"/, 'EndEditGroup', # Post-edit
 
 		# OSX xterm:
 		# OSX xterm: home \eOH end \eOF delete \e[3~ help \e[28~ f13 \e[25~
@@ -1171,6 +1182,76 @@ sub InitKeymap
 ##     "\e[[D": backward-char
 ##
 
+sub filler_Pending ($) {
+  my $keys = shift;
+  sub {
+    my $c = shift;
+    push @Pending, map chr, @$keys;
+    return if not @$keys or $c == 1 or not defined(my $in = &getc_with_pending);
+    # provide the numeric argument
+    local(*KeyMap) = $var_EditingMode;
+    $doingNumArg = 1;		# Allow NumArg inside NumArg
+    &do_command(*KeyMap, $c, ord $in);
+    return;
+  }
+}
+
+sub _unescape ($) {
+  my($key, @keys) = shift;
+  ## New-style bindings are enclosed in double-quotes.
+  ## Characters are taken verbatim except the special cases:
+  ##    \C-x    Control x (for any x)
+  ##    \M-x    Meta x (for any x)
+  ##    \e	  Escape
+  ##    \*      Set the keymap default   (JP: added this)
+  ##               (must be the last character of the sequence)
+  ##
+  ##    \x      x  (unless it fits the above pattern)
+  ##
+  ## Look for special case of "\C-\M-x", which should be treated
+  ## like "\M-\C-x".
+
+  while (length($key) > 0) {
+
+    # JP: fixed regex bugs below: changed all 's#' to 's#^'
+
+    if ($key =~ s#^\\C-\\M-(.)##) {
+      push(@keys, ord("\e"), &ctrl(ord($1)));
+    } elsif ($key =~ s#^\\(M-|e)##) {
+      push(@keys, ord("\e"));
+    } elsif ($key =~ s#^\\C-(.)##) {
+      push(@keys, &ctrl(ord($1)));
+    } elsif ($key =~ s#^\\x([0-9a-fA-F]{2})##) {
+      push(@keys, eval('0x'.$1));
+    } elsif ($key =~ s#^\\([0-7]{3})##) {
+      push(@keys, eval('0'.$1));
+    } elsif ($key =~ s#^\\\*$##) {     # JP: added
+      push(@keys, 'default');
+    } elsif ($key =~ s#^\\([afnrtv])##) {
+      push(@keys, ord(eval(qq("\\$1"))));
+    } elsif ($key =~ s#^\\d##) {
+      push(@keys, 4);		# C-d
+    } elsif ($key =~ s#^\\b##) {
+      push(@keys, 0x7f);	# Backspace
+    } elsif ($key =~ s#^\\(.)##) {
+      push(@keys, ord($1));
+    } else {
+      push(@keys, ord($key));
+      substr($key,0,1) = '';
+    }
+  }
+  @keys
+}
+
+sub RL_func ($) {
+  my $name_or_macro = shift;
+  if ($name_or_macro =~ /^"((?:\\.|[^\\\"])*)"|^'((?:\\.|[^\\\'])*)'/s) {
+    filler_Pending [_unescape "$+"];
+  } else {
+    "F_$name_or_macro";
+  }
+}
+
 sub actually_do_binding
 {
   ##
@@ -1209,7 +1290,7 @@ sub actually_do_binding
 	  " changing default action to $func in $name key map\n"
 	  if $^W && defined $KeyMap{'default'};
 
-	$KeyMap{'default'} = "F_$func";
+	$KeyMap{'default'} = RL_func $func;
     }
     else {
 	if (defined($KeyMap[$key]) && $KeyMap[$key] eq 'F_PrefixMeta'
@@ -1219,7 +1300,7 @@ sub actually_do_binding
 	      " Re-binding char #$key to non-meta ($func) in $name key map\n"
 	      if $^W;
 	  }
-	$KeyMap[$key] = "F_$func";
+	$KeyMap[$key] = RL_func $func;
     }
   }
 }
@@ -1237,60 +1318,28 @@ sub rl_bind
 	##	BackwardKillLine
 	## if not already there.
 	##
-	$func = "\u$func";
-	$func =~ s/-(.)/\u$1/g;		
+        unless ($func =~ /^[\"\']/) {
+	  $func = "\u$func";
+	  $func =~ s/-(.)/\u$1/g;
 
-	# Temporary disabled
-	if (!$autoload_broken and !defined($ {'readline::'}{"F_$func"})) {
+	  # Temporary disabled
+	  if (!$autoload_broken and !defined($ {'readline::'}{"F_$func"})) {
 	    warn "Warning$InputLocMsg: bad bind function [$func]\n" if $^W;
 	    next;
+	  }
 	}
 
 	## print "sequence [$key] func [$func]\n"; ##DEBUG
 
 	@keys = ();
  	## See if it's a new-style binding.
-	if ($key =~ m/"(.*[^\\])"/) {
-	    $key = $1;
-	    ## New-style bindings are enclosed in double-quotes.
-	    ## Characters are taken verbatim except the special cases:
-	    ##    \C-x    Control x (for any x)
-	    ##    \M-x    Meta x (for any x)
-	    ##    \e	  Escape
-	    ##    \*      Set the keymap default   (JP: added this)
-	    ##               (must be the last character of the sequence)
-	    ##
-	    ##    \x      x  (unless it fits the above pattern)
-	    ##
-	    ## Look for special case of "\C-\M-x", which should be treated
-	    ## like "\M-\C-x".
-	    
-	    while (length($key) > 0) {
-
-		# JP: fixed regex bugs below: changed all 's#' to 's#^'
-
-		if ($key =~ s#^\\C-\\M-(.)##) {
-		   push(@keys, ord("\e"), &ctrl(ord($1)));
-		} elsif ($key =~ s#^\\(M-|e)##) {
-		   push(@keys, ord("\e"));
-		} elsif ($key =~ s#^\\C-(.)##) {
-		   push(@keys, &ctrl(ord($1)));
-		} elsif ($key =~ s#^\\x([0-9a-fA-F]{2})##) {
-		   push(@keys, eval('0x'.$1));
-		} elsif ($key =~ s#^\\\*$##) {    # JP: added
-		   push(@keys, 'default');
-		} elsif ($key =~ s#^\\(.)##) {
-		   push(@keys, ord($1));
-		} else {
-		   push(@keys, ord($key));
-		   substr($key,0,1) = '';
-		}
-	    }
+	if ($key =~ m/"((?:\\.|[^\\])*)"/s) {
+	    @keys = _unescape "$1";
 	} else {
 	    ## ol-dstyle binding... only one key (or Meta+key)
 	    my ($isctrl, $orig) = (0, $key);
-	    $isctrl = $key =~ s/(C|Control|CTRL)-//i;
-	    push(@keys, ord("\e")) if $key =~ s/(M|Meta)-//i; ## is meta?
+	    $isctrl = $key =~ s/\b(C|Control|CTRL)-//i;
+	    push(@keys, ord("\e")) if $key =~ s/\b(M|Meta)-//i; ## is meta?
 	    ## Isolate key part. This matches GNU's implementation.
 	    ## If the key is '-', be careful not to delete it!
 	    $key =~ s/.*-(.)/$1/;
@@ -1322,6 +1371,7 @@ sub read_an_init_file {
     my $file = shift;
     my $include_depth = shift;
     local *RC;
+    $file =~ s/^~([\\\/])/$ENV{HOME}$1/ if not -f $file and exists $ENV{HOME};
     return unless open RC, "< $file";
     my (@action) = ('exec'); ## exec, skip, ignore (until appropriate endif)
     my (@level) = ();        ## if, else
@@ -1378,7 +1428,7 @@ sub read_an_init_file {
 	# default /etc/inputrc on Mandrake Linux boxes.
 	} elsif (m/\s*set\s+(\S+)\s+(\S*)/) {	# Allow trailing comment
 	    &rl_set($1, $2, $file);
-	} elsif (m/^\s*(\S+):\s+("[^\"]*")/) {	# Allow trailing comment
+	} elsif (m/^\s*(\S+):\s+("(?:\\.|[^\\\"])*"|'(\\.|[^\\\'])*')/) {	# Allow trailing comment
 	    &rl_bind($1, $2);
 	} elsif (m/^\s*(\S+):\s+(\S+)/) {	# Allow trailing comment
 	    &rl_bind($1, $2);
@@ -1392,7 +1442,8 @@ sub read_an_init_file {
 
 sub F_ReReadInitFile
 {
-    my ($file) = $ENV{'INPUTRC'};
+    my ($file) = $ENV{'TRP_INPUTRC'};
+    $file = $ENV{'INPUTRC'} unless defined $file;
     unless (defined $file) {
 	return unless defined $ENV{'HOME'};
 	$file = "$ENV{'HOME'}/.inputrc";
@@ -1642,6 +1693,11 @@ sub SetTTY {
     #return system 'stty raw -echo' if defined &DB::DB;
     if (defined $term_readkey) {
       Term::ReadKey::ReadMode(4, $term_IN);
+      if ($^O eq 'MSWin32') {
+	# If we reached this, Perl isn't cygwin; Enter sends \r; thus we need binmode
+	# XXXX Do we need to undo???  $term_IN is most probably private now...
+	binmode $term_IN;
+      }
       return 1;
     }
 #   system 'stty raw -echo';
@@ -2022,7 +2078,7 @@ sub rl_getc {
 }
 
 ##
-## get_command(keymap, numericarg, command)
+## get_command(keymap, ord_command_char)
 ##
 ## If the KEYMAP has an entry for COMMAND, it is returned.
 ## Otherwise, the default command is returned.
@@ -2185,6 +2241,8 @@ sub F_KillWord;
 sub F_BackwardKillWord;
 sub F_Abort;
 sub F_DoLowercaseVersion;
+sub F_DoMetaVersion;
+sub F_DoControlVersion;
 sub F_Undo;
 sub F_RevertLine;
 sub F_EmacsEditingMode;
@@ -2212,6 +2270,10 @@ sub F_UnmemorizeDigitArgument;
 sub F_ResetDigitArgument;
 sub F_MergeInserts;
 sub F_MemorizePos;
+sub F_BeginPasteGroup;
+sub F_EndPasteGroup;
+sub F_BeginEditGroup;
+sub F_EndEditGroup;
 
 # Comment next line and __DATA__ line below to disable the selfloader.
 
@@ -2715,8 +2777,32 @@ sub changecase
 }
 
 sub F_TransposeWords {
-    1;
-    ## not implemented yet
+    my $c = shift;
+    return F_Ding() unless $c;
+    # Find "this" word
+    F_BackwardWord(1);
+    my $p0 = $D;
+    F_ForwardWord(1);
+    my $p1 = $D;
+    return F_Ding() if $p1 == $p0;
+    my ($p2, $p3) = ($p0, $p1);
+    if ($c > 0) {
+      F_ForwardWord($c);
+      $p3 = $D;
+      F_BackwardWord(1);
+      $p2 = $D;
+    } else {
+      F_BackwardWord(1 - $c);
+      $p0 = $D;
+      F_ForwardWord(1);
+      $p1 = $D;
+    }
+    return F_Ding() if $p3 == $p2 or $p2 < $p1;
+    my $r = substr $line, $p2, $p3 - $p2;
+    substr($line, $p2, $p3 - $p2) = substr $line, $p0, $p1 - $p0;
+    substr($line, $p0, $p1 - $p0) = $r;
+    $D = $c > 0 ? $p3 : $p0 + $p3 - $p2; # End of "this" word after edit
+    return 1;
 ## Exchange words: C-Left, C-right, C-right, C-left.  If positions do
 ## not overlap, we get two things to transpose.  Repeat count?
 }
@@ -2991,6 +3077,33 @@ sub F_DoLowercaseVersion
     } else {
 	&F_Ding;
     }
+}
+
+##
+## do the equiv with control key...
+##
+sub F_DoControlVersion
+{
+    local *KeyMap = $var_EditingMode;
+    my $key = $_[1];
+
+    if ($key == ord('?')) {
+	$key = 0x7F;
+    } else {
+	$key &= ~(0x80 | 0x60);
+    }
+    &do_command(*KeyMap, $_[0], $key);
+}
+
+##
+## do the equiv with meta key...
+##
+sub F_DoMetaVersion
+{
+    local *KeyMap = $var_EditingMode;
+    unshift @Pending, chr $_[1];
+
+    &do_command(*KeyMap, $_[0], ord "\e");
 }
 
 ##
@@ -4456,7 +4569,33 @@ sub F_ResetDigitArgument {
     my $in = &getc_with_pending;
     return unless defined $in;
     my $ord = ord $in;
+    local(*KeyMap) = $var_EditingMode;
     &do_command(*KeyMap, $memorizedArg, $ord);
+}
+
+sub F_BeginPasteGroup {
+    my $c = shift;
+    $memorizedArg = $c unless defined $memorizedArg;
+    F_BeginUndoGroup(1);
+    $memorizedPos = $D;
+}
+
+sub F_EndPasteGroup {
+    my $c = $memorizedArg;
+    undef $memorizedArg;
+    $c = 1 unless defined $c;
+    F_MergeInserts($c);
+    F_EndUndoGroup(1);
+}
+
+sub F_BeginEditGroup {
+    $memorizedArg = shift;
+    F_BeginUndoGroup(1);
+}
+
+sub F_EndEditGroup {
+    undef $memorizedArg;
+    F_EndUndoGroup(1);
 }
 
 1;

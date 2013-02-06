@@ -3,7 +3,7 @@ use Carp;
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Compa Term::ReadLine::Perl::AU);
 #require 'readline.pl';
 
-$VERSION = $VERSION = 1.03;
+$VERSION = $VERSION = 1.0301;
 
 sub readline {
   shift; 
