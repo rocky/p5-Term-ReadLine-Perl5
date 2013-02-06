@@ -1,21 +1,43 @@
 package Term::ReadLine::Perl;
+
+=head1 NAME
+
+Term::ReadLine::Perl - A pure Perl implementation GNU Readline
+
+=head1 SYNOPSIS
+
+  use Term::ReadLine::Perl;
+  $term = new Term::ReadLine::Perl 'ProgramName';
+  while ( defined ($_ = $term->readline('prompt>')) ) {
+    ...
+  }
+
+=head1 DESCRIPTION
+
+=head2 Overview
+
+This is a implementation of the GNU Readline/History Library written
+entirely in Perl. 
+
+GNU Readline reads lines from an interactive terminal with emacs or vi
+editing capabilities. It provides as mechanism for saving history of
+previous input. 
+
+This package typically used in command-line interfaces and REPLs (Read,
+Eval, Print Loops).
+
+=cut
+
+
 use Carp;
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Compa Term::ReadLine::Perl::AU);
 #require 'readline.pl';
 
-$VERSION = $VERSION = 1.0303;
+$VERSION = 1.04;
 
 sub readline {
   shift; 
-  #my $in = 
   &readline::readline(@_);
-  #$loaded = defined &Term::ReadKey::ReadKey;
-  #print STDOUT "\nrl=`$in', loaded = `$loaded'\n";
-  #if (ref \$in eq 'GLOB') {	# Bug under debugger
-  #  ($in = "$in") =~ s/^\*(\w+::)+//;
-  #}
-  #print STDOUT "rl=`$in'\n";
-  #$in;
 }
 
 # add_history is what GNU ReadLine defines. AddHistory is what we have
@@ -29,7 +51,6 @@ sub readline {
 # for backward compatibility: StifleHistory is the old name.
 *StifleHistory = \&stifle_history;
 
-#$term;
 # Initializations of variables to pacify -w
 $readline::minlength = 1;	
 $readline::rl_readline_name = undef;
@@ -44,7 +65,7 @@ sub new {
     warn "Cannot create second readline interface, falling back to dumb.\n";
     return Term::ReadLine::Stub::new(@_);
   }
-  shift;			# Package
+  shift; # Package
   if (@_) {
     if ($term) {
       warn "Ignoring name of second readline interface.\n" if defined $term;
@@ -94,11 +115,13 @@ sub newTTY {
   select($sel);
 }
 sub ReadLine {'Term::ReadLine::Perl'}
+
 sub MinLine {
   my $old = $readline::minlength;
   $readline::minlength = $_[1] if @_ == 2;
   return $old;
 }
+
 sub SetHistory {
   shift;
   @readline::rl_History = @_;
@@ -283,3 +306,25 @@ sub get_line {
 }
 
 1;
+
+__END__
+
+=head1 AUTHORS
+
+Jeffrey Friedl and Ilya Zakharevich
+
+=head1 SEE ALSO
+
+=over 4
+
+=item GNU Readline Library Manual
+
+=item GNU History Library Manual
+
+=item C<Term::ReadLine>
+
+=item C<Term::ReadLine::Perl> (Term-ReadLine-Perl-xx.tar.gz)
+
+=back
+
+=cut
