@@ -52,7 +52,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.0301';
+$VERSION = $VERSION = '1.0302';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -600,7 +600,7 @@ sub preinit
     $InputLocMsg = ' [initialization]';
 
     &InitKeymap(*emacs_keymap, 'SelfInsert', 'emacs_keymap',
-		($inDOS ? () : ('C-@',	'SetPoint') ),
+		($inDOS ? () : ('C-@',	'SetMark') ),
 		'C-a',	'BeginningOfLine',
 		'C-b',	'BackwardChar',
 		'C-c',	'Interrupt',
@@ -635,7 +635,15 @@ sub preinit
 		qq/"\cX\cW"/,	'KillRegion',
 		qq/"\cXw"/,	'CopyRegionAsKill',
 		qq/"\cX\ec\\*"/,	'DoControlVersion',
+		qq/"\cX\ec\0"/,	'SetMark',
+		qq/"\cX\ec\@"/,	'SetMark',
+		qq/"\cX\ec "/,	'SetMark',
 		qq/"\cX\em\\*"/,	'DoMetaVersion',
+		qq/"\cX\@c\\*"/,	'DoControlVersion',
+		qq/"\cX\@c\0"/,	'SetMark',
+		qq/"\cX\@c\@"/,	'SetMark',
+		qq/"\cX\@c "/,	'SetMark',
+		qq/"\cX\@m\\*"/,	'DoMetaVersion',
 		'C-y',	'Yank',
 		'C-z',	'Suspend',
 		'C-\\',	'Ding',

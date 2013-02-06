@@ -205,3 +205,8 @@ After 0.91:
 	$ENV{TRP_INPUTRC} overrides $ENV{INPUTRC}.
 	New functions F_DoMetaVersion; F_DoControlVersion; bound as in Emacs:
 		C-x Esc m and C-x Esc c.
+1.0302: C-@ was incorrectly bound to a missing function SetPoint.
+	C-x Esc c @ and C-x Esc c Space are now bound to SetMark, so do this
+		if $inDOS too.
+	Bind C-x @ c and C-x @ m too (as in Emacs).
+
