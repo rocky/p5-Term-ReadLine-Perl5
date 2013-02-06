@@ -39,7 +39,7 @@ my $useioctl = 1;
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = 0.98;
+$VERSION = $VERSION = 0.9901;
 
 ## 940817.008 - Added $var_CompleteAddsuffix.
 ##		Now recognizes window-change signals (at least on BSD).
@@ -1096,7 +1096,7 @@ sub redisplay
 {
     ## local $line has prompt also; take that into account with $D.
     local($prompt) = defined($_[0]) ? $_[0] : $prompt;
-    my $oline = $line;
+    my $oline;
     local($line) = $prompt . $line;
     local($D) = $D + length($prompt);
 
@@ -1176,6 +1176,13 @@ sub redisplay
     ##
     $line = substr($line, $si, $thislen);
     $delta = $D - $si;	## delta is cursor distance from left margin.
+    if ($si > length($prompt)) {
+      $prompt = "";
+      $oline = $line;
+    } else {
+      $oline = substr($line, (length $prompt) - $si);
+      $prompt = substr($prompt,$si);
+    }
 
     ##
     ## Now must output $line, with cursor $delta spaces from left margin.

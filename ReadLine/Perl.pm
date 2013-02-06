@@ -3,7 +3,7 @@ use Carp;
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Compa Term::ReadLine::Perl::AU);
 #require 'readline.pl';
 
-$VERSION = $VERSION = 0.98;
+$VERSION = $VERSION = 0.99;
 
 sub readline {
   shift; 
@@ -85,7 +85,7 @@ sub AddHistory {
 }
 %features =  (appname => 1, minline => 1, autohistory => 1, getHistory => 1,
 	      setHistory => 1, addHistory => 1, preput => 1, 
-	      attribs => 1, newTTY => 1,
+	      attribs => 1, 'newTTY' => 1,
 	      tkRunning => Term::ReadLine::Stub->Features->{'tkRunning'},
 	      ornaments => Term::ReadLine::Stub->Features->{'ornaments'},
 	     );

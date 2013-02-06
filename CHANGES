@@ -68,3 +68,5 @@ After 0.91:
 	Name of interface is now Term::ReadLine::Perl.
 	Meta-flag tolerated (thanks to Honza Pazdziora).
 	Bindings to \C-letter work again.
+0.99:
+	Buglet with -w corrected.
