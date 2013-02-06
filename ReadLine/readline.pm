@@ -50,7 +50,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.02';
+$VERSION = $VERSION = '1.0202';
 
 # 1011109.011 - Changes from Russ Southern (russ@dvns.com):
 ##             * Added $rl_vi_replace_default_on_insert
@@ -615,9 +615,9 @@ sub preinit
 		qq/"\cX\cR"/,	'ReReadInitFile',
 		qq/"\cX?"/,	'PossibleCompletions',
 		qq/"\cX*"/,	'InsertPossibleCompletions',
-		qq/"\cX\Cu"/,	'Undo',
+		qq/"\cX\cu"/,	'Undo',
 		qq/"\cXu"/,	'Undo',
-		qq/"\cX\Cw"/,	'KillRegion',
+		qq/"\cX\cw"/,	'KillRegion',
 		qq/"\cXw"/,	'CopyRegionAsKill',
 		'C-y',	'Yank',
 		'C-z',	'Suspend',
@@ -1630,10 +1630,10 @@ sub redisplay
 {
     ## local $line has prompt also; take that into account with $D.
     local($prompt) = defined($_[0]) ? $_[0] : $prompt;
-    my ($thislen, $have_ket);
+    my ($thislen, $have_bra);
     local($line) = $prompt . $line;
     local($D) = $D + length($prompt);
-    my ($have_bra);
+    my ($have_ket) = '';
 
     ##
     ## If the line contains anything that might require special processing

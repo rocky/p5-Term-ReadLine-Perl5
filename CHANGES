@@ -114,3 +114,6 @@ After 0.91:
 	Kill buffer is prepended or appended in natural manner.
 	Disable detection of Japanese multibyte characters - conflicts with
 		single-byte scripts.  Reenable by $readline::_rl_japanese_mb = 1.
+1.0201:	Warnings due to a misprint fixed (thanks to Tatsuhiko Miyagawa).
+1.0202:	Warnings on highlight of the right scroll mark '<' fixed
+	(thanks to Slaven Rezic).
