@@ -30,6 +30,12 @@ package readline;
 
 my $autoload_broken = 1;	# currently: defined does not work with a-l
 my $useioctl = 1;
+my $usestty = 1;
+my $max_include_depth = 10;     # follow $include's in init files this deep
+
+BEGIN {			# Some old systems have ioctl "unsupported"
+  *ioctl = sub ($$$) { eval { ioctl $_[0], $_[1], $_[2] } };
+}
 
 ##
 ## BLURB:
@@ -44,8 +50,10 @@ my $useioctl = 1;
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '0.9908';
+$VERSION = $VERSION = '1.02';
 
+# 1011109.011 - Changes from Russ Southern (russ@dvns.com):
+##             * Added $rl_vi_replace_default_on_insert
 # 1000510.010 - Changes from Joe Petolino (petolino@eng.sun.com), requested
 ##              by Ilya:
 ##
@@ -361,21 +369,40 @@ $rl_getc = \&rl_getc;
 ##   $rl_MaxHistorySize -- maximum size that the history array may grow.
 ##   $rl_screen_width -- width readline thinks it can use on the screen.
 ##   $rl_correct_sw -- is substructed from the real width of the terminal
-##   $rl_margin -- when moving to within this far from a margin, scrolls.
+##   $rl_margin -- scroll by moving to within this far from a margin.
 ##   $rl_CLEAR -- what to output to clear the screen.
 ##   $rl_max_numeric_arg -- maximum numeric arg allowed.
+##   $rl_vi_replace_default_on_insert
+##     Normally, the text you enter is added to any default text passed to
+##     readline.  If this variable is true, default text will start out 
+##     highlighted (if supported by your terminal) and text entered while the 
+##     default is highlighted (during the _first_ insert mode only) will 
+##     replace the entire default line.  Once you have left insert mode (hit 
+##     escape), everything works as normal.  
+##     - This is similar to many GUI controls' behavior, which select the 
+##       default text so that new text replaces the old.
+##     - Use with $rl_start_default_at_beginning for normal-looking behavior
+##       (though it works just fine without it).
+##     Notes/Bugs: 
+##     - Control characters (like C-w) do not actually terminate this replace
+##       mode, for the same reason it does not work in emacs mode.
+##     - Spine-crawlingly scary subroutine redefinitions
+##   $rl_mark - start of the region
+##   $line_rl_mark - the line on which $rl_mark is active
+##   $_rl_japanese_mb - For character movement suppose Japanese (which?!)
+##     multi-byte encoding.  (How to make a sane default?)
 ##
 
 sub get_window_size
 {
     my $sig = shift;
     my ($num_cols,$num_rows);
-    
+
     if (defined $term_readkey) {
 	 ($num_cols,$num_rows) =  Term::ReadKey::GetTerminalSize($term_OUT);
 	 $rl_screen_width = $num_cols - $rl_correct_sw
 	   if defined($num_cols) && $num_cols;
-    } elsif (ioctl($term_IN,$TIOCGWINSZ,$winsz)) {
+    } elsif (defined $TIOCGWINSZ and &ioctl($term_IN,$TIOCGWINSZ,$winsz)) {
 	 ($num_rows,$num_cols) = unpack($winsz_t,$winsz);
 	 $rl_screen_width = $num_cols - $rl_correct_sw
 	   if defined($num_cols) && $num_cols;
@@ -385,7 +412,7 @@ sub get_window_size
 	$force_redraw = 1;
 	&redisplay();
     }
-    
+
     for $hook (@winchhooks) {
       eval {&$hook()}; warn $@ if $@ and $^W;
     }
@@ -393,6 +420,11 @@ sub get_window_size
     $SIG{'WINCH'} = "readline::get_window_size";
 }
 
+# Fix: case-sensitivity of inputrc on/off keywords in
+#      `set' commands. readline lib doesn't care about case.
+# changed case of keys 'On' and 'Off' to 'on' and 'off'
+# &rl_set changed so that it converts the value to
+# lower case before hash lookup.
 sub preinit
 {
     ## Set up the input and output handles
@@ -410,36 +442,6 @@ sub preinit
     $var_EditingMode{'vipos'}    = *vipos_keymap;
     $var_EditingMode{'visearch'} = *visearch_keymap;
 
-    ## not yet supported... always on
-    $var_InputMeta = 1;
-    $var_InputMeta{'Off'} = 0;
-    $var_InputMeta{'On'} = 1;
-
-    ## not yet supported... always on
-    $var_OutputMeta = 1;
-    $var_OutputMeta{'Off'} = 0;
-    $var_OutputMeta{'On'} = 1;
-
-    ## not yet supported... always off
-    $var_ConvertMeta = 0;
-    $var_ConvertMeta{'Off'} = 0;
-    $var_ConvertMeta{'On'} = 1;
-
-    ## not yet supported... always off
-    $var_MetaFlag = 0;
-    $var_MetaFlag{'Off'} = 0;
-    $var_MetaFlag{'On'} = 1;
-
-    ## not yet supported... always off
-    $var_MarkModifiedLines = 0;
-    $var_MarkModifiedLines{'Off'} = 0;
-    $var_MarkModifiedLines{'On'} = 1;
-
-    ## not yet supported... always off
-    $var_PreferVisibleBell = 0;
-    $var_PreferVisibleBell{'On'} = 1;
-    $var_PreferVisibleBell{'Off'} = 0;
-
     ## this is an addition. Very nice.
     $var_TcshCompleteMode = 0;
     $var_TcshCompleteMode{'On'} = 1;
@@ -448,6 +450,23 @@ sub preinit
     $var_CompleteAddsuffix = 1;
     $var_CompleteAddsuffix{'On'} = 1;
     $var_CompleteAddsuffix{'Off'} = 0;
+
+    ## not yet supported... always on
+    for ('InputMeta', 'OutputMeta') {
+	${"var_$_"} = 1;
+	${"var_$_"}{'Off'} = 0;
+	${"var_$_"}{'On'} = 1;
+    }
+
+    ## not yet supported... always off
+    for ('ConvertMeta', 'MetaFlag', 'MarkModifiedLines', 'PreferVisibleBell',
+	 'BlinkMatchingParen', 'VisibleStats', 'ShowAllIfAmbiguous',
+	 'PrintCompletionsHorizontally', 'MarkDirectories', 'ExpandTilde',
+	 'EnableKeypad', 'DisableCompletion', 'CompletionIgnoreCase') {
+	${"var_$_"} = 0;
+	${"var_$_"}{'Off'} = 0;
+	${"var_$_"}{'On'} = 1;
+    }
 
     # To conform to interface
     $minlength = 1 unless defined $minlength;
@@ -458,8 +477,9 @@ sub preinit
     $inDOS = $^O eq 'os2' || defined $ENV{OS2_SHELL} unless defined $inDOS;
     eval {
       require Term::ReadKey; $term_readkey++;
-    };
-    if ($@) {
+    } unless defined $ENV{PERL_RL_USE_TRK}
+	     and not $ENV{PERL_RL_USE_TRK};
+    unless ($term_readkey) {
       eval {require "ioctl.pl"}; ## try to get, don't die if not found.
       eval {require "sys/ioctl.ph"}; ## try to get, don't die if not found.
       eval {require "sgtty.ph"}; ## try to get, don't die if not found.
@@ -540,6 +560,7 @@ sub preinit
     $rl_correct_sw = ($inDOS ? 1 : 0);
 
     $rl_start_default_at_beginning = 0;
+    $rl_vi_replace_default_on_insert = 0;
     $rl_screen_width = 79; ## default
 
     $rl_completion_function = "rl_filename_list"
@@ -564,7 +585,7 @@ sub preinit
     $InputLocMsg = ' [initialization]';
     
     &InitKeymap(*emacs_keymap, 'SelfInsert', 'emacs_keymap',
-		($inDOS ? () : ('C-@',	'Ding') ),
+		($inDOS ? () : ('C-@',	'SetPoint') ),
 		'C-a',	'BeginningOfLine',
 		'C-b',	'BackwardChar',
 		'C-c',	'Interrupt',
@@ -590,9 +611,14 @@ sub preinit
 		##'C-v',	'QuotedInsert',
 		'C-v',	'HistorySearchForward',
 		'C-w',	'UnixWordRubout',
-		qq/"\cX\cX"/,	'ReReadInitFile',
+		qq/"\cX\cX"/,	'ExchangePointAndMark',
+		qq/"\cX\cR"/,	'ReReadInitFile',
 		qq/"\cX?"/,	'PossibleCompletions',
 		qq/"\cX*"/,	'InsertPossibleCompletions',
+		qq/"\cX\Cu"/,	'Undo',
+		qq/"\cXu"/,	'Undo',
+		qq/"\cX\Cw"/,	'KillRegion',
+		qq/"\cXw"/,	'CopyRegionAsKill',
 		'C-y',	'Yank',
 		'C-z',	'Suspend',
 		'C-\\',	'Ding',
@@ -650,7 +676,7 @@ sub preinit
 
 		# hpterm
 
-		($ENV{'TERM'} eq 'hpterm' ?
+		(($ENV{'TERM'} and $ENV{'TERM'} eq 'hpterm') ?
 		 (
 		  qq/"\eA"/,    'PreviousHistory',     # up    arrow
 		  qq/"\eB"/,    'NextHistory',	       # down  arrow
@@ -677,6 +703,10 @@ sub preinit
 		),
 		($inDOS ?
 		 (
+		  qq/"\0\2"/,  'SetMark', # 2: <Control>+<Space>
+		  qq/"\0\3"/,  'SetMark', # 3: <Control>+<@>
+		  qq/"\0\4"/,  'Yank',    # 4: <Shift>+<Insert>
+		  qq/"\0\5"/,  'KillRegion',    # 5: <Shift>+<Delete>
 		  qq/"\0\16"/, 'Undo', # 14: <Alt>+<Backspace>
 		  qq/"\0\23"/, 'RevertLine', # 19: <Alt>+<R>
 		  qq/"\0\24"/, 'TransposeWords', # 20: <Alt>+<T>
@@ -708,6 +738,7 @@ sub preinit
 		  qq/"\0\166"/, 'EndOfHistory', # 118: <Ctrl>+<Page Down>
 		  qq/"\0\167"/, 'BackwardKillLine', # 119: <Ctrl>+<Home>
 		  qq/"\0\204"/, 'BeginningOfHistory', # 132: <Ctrl>+<Page Up>
+		  qq/"\0\x92"/, 'CopyRegionAsKill', # 146: <Ctrl>+<Insert>
 		  qq/"\0\223"/, 'KillWord', # 147: <Ctrl>+<Delete>
 		 )
 		 : ( 'C-@',	'Ding')
@@ -743,7 +774,6 @@ sub preinit
 
 		'C-c',	'Interrupt',
 		'C-e',	'EmacsEditingMode',
-		'M-C-j','EmacsEditingMode',
 		'C-h',	'ViMoveCursor',
 		'C-l',	'ClearScreen',
 		"\n",	'ViAcceptLine',
@@ -821,7 +851,8 @@ sub preinit
 		'|',	'ViMoveCursor',
 		'~',	'ViToggleCase',
 
-		($inDOS ?
+		(($inDOS
+		  and (not $ENV{'TERM'} or $ENV{'TERM'} !~ /^(vt|xterm)/i)) ?
 		 (
 		  qq/"\0\110"/, 'ViPreviousHistory',   # 72: <Up arrow>
 		  qq/"\0\120"/, 'ViNextHistory',       # 80: <Down arrow>
@@ -830,25 +861,26 @@ sub preinit
 		  "\e",	        'ViCommandMode',
 		 ) :
 
-		($ENV{'TERM'} eq 'hpterm') ?
-		 (
-		  qq/"\eA"/,    'ViPreviousHistory',   # up    arrow
-		  qq/"\eB"/,    'ViNextHistory',       # down  arrow
-		  qq/"\eC"/,    'ForwardChar',	       # right arrow
-		  qq/"\eD"/,    'BackwardChar',	       # left  arrow
-		  qq/"\e\\*"/,  'ViAfterEsc',
-		 ) :
+		 (('M-C-j','EmacsEditingMode'),	# Conflicts with \e otherwise
+		  (($ENV{'TERM'} and $ENV{'TERM'} eq 'hpterm') ?
+		   (
+		    qq/"\eA"/,    'ViPreviousHistory',   # up    arrow
+		    qq/"\eB"/,    'ViNextHistory',       # down  arrow
+		    qq/"\eC"/,    'ForwardChar',	       # right arrow
+		    qq/"\eD"/,    'BackwardChar',	       # left  arrow
+		    qq/"\e\\*"/,  'ViAfterEsc',
+		   ) :
 
-		# Default
-		 (
-		  qq/"\e[A"/,   'ViPreviousHistory',	# up    arrow
-		  qq/"\e[B"/,   'ViNextHistory',	# down  arrow
-		  qq/"\e[C"/,   'ForwardChar',		# right arrow
-		  qq/"\e[D"/,   'BackwardChar',		# left  arrow
-		  qq/"\e\\*"/,  'ViAfterEsc', 
-		  qq/"\e[\\*"/, 'ViAfterEsc', 
-		 )
-		),
+		   # Default
+		   (
+		    qq/"\e[A"/,   'ViPreviousHistory',	# up    arrow
+		    qq/"\e[B"/,   'ViNextHistory',	# down  arrow
+		    qq/"\e[C"/,   'ForwardChar',		# right arrow
+		    qq/"\e[D"/,   'BackwardChar',		# left  arrow
+		    qq/"\e\\*"/,  'ViAfterEsc', 
+		    qq/"\e[\\*"/, 'ViAfterEsc', 
+		   )
+		))),
 	       );
 
     # Vi positioning commands (suffixed to vi commands like 'd').
@@ -887,7 +919,7 @@ sub preinit
 		  "\e",	        'ViPositionEsc',
 		 ) :
 
-		($ENV{'TERM'} eq 'hpterm') ?
+		($ENV{'TERM'} and $ENV{'TERM'} eq 'hpterm') ?
 		 (
 		  qq/"\eC"/,    'ForwardChar',	       # right arrow
 		  qq/"\eD"/,    'BackwardChar',	       # left  arrow
@@ -988,7 +1020,7 @@ sub preinit
 
 sub init
 {
-    if ($ENV{'TERM'} eq 'emacs' || $ENV{'TERM'} eq 'dumb') {
+    if ($ENV{'TERM'} and ($ENV{'TERM'} eq 'emacs' || $ENV{'TERM'} eq 'dumb')) {
 	$dumb_term = 1;
     } elsif (! -c $term_IN && $term_IN eq \*STDIN) { # Believe if it is given
     	$stdin_not_tty = 1;
@@ -1095,7 +1127,7 @@ sub actually_do_binding
     while (@keys) {
       if (defined($KeyMap[$key]) && ($KeyMap[$key] ne 'F_PrefixMeta')) {
 	warn "Warning$InputLocMsg: ".
-	  "Re-binding char #$key from [$KeyMap[$key]] to meta.\n" if $^W;
+	  "Re-binding char #$key from [$KeyMap[$key]] to meta for [@keys] => $func.\n" if $^W;
       }
       $KeyMap[$key] = 'F_PrefixMeta';
       $map = "$KeyMap{'name'}_$key";
@@ -1220,20 +1252,21 @@ sub rl_bind
     &actually_do_binding(@arr);
 }
 
-sub F_ReReadInitFile
-{
-    my ($file) = $ENV{'INPUTRC'};
-    $file = $ENV{'HOME'}."/.inputrc" unless defined $file;
-    return if !open(RC, $file);
+sub read_an_init_file {
+    my $file = shift;
+    my $include_depth = shift;
+    local *RC;
+    return unless open RC, "< $file";
     my (@action) = ('exec'); ## exec, skip, ignore (until appropriate endif)
     my (@level) = ();        ## if, else
 
+    local $/ = "\n";
     while (<RC>) {
-	s/^\s*//;
+	s/^\s+//;
 	next if m/^\s*(#|$)/;
 	$InputLocMsg = " [$file line $.]";
-	if (/^\$if\s+/) {
-	    my($test) = $';
+	if (/^\$if\s+(.*)/) {
+	    my($test) = $1;
 	    push(@level, 'if');
 	    if ($action[$#action] ne 'exec') {
 		## We're supposed to be skipping or ignoring this level,
@@ -1244,7 +1277,7 @@ sub F_ReReadInitFile
 		## The test is either "term=xxxx", or just a string that
 		## we compare to $rl_readline_name;
 		if ($test =~ /term=([a-z0-9]+)/) {
-		    $test = $1 eq $ENV{'TERM'};
+		    $test = ($ENV{'TERM'} && $1 eq $ENV{'TERM'});
 		} else {
 		    $test = $test =~ /^(perl|$rl_readline_name)\s*$/i;
 		}
@@ -1266,28 +1299,45 @@ sub F_ReReadInitFile
 		$action[$#action] = 'ignore'; ## otherwise, just IGNORE.
 	    }
 	    next;
+	} elsif (/^\$include\s+(\S+)/) {
+	    if ($include_depth > $max_include_depth) {
+		warn "Deep recursion in \$include directives in $file.\n";
+	    } else {
+		read_an_init_file($1, $include_depth + 1);
+	    }
 	} elsif ($action[$#action] ne 'exec') {
 	    ## skipping this one....
-	} elsif (m/\s*set\s+(\S+)\s+(\S*)\s*$/) {
+	# readline permits trailing comments in inputrc
+	# this seems to solve the warnings caused by trailing comments in the
+	# default /etc/inputrc on Mandrake Linux boxes.
+	} elsif (m/\s*set\s+(\S+)\s+(\S*)/) {	# Allow trailing comment
 	    &rl_set($1, $2, $file);
-	} elsif (m/^\s*(\S+):\s+("[^\"]*")\s*$/) {
+	} elsif (m/^\s*(\S+):\s+("[^\"]*")/) {	# Allow trailing comment
 	    &rl_bind($1, $2);
-	} elsif (m/^\s*(\S+):\s+(\S+)\s*$/) {
+	} elsif (m/^\s*(\S+):\s+(\S+)/) {	# Allow trailing comment
 	    &rl_bind($1, $2);
 	} else {
-	    chop;
+	    chomp;
 	    warn "\rWarning$InputLocMsg: Bad line [$_]\n" if $^W;
 	}
     }
     close(RC);
-    ##undef(&F_ReReadInitFile); ## you can do this if you're low on memory
+}
+
+sub F_ReReadInitFile
+{
+    my ($file) = $ENV{'INPUTRC'};
+    $file = "$ENV{'HOME'}/.inputrc" unless defined $file;
+    read_an_init_file($file, 0);
 }
 
 sub readline_dumb {
+	local $\ = '';
 	print $term_OUT $prompt;
+	local $/ = "\n";
 	return undef
           if !defined($line = $Term::ReadLine::Perl::term->get_line);
-	chop($line);
+	chomp($line);
 	$| = $oldbar;
 	select $old;
 	return $line;
@@ -1304,8 +1354,9 @@ sub readline
       if not $Term::ReadLine::registered and $Term::ReadLine::toloop
 	and defined &Tk::DoOneEvent;
     if ($stdin_not_tty) {
+	local $/ = "\n";
 	return undef if !defined($line = <$term_IN>);
-	chop($line);
+	chomp($line);
 	return $line;
     }
 
@@ -1338,7 +1389,7 @@ sub readline
     $line_for_revert = $line;
 
 # I don't think we need to do this, actually...
-#    while (ioctl(STDIN,$FIONREAD,$fion))
+#    while (&ioctl(STDIN,$FIONREAD,$fion))
 #    {
 #	local($n_chars_available) = unpack ($fionread_t, $fion);
 #	## print "n_chars = $n_chars_available\n";
@@ -1349,12 +1400,14 @@ sub readline
     $D = $rl_start_default_at_beginning ? 0 : length($line); ## set dot.
     $LastCommandKilledText = 0;     ## heck, was no last command.
     $lastcommand = '';		    ## Well, there you go.
+    $line_rl_mark = -1;
 
     ##
     ## some stuff for &redisplay.
     ##
     $lastredisplay = '';	## Was no last redisplay for this time.
     $lastlen = length($lastredisplay);
+    $lastpromptlen = 0;
     $lastdelta = 0;		## Cursor was nowhere
     $si = 0;			## Want line to start left-justified
     $force_redraw = 1;		## Want to display with brute force.
@@ -1363,7 +1416,6 @@ sub readline
         $dumb_term = 1;
 	return readline_dumb;
     }
-    &redisplay(); 		## Show the line (just prompt at this point).
 
     *KeyMap = $var_EditingMode;
     undef($AcceptLine);		## When set, will return its value.
@@ -1375,7 +1427,45 @@ sub readline
     undef $Vi_undo_all_state;
 
     # We need to do some additional initialization for vi mode.
-    &F_ViInput() if $KeyMap{'name'} eq 'vi_keymap';
+    # RS: bug reports/platform issues are welcome: russ@dvns.com
+    if ($KeyMap{'name'} eq 'vi_keymap'){
+        &F_ViInput();
+        if ($rl_vi_replace_default_on_insert){
+            local $^W=0;
+           my $Orig = $Term::ReadLine::Perl::term->ornaments(); 
+           eval {
+               # Term::ReadLine does not expose its $terminal, so make another
+               require Term::Cap;
+               my $terminal = Tgetent Term::Cap ({OSPEED=>9600});
+               # and be sure the terminal supports highlighting
+               $terminal->Trequire('mr');
+           };
+           if (!$@ and $Orig ne ',,,'){
+               $Term::ReadLine::Perl::term->ornaments
+                   (join(',', (split(/,/, $Orig))[0,1]) . ',mr,me') 
+           }
+            my $F_SelfInsert_Real = \&F_SelfInsert;
+            *F_SelfInsert = sub {
+               $Term::ReadLine::Perl::term->ornaments($Orig); 
+                &F_ViChangeEntireLine;
+                local $^W=0;
+                *F_SelfInsert = $F_SelfInsert_Real;
+                &F_SelfInsert;
+            };
+            my $F_ViEndInsert_Real = \&F_ViEndInsert;
+            *F_ViEndInsert = sub {
+               $Term::ReadLine::Perl::term->ornaments($Orig); 
+                local $^W=0;
+                *F_SelfInsert = $F_SelfInsert_Real;
+                *F_ViEndInsert = $F_ViEndInsert_Real;
+                &F_ViEndInsert;
+               $force_redraw = 1;
+               redisplay();
+            };
+        }
+    }
+
+    &redisplay();              ## Show the line (just prompt at this point).
 
     # pretend input if we 'Operate' on more than one line
     &F_OperateAndGetNext($rl_OperateCount) if $rl_OperateCount > 0;
@@ -1426,7 +1516,8 @@ sub SetTTY {
 #   system 'stty raw -echo';
 
     $sgttyb = ''; ## just to quiet "perl -w";
-  if ($useioctl && $^O ne 'solaris' && ioctl($term_IN,$TIOCGETP,$sgttyb)) {
+  if ($useioctl && $^O ne 'solaris' && defined $TIOCGETP
+      && &ioctl($term_IN,$TIOCGETP,$sgttyb)) {
     @tty_buf = unpack($sgttyb_t,$sgttyb);
     if (defined $ENV{OS2_SHELL}) {
       $tty_buf[3] &= ~$mode;
@@ -1436,7 +1527,9 @@ sub SetTTY {
       $tty_buf[4] &= ~$ECHO;
     }
     $sgttyb = pack($sgttyb_t,@tty_buf);
-    ioctl($term_IN,$TIOCSETP,$sgttyb) || die "Can't ioctl TIOCSETP: $!";
+    &ioctl($term_IN,$TIOCSETP,$sgttyb) || die "Can't ioctl TIOCSETP: $!";
+  } elsif (!$usestty) {
+    return 0;
   } else {
      warn <<EOW if $useioctl and not defined $ENV{PERL_READLINE_NOWARN};
 Can't ioctl TIOCGETP: $!
@@ -1450,7 +1543,7 @@ in your environment.
 EOW
 					# '; # For Emacs. 
      $useioctl = 0;
-     system 'stty raw -echo' and die "Cannot call `stty': $!";
+     system 'stty raw -echo' and ($usestty = 0, die "Cannot call `stty': $!");
   }
   return 1;
 }
@@ -1464,7 +1557,7 @@ sub ResetTTY {
 
 #   system 'stty -raw echo';
   if ($useioctl) {
-    ioctl($term_IN,$TIOCGETP,$sgttyb) || die "Can't ioctl TIOCGETP: $!";
+    &ioctl($term_IN,$TIOCGETP,$sgttyb) || die "Can't ioctl TIOCGETP: $!";
     @tty_buf = unpack($sgttyb_t,$sgttyb);
     if (defined $ENV{OS2_SHELL}) {
       $tty_buf[3] |= $mode;
@@ -1474,8 +1567,8 @@ sub ResetTTY {
       $tty_buf[4] |= $ECHO;
     }
     $sgttyb = pack($sgttyb_t,@tty_buf);
-    ioctl($term_IN,$TIOCSETP,$sgttyb) || die "Can't ioctl TIOCSETP: $!";
-  } else {
+    &ioctl($term_IN,$TIOCSETP,$sgttyb) || die "Can't ioctl TIOCSETP: $!";
+  } elsif ($usestty) {
     system 'stty -raw echo' and die "Cannot call `stty': $!";
   }
 }
@@ -1484,26 +1577,35 @@ sub ResetTTY {
 # face-change commands
 
 sub substr_with_props {
-  my ($p, $s, $from, $len) = @_;
+  my ($p, $s, $from, $len, $ket) = @_;
   my $lp = length $p;
 
   defined $from or $from = 0;
   defined $len or $len = length($p) + length($s) - $from;
-
-  $p =~ s/^(\s*)//; my $bs = $1;
-  $p =~ s/(\s*)$//; my $as = $1;
+  $ket = '' if $len < length($p) + length($s) - $from; # Not redrawn
 
   if ($from >= $lp) {
-    return $rl_term_set->[2] . substr($s, $from - $lp, $len) 
-      . $rl_term_set->[3];
-  } elsif ($from + $len <= $lp) {
-    return $bs . $rl_term_set->[0] . substr($p, $from, $len) 
-      . $rl_term_set->[1] . $as;
+    $p = '';
+    $s = substr $s, $from - $lp;
+    $lp = 0;
   } else {
-    return $bs . $rl_term_set->[0] . substr($p, $from, $lp - $from) 
-      . $rl_term_set->[1] . $as
-	. $rl_term_set->[2] . substr($s, 0, $from + $len - $lp) 
-	  . $rl_term_set->[3];
+    $p = substr $p, $from;
+    $lp -= $from;
+    $from = 0;
+  }
+  $s = substr $s, 0, $len - $lp;
+  $p =~ s/^(\s*)//; my $bs = $1;
+  $p =~ s/(\s*)$//; my $as = $1;
+  $ket = chop $s if $ket;
+
+  if (!$lp) {			# Should not happen...
+    return $rl_term_set->[2] . $s . $rl_term_set->[3];
+  } elsif (!length $s) {	# Should not happen
+    return $bs . $rl_term_set->[0] . $p . $rl_term_set->[1] . $as;
+  } else {			# Do not underline spaces in the prompt
+    return $bs . $rl_term_set->[0] . $p . $rl_term_set->[1] . $as
+      . $rl_term_set->[2] . $s . $rl_term_set->[3] 
+	. (length $ket ? ($rl_term_set->[0] . $ket . $rl_term_set->[1]) : '');
   }
 }
 
@@ -1528,9 +1630,10 @@ sub redisplay
 {
     ## local $line has prompt also; take that into account with $D.
     local($prompt) = defined($_[0]) ? $_[0] : $prompt;
-    my $oline;
+    my ($thislen, $have_ket);
     local($line) = $prompt . $line;
     local($D) = $D + length($prompt);
+    my ($have_bra);
 
     ##
     ## If the line contains anything that might require special processing
@@ -1583,22 +1686,27 @@ sub redisplay
     ##
     if ($D == length($prompt)) {
 	$si = 0;   ## display from the beginning....
-    } elsif ($si >= $D) {
+    } elsif ($si >= $D) {	# point to the left
 	$si = &max(0, $D - $rl_margin);
-	$si-- if $si != length($prompt) && !&OnSecondByte($si);
-    } elsif ($si + $rl_screen_width <= $D) {
+	$si-- if $si > 0 && $si != length($prompt) && !&OnSecondByte($si);
+    } elsif ($si + $rl_screen_width <= $D) { # Point to the right
 	$si = &min(length($line), ($D - $rl_screen_width) + $rl_margin);
-	$si-- if $si != length($prompt) && !&OnSecondByte($si);
+	$si-- if $si > 0 && $si != length($prompt) && !&OnSecondByte($si);
+    } elsif (length($line) - $si < $rl_screen_width - $rl_margin and $si) {
+        # Too little of the line shown
+        $si = &max(0, length($line) - $rl_screen_width + 3);
+	$si-- if $si > 0 && $si != length($prompt) && !&OnSecondByte($si);
     } else {
 	## Fine as-is.... don't need to change $si.
     }
-    substr($line, $si, 1) = '<' if $si != 0; ## put the "chopped-off" marker
+    $have_bra = 1 if $si != 0; # Need the "chopped-off" marker
 
     $thislen = &min(length($line) - $si, $rl_screen_width);
     if ($si + $thislen < length($line)) {
 	## need to place a '>'... make sure to place on first byte.
 	$thislen-- if &OnSecondByte($si+$thislen-1);
 	substr($line, $si+$thislen-1,1) = '>';
+	$have_ket = 1;
     }
 
     ##
@@ -1608,17 +1716,21 @@ sub redisplay
     ##
     $line = substr($line, $si, $thislen);
     $delta = $D - $si;	## delta is cursor distance from left margin.
-    if ($si > length($prompt)) {
-      $prompt = "";
-      $oline = $line;
+    if ($si >= length($prompt)) { # Keep $line for $lastredisplay...
+      $prompt = ($have_bra ? "<" : "");
+      $line = substr $line, 1;	# After prompt
     } else {
-      $oline = substr($line, (length $prompt) - $si);
+      $line = substr($line, (length $prompt) - $si);
       $prompt = substr($prompt,$si);
+      substr($prompt, 0, 1) = '<' if $si > 0;
     }
+    # Now $line is the part after the prompt...
 
     ##
     ## Now must output $line, with cursor $delta spaces from left margin.
     ##
+
+    local ($\, $,) = ('','');
 
     ##
     ## If $force_redraw is not set, we can attempt to optimize the redisplay
@@ -1630,11 +1742,12 @@ sub redisplay
 	## can try to optimize here a bit.
 
 	## For when we only need to move the cursor
-	if ($lastredisplay eq $line) {
+	if ($lastredisplay eq $line and $lastpromptlen == length $prompt) {
 	    ## If we need to move forward, just overwrite as far as we need.
 	    if ($lastdelta < $delta) {
-		print $term_OUT (substr_with_props($prompt, $oline, $lastdelta, $delta-$lastdelta));
-
+		print $term_OUT 
+		  substr_with_props($prompt, $line,
+				    $lastdelta, $delta-$lastdelta, $have_ket);
 	    ## Need to move back.
 	    } elsif($lastdelta > $delta) {
 		## Two ways to move back... use the fastest. One is to just
@@ -1643,10 +1756,13 @@ sub redisplay
 		if ($lastdelta - $delta < $delta) {
 		    print $term_OUT "\b" x ($lastdelta - $delta);
 		} else {
-		    print $term_OUT "\r", substr_with_props($prompt, $oline, 0, $delta);
+		    print $term_OUT "\r",
+		      substr_with_props($prompt, $line, 0, $delta, $have_ket);
 		}
 	    }
-	    ($lastlen, $lastredisplay, $lastdelta) = ($thislen, $line, $delta);
+	    ($lastlen, $lastredisplay, $lastdelta, $lastpromptlen)
+	      = ($thislen, $line, $delta, length $prompt);
+	    # print $term_OUT "\a"; # Debugging
 	    return;
 	}
 
@@ -1654,10 +1770,14 @@ sub redisplay
 	if ($thislen > $lastlen &&
 	    $lastdelta == $lastlen &&
 	    $delta == $thislen &&
-	    substr($line, 0, $lastlen) eq $lastredisplay)
+	    $lastpromptlen == length($prompt) &&
+	    substr($line, 0, $lastlen - $lastpromptlen) eq $lastredisplay)
 	{
-	    print $term_OUT (substr_with_props($prompt, $oline, $lastdelta));
-	    ($lastlen, $lastredisplay, $lastdelta) = ($thislen, $line, $delta);
+	    print $term_OUT substr_with_props($prompt, $line,
+					      $lastdelta, undef, $have_ket);
+	    # print $term_OUT "\a"; # Debugging
+	    ($lastlen, $lastredisplay, $lastdelta, $lastpromptlen)
+	      = ($thislen, $line, $delta, length $prompt);
 	    return;
 	}
 
@@ -1669,13 +1789,14 @@ sub redisplay
     ## Brute force method of redisplaying... redraw the whole thing.
     ##
 
-    print $term_OUT "\r", substr_with_props($prompt, $oline);
+    print $term_OUT "\r", substr_with_props($prompt, $line, 0, undef, $have_ket);
     print $term_OUT ' ' x ($lastlen - $thislen) if $lastlen > $thislen;
 
-    print $term_OUT "\r",substr_with_props($prompt, $oline, 0, $delta)
+    print $term_OUT "\r",substr_with_props($prompt, $line, 0, $delta, $have_ket)
 	if $delta != length ($line) || $lastlen > $thislen;
 
-    ($lastlen, $lastredisplay, $lastdelta) = ($thislen, $line, $delta);
+    ($lastlen, $lastredisplay, $lastdelta, $lastpromptlen)
+      = ($thislen, $line, $delta, length $prompt);
 
     $force_redraw = 0;
 }
@@ -1757,6 +1878,7 @@ sub F_AcceptLine
 {
     &add_line_to_history;
     $AcceptLine = $line;
+    local $\ = '';
     print $term_OUT "\r\n";
 }
 
@@ -1886,6 +2008,9 @@ sub rl_set
 {
     local($var, $val) = @_;
 
+    # &preinit's keys are all Capitalized
+    $val = ucfirst lc $val;
+
     $var = 'CompleteAddsuffix' if $var eq 'visible-stats';
 
     ## if the variable is in the form "some-name", change to "SomeName"
@@ -1917,7 +2042,7 @@ sub rl_set
 ##
 sub OnSecondByte
 {
-    return 0 if $_[0] == 0 || $_[0] == length($line);
+    return 0 if !$_rl_japanese_mb || $_[0] == 0 || $_[0] == length($line);
 
     die 'internal error' if $_[0] > length($line);
 
@@ -1950,7 +2075,8 @@ sub OnSecondByte
 ##
 sub CharSize
 {
-    return 2 if ord(substr($line, $_[0],   1)) >= 0x80 &&
+    return 2 if $_rl_japanese_mb &&
+		ord(substr($line, $_[0],   1)) >= 0x80 &&
                 ord(substr($line, $_[0]+1, 1)) >= 0x80;
     1;
 }
@@ -1958,7 +2084,7 @@ sub CharSize
 sub GetTTY
 {
     $base_termios = $termios;  # make it long enough
-    ioctl($term_IN,$TCGETS,$base_termios) || die "Can't ioctl TCGETS: $!";
+    &ioctl($term_IN,$TCGETS,$base_termios) || die "Can't ioctl TCGETS: $!";
 }
 
 sub XonTTY
@@ -1966,8 +2092,8 @@ sub XonTTY
     # I don't know which of these I actually need to do this to, so we'll
     # just cover all bases.
 
-    ioctl($term_IN,$TCXONC,$TCOON);    # || die "Can't ioctl TCXONC STDIN: $!";
-    ioctl($term_OUT,$TCXONC,$TCOON);   # || die "Can't ioctl TCXONC STDOUT: $!";
+    &ioctl($term_IN,$TCXONC,$TCOON);    # || die "Can't ioctl TCXONC STDIN: $!";
+    &ioctl($term_OUT,$TCXONC,$TCOON);   # || die "Can't ioctl TCXONC STDOUT: $!";
 }
 
 sub ___SetTTY
@@ -1990,7 +2116,7 @@ sub ___SetTTY
     $termios[$TERMIOS_VMIN] = 1;
     $termios[$TERMIOS_VTIME] = 0;
     $termios = pack($termios_t,@termios);
-    ioctl($term_IN,$TCSETS,$termios) || die "Can't ioctl TCSETS: $!";
+    &ioctl($term_IN,$TCSETS,$termios) || die "Can't ioctl TCSETS: $!";
 
 # print "after SetTTY\n\r";
 # system 'stty -a';
@@ -2017,7 +2143,7 @@ sub ___ResetTTY
     $termios[$TERMIOS_LFLAG] |= $TERMIOS_NORMAL_LON;
     $termios[$TERMIOS_LFLAG] &= ~$TERMIOS_NORMAL_LOFF;
     $termios = pack($termios_t,@termios);
-    ioctl($term_IN,$TCSETS,$termios) || die "Can't ioctl TCSETS: $!";
+    &ioctl($term_IN,$TCSETS,$termios) || die "Can't ioctl TCSETS: $!";
 
 # print "after ResetTTY\n\r";
 # system 'stty -a';
@@ -2048,9 +2174,13 @@ sub kill_text
     my($from, $to, $save) = (&min($_[0], $_[1]), &max($_[0], $_[1]), $_[2]);
     my $len = $to - $from;
     if ($save) {
-	$ThisCommandKilledText = 1;
 	$KillBuffer = '' if !$LastCommandKilledText;
-	$KillBuffer .= substr($line, $from, $len);
+	if ($from < $LastCommandKilledText - 1) {
+	  $KillBuffer = substr($line, $from, $len) . $KillBuffer;
+	} else {
+	  $KillBuffer .= substr($line, $from, $len);
+	}
+	$ThisCommandKilledText = 1 + $from;
     }
     substr($line, $from, $len) = '';
 
@@ -2172,6 +2302,7 @@ sub F_ClearScreen
     return &F_RedrawCurrentLine if $count != 1;
 
     $rl_CLEAR = `clear` if !defined($rl_CLEAR);
+    local $\ = '';
     print $term_OUT $rl_CLEAR;
     $force_redraw = 1;
 }
@@ -2655,6 +2786,7 @@ sub F_EmacsEditingMode
 ##
 sub F_Interrupt
 {
+    local $\ = '';
     print $term_OUT "\r\n";
     &ResetTTY;
     kill ("INT", 0);
@@ -2743,6 +2875,7 @@ sub F_Suspend
 	$AcceptLine = $ReturnEOF = 1 if $lastcommand ne 'F_DeleteChar';
 	return;
     }
+    local $\ = '';
     print $term_OUT "\r\n";
     &ResetTTY;
     eval { kill ("TSTP", 0) };
@@ -2756,6 +2889,7 @@ sub F_Suspend
 ## Should do something with $var_PreferVisibleBell here, but what?
 ##
 sub F_Ding {
+    local $\ = '';
     print $term_OUT "\007";
     return;    # Undefined return value
 }
@@ -2929,6 +3063,7 @@ sub complete_internal
 	}
     } elsif ($what_to_do eq '?') {
 	shift(@matches); ## remove prepended common prefix
+	local $\ = '';
 	print $term_OUT "\n\r";
 	# print "@matches\n\r";
 	&pretty_print_list (@matches);
@@ -3064,6 +3199,7 @@ sub pretty_print_list
     $columns-- while ((($lines * $columns) - @list + 1) > $lines);
 
     $mark = $#list - $lines;
+    local $\ = '';
     for ($l = 0; $l < $lines; $l++) {
 	for ($index = $l; $index <= $mark; $index += $lines) {
 	    printf("%-$ {maxwidth}s", $list[$index]);
@@ -3338,6 +3474,7 @@ sub F_ViBackwardDeleteChar {
 ##
 sub F_ViSaveLine
 {
+    local $\ = '';
     $line = '#'.$line;
     &redisplay();
     print $term_OUT "\r\n";
@@ -3490,6 +3627,7 @@ sub F_ViPrintHistory {
     my $lspace = ' ' x ($lmh+3);
     my $hdr = "$lspace----- (Use '<num>G' to retrieve command <num>) -----\n";
 
+    local ($\, $,) = ('','');
     print "\n", $hdr;
     print $lspace, ". . .\n" if $start > 0;
     my $i;
@@ -3882,6 +4020,34 @@ sub F_ViPossibleCompletions {
     # Enter input mode with cursor where we left off.
     &F_ForwardChar(1);
     &vi_input_mode;
+}
+
+sub F_SetMark {
+    $rl_mark = $D;
+    $line_rl_mark = $rl_HistoryIndex;
+}
+
+sub F_ExchangePointAndMark {
+    return F_Ding unless $line_rl_mark == $rl_HistoryIndex;
+    ($rl_mark, $D) = ($D, $rl_mark);
+    $D = length $line if $D > length $line;
+}
+
+sub F_KillRegion {
+    return F_Ding unless $line_rl_mark == $rl_HistoryIndex;
+    $rl_mark = length $line if $rl_mark > length $line;
+    kill_text($rl_mark, $D, 1);
+    $line_rl_mark = -1;		# Disable mark
+}
+
+sub F_CopyRegionAsKill {
+    return F_Ding unless $line_rl_mark == $rl_HistoryIndex;
+    $rl_mark = length $line if $rl_mark > length $line;
+    my ($s, $e) = ($rl_mark, $D);
+    ($s, $e) = ($e, $s) if $s > $e;
+    $ThisCommandKilledText = 1 + $s;
+    $KillBuffer = '' if !$LastCommandKilledText;
+    $KillBuffer .= substr($line, $s, $e - $s);
 }
 
 1;

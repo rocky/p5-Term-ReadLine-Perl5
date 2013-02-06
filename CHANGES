@@ -90,3 +90,27 @@ After 0.91:
 	Advice users to look into *this* file for features...
 	Joe.Petolino@Eng.Sun.COM added vi support (untested).
 	Remove .gz-ness from Makefile.PL.
+1.00:	Ignore $/, $\, $,.
+	Handle $include in RC file (by Roland Walker and Alexander Kourakos).
+	Support "unsupported ioctl()".
+	$rl_vi_replace_default_on_insert (by Russ Southern).
+	Now we closely match the new syntax of .inputrc (by David Wollmann).
+	Allow setenv PERL_RL_USE_TRK=0 to disable usage of Term::ReadKey.
+	With $inDOS vicmd_map had conflicting definitions for #27.
+	Removed spurious warnings from failing ioctl and stty.
+1.01:	Allow unset TERM.
+	Wrong display and warnings if UP/DOWN reach a short line from a
+		scrolled line
+	Highlight the h-scroll indicators "<" ">" same as the prompt.
+	Draw h-scroll indicator "<" even if a part of the prompt is shown.
+	Scroll right if more than $rl_margin empty space is on the right.
+1.02:	Move reread-init to C-x C-r.  Make C-x u and C-x C-u do undo.
+	Set-mark:			C-@, Control-Space on PC.
+	Exchange-point-and-mark:	C-x C-x.
+	Kill-region:			C-x C-w (as in lynx).
+	Copy-region-as-kill:		C-x w   (kinda similar to Emacs).
+	On PC, the last 2 and yank also available on Shift-Del, Control-Insert,
+		Shift-Insert.
+	Kill buffer is prepended or appended in natural manner.
+	Disable detection of Japanese multibyte characters - conflicts with
+		single-byte scripts.  Reenable by $readline::_rl_japanese_mb = 1.

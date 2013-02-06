@@ -60,12 +60,15 @@ Note that as of 0.95 Term/ReadLine.pm is unbundled to make CPAN.pm happier.
 On the other hand, if you get newer Term/ReadLine.pm (say, by installing
 newer Perl) you may get more features enabled.
 
-For most features of T::R::P one needs to look in the CHANGES file.
+For most features of T::R::P one needs to look in the CHANGES file, and the
+comments at the start of of readline/readline.pm.  Volunteers to make the
+corresponding OO interface into POD are welcome (wrappers are available in
+Term::ReadLine::Perl; see perl5db.pl for a sample usage of hairier features,
+such as accessing Readline variables and methods).
 
 AUTHOR BUGS
 ~~~~~~~~~~~
 Ilya Zakharevich
-ilya@math.ohio-state.edu
+cpan@ilyaz.org
 
-Std dstribution site: ftp://ftp.math.ohio-state.edu/pub/users/ilya/perl
-
+Std dstribution site: http://www.ilyaz.org/software/perl/modules

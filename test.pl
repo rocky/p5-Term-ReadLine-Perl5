@@ -2,6 +2,11 @@
 # If argument starts with /dev, use it as console
 BEGIN{ $ENV{PERL_RL} = 'Perl' };	# Do not test TR::Gnu !
 use Term::ReadLine;
+
+use Carp;
+$SIG{__WARN__} = sub { warn Carp::longmess(@_) };
+
+
 if (!@ARGV) {
   $term = new Term::ReadLine 'Simple Perl calc';
 } elsif ($ARGV[0] =~ m|^/dev|) {
