@@ -39,7 +39,7 @@ my $useioctl = 1;
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = 0.9906;
+$VERSION = $VERSION = 0.9907;
 
 ## 940817.008 - Added $var_CompleteAddsuffix.
 ##		Now recognizes window-change signals (at least on BSD).
@@ -415,7 +415,7 @@ sub preinit
     $rl_special_prefixes = '';
     ($rl_readline_name = $0) =~ s#.*[/\\]## if !defined($rl_readline_name);
 
-    @rl_History=() if !defined(@rl_History);
+    @rl_History=() if !(@rl_History);
     $rl_MaxHistorySize = 100 if !defined($rl_MaxHistorySize);
     $rl_max_numeric_arg = 200 if !defined($rl_max_numeric_arg);
     $rl_OperateCount = 0 if !defined($rl_OperateCount);
@@ -703,7 +703,7 @@ sub actually_do_binding
       }
       $KeyMap[$key] = 'F_PrefixMeta';
       $map = "$KeyMap{'name'}_$key";
-      InitKeymap(*$map, 'Ding', $map) if !defined(%$map);
+      InitKeymap(*$map, 'Ding', $map) if !(%$map);
       *KeyMap = *$map;
       $key = shift @keys;
       #&actually_do_binding($func, \@keys);
@@ -2235,7 +2235,7 @@ sub F_PrefixMeta
 {
     my($count, $keymap) = ($_[0], "$KeyMap{'name'}_$_[1]");
     ##print "F_PrefixMeta [$keymap]\n\r";
-    die "<internal error, $_[1]>" unless defined(%$keymap);
+    die "<internal error, $_[1]>" unless %$keymap;
     do_command(*$keymap, $count, ord(&$rl_getc));
 }
 

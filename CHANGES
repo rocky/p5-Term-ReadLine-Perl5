@@ -85,3 +85,4 @@ After 0.91:
 0.9905: (thanks to Wilson P. Snyder II wsnyder@maker.com)
 	Fix reverse search.
 0.9906: $readline::rl_getc added with the default value \&readline::rl_getc
+0.9907: remove defined() noise.
