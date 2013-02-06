@@ -52,7 +52,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = '1.0303';
+$VERSION = '1.04';
 
 
 $rl_getc = \&rl_getc;
