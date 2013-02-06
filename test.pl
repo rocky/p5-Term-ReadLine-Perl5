@@ -35,7 +35,7 @@ if (!@ARGV) {
   $no_print = $ARGV[0] eq '--no-print';
 }
 $prompt = "Enter arithmetic or Perl expression: ";
-if ((my $l = $ENV{PERL_RL_TEST_PROMPT_MINLEN} | 0) > length $prompt) {
+if ((my $l = $ENV{PERL_RL_TEST_PROMPT_MINLEN} || 0) > length $prompt) {
   $prompt =~ s/(?=:)/ ' ' x ($l - length $prompt)/e;
 }
 $OUT = $term->OUT || STDOUT;

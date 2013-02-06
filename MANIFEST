@@ -5,3 +5,5 @@ ReadLine/Perl.pm
 ReadLine/readline.pm
 README
 test.pl
+t/00test-pod.t
+t/10test-history.t
