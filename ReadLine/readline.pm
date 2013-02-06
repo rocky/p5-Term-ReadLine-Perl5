@@ -50,7 +50,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.0202';
+$VERSION = $VERSION = '1.0203';
 
 # 1011109.011 - Changes from Russ Southern (russ@dvns.com):
 ##             * Added $rl_vi_replace_default_on_insert
@@ -2009,7 +2009,7 @@ sub rl_set
     local($var, $val) = @_;
 
     # &preinit's keys are all Capitalized
-    $val = ucfirst lc $val;
+    $val = ucfirst lc $val if $val =~ /^(on|off)$/i;
 
     $var = 'CompleteAddsuffix' if $var eq 'visible-stats';
 

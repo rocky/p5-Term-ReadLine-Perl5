@@ -117,3 +117,5 @@ After 0.91:
 1.0201:	Warnings due to a misprint fixed (thanks to Tatsuhiko Miyagawa).
 1.0202:	Warnings on highlight of the right scroll mark '<' fixed
 	(thanks to Slaven Rezic).
+1.0203:	Unconditional titlecasing of .inputrc "values" broke settings with
+	values such as 'vi' etc (thanks to Russ Southern for a report).
