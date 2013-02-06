@@ -82,3 +82,5 @@ After 0.91:
 0.9904: (thanks to Alexander Kourakos <awk@bnt.com>)
         gave warnings for blank lines in my .inputrc
         showed underlined spaces in prompts (in xterm) which look ugly.
+0.9905: (thanks to Wilson P. Snyder II wsnyder@maker.com)
+	Fix reverse search.
