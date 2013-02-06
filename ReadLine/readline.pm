@@ -49,7 +49,7 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.0205';
+$VERSION = $VERSION = '1.0206';
 
 ##            - Changes from Slaven Rezic (slaven@rezic.de):
 ##		* reverted the usage of $ENV{EDITOR} to set startup mode
@@ -561,6 +561,7 @@ sub preinit
       $TERMIOS_VMIN = 5 + 4;
       $TERMIOS_VTIME = 5 + 5;
     }
+    $rl_delete_selection = 1;
     $rl_correct_sw = ($inDOS ? 1 : 0);
     $rl_scroll_nextline = 1 unless defined $rl_scroll_nextline;
     $rl_last_pos_can_backspace = ($inDOS ? 0 : 1) # Can backspace when the 
@@ -714,8 +715,8 @@ sub preinit
 		 (
 		  qq/"\0\2"/,  'SetMark', # 2: <Control>+<Space>
 		  qq/"\0\3"/,  'SetMark', # 3: <Control>+<@>
-		  qq/"\0\4"/,  'Yank',    # 4: <Shift>+<Insert>
-		  qq/"\0\5"/,  'KillRegion',    # 5: <Shift>+<Delete>
+		  qq/"\0\4"/,  'YankClipboard',    # 4: <Shift>+<Insert>
+		  qq/"\0\5"/,  'KillRegionClipboard',    # 5: <Shift>+<Delete>
 		  qq/"\0\16"/, 'Undo', # 14: <Alt>+<Backspace>
 		  qq/"\0\23"/, 'RevertLine', # 19: <Alt>+<R>
 		  qq/"\0\24"/, 'TransposeWords', # 20: <Alt>+<T>
@@ -747,7 +748,7 @@ sub preinit
 		  qq/"\0\166"/, 'EndOfHistory', # 118: <Ctrl>+<Page Down>
 		  qq/"\0\167"/, 'BackwardKillLine', # 119: <Ctrl>+<Home>
 		  qq/"\0\204"/, 'BeginningOfHistory', # 132: <Ctrl>+<Page Up>
-		  qq/"\0\x92"/, 'CopyRegionAsKill', # 146: <Ctrl>+<Insert>
+		  qq/"\0\x92"/, 'CopyRegionAsKillClipboard', # 146: <Ctrl>+<Insert>
 		  qq/"\0\223"/, 'KillWord', # 147: <Ctrl>+<Delete>
 		  qq/"\0#"/, 'PrintHistory', # Alt-H
 		 )
@@ -1379,7 +1380,6 @@ sub readline_dumb {
 	return $line;
 }
 
-
 ##
 ## This is it. Called as &readline'readline($prompt, $default),
 ## (DEFAULT can be omitted) the next input line is returned (undef on EOF).
@@ -1516,10 +1516,7 @@ sub readline
     }
 
     if ($rl_default_selected) {
-	get_ornaments_selected();
-	@$rl_term_set[2,3,4,5] = @$rl_term_set[4,5,2,3];
-	&redisplay();          ## Show the line, default inverted.
-	@$rl_term_set[2,3,4,5] = @$rl_term_set[4,5,2,3];
+	redisplay_high();
     } else {
 	&redisplay();          ## Show the line (prompt+default at this point).
     }
@@ -1542,13 +1539,15 @@ sub readline
 	$ThisCommandKilledText = 0;
 	##print "\n\rline is @$D:[$line]\n\r"; ##DEBUG
 	my $cmd = get_command($var_EditingMode, ord($input));
-	if ( $rl_first_char && $cmd =~ /^F_(SelfInsert|BackwardDeleteChar)$/
+	if ( $rl_first_char && $cmd =~ /^F_(SelfInsert$|Yank)/
 	     && length $line && $rl_default_selected ) {
+	  # (Backward)?DeleteChar specialcased in the code
 	    $line = '';
 	    $D = 0;
+	    $cmd = 'F_BackwardDeleteChar' if $cmd eq 'F_DeleteChar';
 	}
-	$rl_first_char = 0;
 	&$cmd(1, ord($input));			## actually execute input
+	$rl_first_char = 0;
 	*KeyMap = $var_EditingMode;           # JP: added
 
 	# In Vi command mode, don't position the cursor beyond the last
@@ -1647,7 +1646,7 @@ sub ResetTTY {
 # face-change commands
 
 sub substr_with_props {
-  my ($p, $s, $from, $len, $ket) = @_;
+  my ($p, $s, $from, $len, $ket, $bsel, $esel) = @_;
   my $lp = length $p;
 
   defined $from or $from = 0;
@@ -1656,6 +1655,7 @@ sub substr_with_props {
     warn 'bug in Term::ReadLine::Perl, please report to its author cpan@ilyaz.org';
     $ket = '';
   }
+  # We may draw over to put cursor in a correct position:
   $ket = '' if $len < length($p) + length($s) - $from; # Not redrawn
 
   if ($from >= $lp) {
@@ -1670,17 +1670,44 @@ sub substr_with_props {
   $s = substr $s, 0, $len - $lp;
   $p =~ s/^(\s*)//; my $bs = $1;
   $p =~ s/(\s*)$//; my $as = $1;
+  $p = $rl_term_set->[0] . $p . $rl_term_set->[1] if length $p;
+  $p = "$bs$p$as";
   $ket = chop $s if $ket;
+  if (defined $bsel and $bsel != $esel) {
+    $bsel = $len if $bsel > $len;
+    $esel = $len if $esel > $len;
+  }
+  if (defined $bsel and $bsel != $esel) {
+    get_ornaments_selected;
+    $bsel -= $lp; $esel -= $lp;
+    my ($pre, $sel, $post) =
+      (substr($s, 0, $bsel),
+       substr($s, $bsel, $esel-$bsel),
+       substr($s, $esel));
+    $pre  = $rl_term_set->[2] . $pre  . $rl_term_set->[3] if length $pre;
+    $sel  = $rl_term_set->[4] . $sel  . $rl_term_set->[5] if length $sel;
+    $post = $rl_term_set->[2] . $post . $rl_term_set->[3] if length $post;
+    $s = "$pre$sel$post"
+  } else {
+    $s = $rl_term_set->[2] . $s . $rl_term_set->[3] if length $s;
+  }
 
   if (!$lp) {			# Should not happen...
-    return $rl_term_set->[2] . $s . $rl_term_set->[3];
+    return $s;
   } elsif (!length $s) {	# Should not happen
-    return $bs . $rl_term_set->[0] . $p . $rl_term_set->[1] . $as;
+    return $p;
   } else {			# Do not underline spaces in the prompt
-    return $bs . $rl_term_set->[0] . $p . $rl_term_set->[1] . $as
-      . $rl_term_set->[2] . $s . $rl_term_set->[3] 
-	. (length $ket ? ($rl_term_set->[0] . $ket . $rl_term_set->[1]) : '');
+    return "$p$s"
+      . (length $ket ? ($rl_term_set->[0] . $ket . $rl_term_set->[1]) : '');
   }
+}
+
+sub redisplay_high {
+  get_ornaments_selected();
+  @$rl_term_set[2,3,4,5] = @$rl_term_set[4,5,2,3];
+  &redisplay();			## Show the line, default inverted.
+  @$rl_term_set[2,3,4,5] = @$rl_term_set[4,5,2,3];
+  $force_redraw = 1;
 }
 
 ##
@@ -1705,8 +1732,12 @@ sub redisplay
     ## local $line has prompt also; take that into account with $D.
     local($prompt) = defined($_[0]) ? $_[0] : $prompt;
     my ($thislen, $have_bra);
-    local($line) = $prompt . $line;
+    my($dline) = $prompt . $line;
     local($D) = $D + length($prompt);
+    my ($bsel, $esel);
+    if (defined pos $line) {
+      $bsel = (pos $line) + length $prompt;
+    }
     my ($have_ket) = '';
 
     ##
@@ -1714,13 +1745,13 @@ sub redisplay
     ## for displaying (such as tabs, control characters, etc.), we will
     ## take care of that now....
     ##
-    if ($line =~ m/[^\x20-\x7e]/)
+    if ($dline =~ m/[^\x20-\x7e]/)
     {
 	local($new, $Dinc, $c) = ('', 0);
 
-	## Look at each character of $line in turn.....
-        for ($i = 0; $i < length($line); $i++) {
-	    $c = substr($line, $i, 1);
+	## Look at each character of $dline in turn.....
+        for ($i = 0; $i < length($dline); $i++) {
+	    $c = substr($dline, $i, 1);
 
 	    ## A tab to expand...
 	    if ($c eq "\t") {
@@ -1738,13 +1769,15 @@ sub redisplay
 
 	    ## Bump over $D if this char is expanded and left of $D.
 	    $Dinc += length($c) - 1 if (length($c) > 1 && $i < $D);
+	    ## Bump over $bsel if this char is expanded and left of $bsel.
+	    $bsel += length($c) - 1 if (defined $bsel && length($c) > 1 && $i < $bsel);
 	}
-	$line = $new;
+	$dline = $new;
 	$D += $Dinc;
     }
 
     ##
-    ## Now $line is what we'd like to display.
+    ## Now $dline is what we'd like to display.
     ##
     ## If it's too long to fit on the line, we must decide what we can fit.
     ##
@@ -1753,6 +1786,8 @@ sub redisplay
     ## the line, we'll have to make sure that it's not on the first byte of
     ## a 2-byte character, 'cause we'll be placing a '<' marker there, and
     ## that would screw up the 2-byte character.
+    ##
+    ## $si is preserved between several displays (if possible).
     ##
     ## Similarly, if the line needs chopped off, we make sure that the
     ## placement of the tailing '>' won't screw up any 2-byte character in
@@ -1764,44 +1799,56 @@ sub redisplay
 	$si = &max(0, $D - $rl_margin);
 	$si-- if $si > 0 && $si != length($prompt) && !&OnSecondByte($si);
     } elsif ($si + $rl_screen_width <= $D) { # Point to the right
-	$si = &min(length($line), ($D - $rl_screen_width) + $rl_margin);
+	$si = &min(length($dline), ($D - $rl_screen_width) + $rl_margin);
 	$si-- if $si > 0 && $si != length($prompt) && !&OnSecondByte($si);
-    } elsif (length($line) - $si < $rl_screen_width - $rl_margin and $si) {
+    } elsif (length($dline) - $si < $rl_screen_width - $rl_margin and $si) {
         # Too little of the line shown
-        $si = &max(0, length($line) - $rl_screen_width + 3);
+        $si = &max(0, length($dline) - $rl_screen_width + 3);
 	$si-- if $si > 0 && $si != length($prompt) && !&OnSecondByte($si);
     } else {
 	## Fine as-is.... don't need to change $si.
     }
     $have_bra = 1 if $si != 0; # Need the "chopped-off" marker
 
-    $thislen = &min(length($line) - $si, $rl_screen_width);
-    if ($si + $thislen < length($line)) {
+    $thislen = &min(length($dline) - $si, $rl_screen_width);
+    if ($si + $thislen < length($dline)) {
 	## need to place a '>'... make sure to place on first byte.
 	$thislen-- if &OnSecondByte($si+$thislen-1);
-	substr($line, $si+$thislen-1,1) = '>';
+	substr($dline, $si+$thislen-1,1) = '>';
 	$have_ket = 1;
     }
 
     ##
     ## Now know what to display.
-    ## Must get substr($line, $si, $thislen) on the screen,
+    ## Must get substr($dline, $si, $thislen) on the screen,
     ## with the cursor at $D-$si characters from the left edge.
     ##
-    $line = substr($line, $si, $thislen);
+    $dline = substr($dline, $si, $thislen);
     $delta = $D - $si;	## delta is cursor distance from left margin.
-    if ($si >= length($prompt)) { # Keep $line for $lastredisplay...
+    if (defined $bsel) {
+      $bsel -= $si;
+      $esel = $delta;
+      ($bsel, $esel) = ($esel, $bsel) if $bsel > $esel;
+      $bsel = 0 if $bsel < 0;
+      if ($have_ket) {
+	$esel = $thislen - 1 if $esel > $thislen - 1;
+      } else {
+	$esel = $thislen if $esel > $thislen;
+      }
+    }
+    if ($si >= length($prompt)) { # Keep $dline for $lastredisplay...
       $prompt = ($have_bra ? "<" : "");
-      $line = substr $line, 1;	# After prompt
+      $dline = substr $dline, 1;	# After prompt
+      $bsel = 1 if defined $bsel and $bsel == 0;
     } else {
-      $line = substr($line, (length $prompt) - $si);
+      $dline = substr($dline, (length $prompt) - $si);
       $prompt = substr($prompt,$si);
       substr($prompt, 0, 1) = '<' if $si > 0;
     }
-    # Now $line is the part after the prompt...
+    # Now $dline is the part after the prompt...
 
     ##
-    ## Now must output $line, with cursor $delta spaces from left margin.
+    ## Now must output $dline, with cursor $delta spaces from left margin.
     ##
 
     local ($\, $,) = ('','');
@@ -1811,16 +1858,16 @@ sub redisplay
     ## However, if we don't happen to find an easy way to optimize, we just
     ## fall through to the brute-force method of re-drawing the whole line.
     ##
-    if (!$force_redraw)
+    if (not $force_redraw and not defined $bsel)
     {
 	## can try to optimize here a bit.
 
 	## For when we only need to move the cursor
-	if ($lastredisplay eq $line and $lastpromptlen == length $prompt) {
+	if ($lastredisplay eq $dline and $lastpromptlen == length $prompt) {
 	    ## If we need to move forward, just overwrite as far as we need.
 	    if ($lastdelta < $delta) {
 		print $term_OUT 
-		  substr_with_props($prompt, $line,
+		  substr_with_props($prompt, $dline,
 				    $lastdelta, $delta-$lastdelta, $have_ket);
 	    ## Need to move back.
 	    } elsif($lastdelta > $delta) {
@@ -1831,11 +1878,11 @@ sub redisplay
 		    print $term_OUT "\b" x ($lastdelta - $delta);
 		} else {
 		    print $term_OUT "\r",
-		      substr_with_props($prompt, $line, 0, $delta, $have_ket);
+		      substr_with_props($prompt, $dline, 0, $delta, $have_ket);
 		}
 	    }
 	    ($lastlen, $lastredisplay, $lastdelta, $lastpromptlen)
-	      = ($thislen, $line, $delta, length $prompt);
+	      = ($thislen, $dline, $delta, length $prompt);
 	    # print $term_OUT "\a"; # Debugging
 	    return;
 	}
@@ -1845,13 +1892,13 @@ sub redisplay
 	    $lastdelta == $lastlen &&
 	    $delta == $thislen &&
 	    $lastpromptlen == length($prompt) &&
-	    substr($line, 0, $lastlen - $lastpromptlen) eq $lastredisplay)
+	    substr($dline, 0, $lastlen - $lastpromptlen) eq $lastredisplay)
 	{
-	    print $term_OUT substr_with_props($prompt, $line,
+	    print $term_OUT substr_with_props($prompt, $dline,
 					      $lastdelta, undef, $have_ket);
 	    # print $term_OUT "\a"; # Debugging
 	    ($lastlen, $lastredisplay, $lastdelta, $lastpromptlen)
-	      = ($thislen, $line, $delta, length $prompt);
+	      = ($thislen, $dline, $delta, length $prompt);
 	    return;
 	}
 
@@ -1863,14 +1910,14 @@ sub redisplay
     ## Brute force method of redisplaying... redraw the whole thing.
     ##
 
-    print $term_OUT "\r", substr_with_props($prompt, $line, 0, undef, $have_ket);
+    print $term_OUT "\r", substr_with_props($prompt, $dline, 0, undef, $have_ket, $bsel, $esel);
     print $term_OUT ' ' x ($lastlen - $thislen) if $lastlen > $thislen;
 
-    print $term_OUT "\r",substr_with_props($prompt, $line, 0, $delta, $have_ket)
-	if $delta != length ($line) || $lastlen > $thislen;
+    print $term_OUT "\r",substr_with_props($prompt, $dline, 0, $delta, $have_ket, $bsel, $esel)
+	if $delta != length ($dline) || $lastlen > $thislen;
 
     ($lastlen, $lastredisplay, $lastdelta, $lastpromptlen)
-      = ($thislen, $line, $delta, length $prompt);
+      = ($thislen, $dline, $delta, length $prompt);
 
     $force_redraw = 0;
 }
@@ -1948,6 +1995,7 @@ sub savestate
 ##
 sub F_SelfInsert
 {
+    remove_selection();
     my ($count, $ord) = @_;
     my $text2add = pack('C', $ord) x $count;
     if ($InsertMode) {
@@ -1968,6 +2016,7 @@ sub F_AcceptLine
     $AcceptLine = $line;
     local $\ = '';
     print $term_OUT "\r\n";
+    $force_redraw = 0;
 }
 
 sub add_line_to_history
@@ -1987,6 +2036,20 @@ sub add_line_to_history
 
 	push(@rl_History, $line); ## tack new one on the end
     }
+}
+
+
+sub remove_selection {
+    if ( $rl_first_char && length $line && $rl_default_selected ) {
+      $line = '';
+      $D = 0;
+      return 1;
+    }
+    if ($rl_delete_selection and defined pos $line and $D != pos $line) {
+      kill_text(pos $line, $D);
+      return 1;
+    }
+    return;
 }
 
 #sub F_ReReadInitFile;
@@ -2044,6 +2107,10 @@ sub F_Suspend;
 sub F_Ding;
 sub F_PossibleCompletions;
 sub F_Complete;
+sub F_YankClipboard;
+sub F_CopyRegionAsKillClipboard;
+sub F_KillRegionClipboard;
+sub clipboard_set;
 
 # Comment next line and __DATA__ line below to disable the selfloader.
 
@@ -2106,8 +2173,10 @@ sub rl_set
     local($return) = undef;
     s/-(.)/\u$1/g;
 
+    # Skip unknown variables: 
+    return unless defined $ {'readline::'}{"var_$_"};
     local(*V) = $ {'readline::'}{"var_$_"};
-    if (!defined($V)) {
+    if (!defined($V)) {			# XXX Duplicate check?
 	warn("Warning$InputLocMsg:\n".
 	     "  Invalid variable `$var'\n") if $^W;
     } elsif (!defined($V{$val})) {
@@ -2437,6 +2506,8 @@ sub F_OperateAndGetNext
 ##
 sub F_BackwardDeleteChar
 {
+    return if remove_selection();
+
     my $count = shift;
     return F_DeleteChar(-$count) if $count < 0;
     my $oldD = $D;
@@ -2455,6 +2526,8 @@ sub F_BackwardDeleteChar
 ##
 sub F_DeleteChar
 {
+    return if remove_selection();
+
     my $count = shift;
     return F_DeleteBackwardChar(-$count) if $count < 0;
     if (length($line) == 0) {	# EOF sent (probably OK in DOS too)
@@ -2747,6 +2820,7 @@ sub TextInsert {
 
 sub F_Yank
 {
+    remove_selection();
     &TextInsert($_[0], $KillBuffer);
 }
 
@@ -4084,13 +4158,17 @@ sub F_ViPossibleCompletions {
 
 sub F_SetMark {
     $rl_mark = $D;
+    pos $line = $rl_mark;
     $line_rl_mark = $rl_HistoryIndex;
+    $force_redraw = 1;
 }
 
 sub F_ExchangePointAndMark {
     return F_Ding unless $line_rl_mark == $rl_HistoryIndex;
     ($rl_mark, $D) = ($D, $rl_mark);
+    pos $line = $rl_mark;
     $D = length $line if $D > length $line;
+    $force_redraw = 1;
 }
 
 sub F_KillRegion {
@@ -4108,6 +4186,70 @@ sub F_CopyRegionAsKill {
     $ThisCommandKilledText = 1 + $s;
     $KillBuffer = '' if !$LastCommandKilledText;
     $KillBuffer .= substr($line, $s, $e - $s);
+}
+
+sub clipboard_set {
+    my $in = shift;
+    if ($^O eq 'os2') {
+      eval {
+	require OS2::Process;
+	OS2::Process::ClipbrdText_set($in);
+	1
+      } and return;
+    }
+    my $mess;
+    if ($ENV{RL_CLCOPY_CMD}) {
+      $mess = "Writing to pipe `$ENV{RL_CLCOPY_CMD}'";
+      open COPY, "| $ENV{RL_CLCOPY_CMD}" or warn("$mess: $!"), return;
+    } elsif (defined $ENV{HOME}) {
+      $mess = "Writing to file `$ENV{HOME}/.rl_cutandpaste'";
+      open COPY, "> $ENV{HOME}/.rl_cutandpaste" or warn("$mess: $!"), return;
+    } else {
+      return;
+    }
+    print COPY $in;
+    close COPY or warn("$mess: closing $!");
+}
+
+sub F_CopyRegionAsKillClipboard {
+    return clipboard_set($line) unless $line_rl_mark == $rl_HistoryIndex;
+    &F_CopyRegionAsKill;
+    clipboard_set($KillBuffer);
+}
+
+sub F_KillRegionClipboard {
+    &F_KillRegion;
+    clipboard_set($KillBuffer);
+}
+
+sub F_YankClipboard
+{
+    remove_selection();
+    my $in;
+    if ($^O eq 'os2') {
+      eval {
+	require OS2::Process;
+	$in = OS2::Process::ClipbrdText();
+	$in =~ s/\n+$//;
+	$in =~ s/\r\n/\n/g;		# With old versions, or what?
+      }
+    } else {
+      my $mess;
+      if ($ENV{RL_PASTE_CMD}) {
+	$mess = "Reading from pipe `$ENV{RL_PASTE_CMD}'";
+	open PASTE, "$ENV{RL_PASTE_CMD} |" or warn("$mess: $!"), return;
+      } elsif (defined $ENV{HOME}) {
+	$mess = "Reading from file `$ENV{HOME}/.rl_cutandpaste'";
+	open PASTE, "< $ENV{HOME}/.rl_cutandpaste" or warn("$mess: $!"), return;
+      }
+      if ($mess) {
+	local $/;
+	$in = <PASTE>;
+	close PASTE or warn("$mess, closing: $!");
+      }
+    }
+    return &TextInsert($_[0], $in) if defined $in;
+    &TextInsert($_[0], $KillBuffer);
 }
 
 1;

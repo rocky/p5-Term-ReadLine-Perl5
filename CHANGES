@@ -146,3 +146,16 @@ After 0.91:
 	The edited line is saved when one moves to history.
 1.0205: Do not touch $ENV{HOME} unless defined.
 	$ENV{AUTOMATED_TESTING} to skip interactive tests.
+1.0206: Shift-Ins, Control-Ins, Shift-Del operate on clipboard (if available)
+		(currently native on OS/2 only, otherwise uses commands
+			$ENV{RL_PASTE_CMD}, $ENV{RL_CLCOPY_CMD}, or file
+			$ENV{HOME}/.rl_cutandpaste).
+	  In absense of mark, CopyRegionAsKillClipboard operates
+	    on the whole line
+	Completely ignore unknown variables in .inputrc.
+	Moving cursor should remove the highlight of initial string too.
+	Change some local() to my().
+	Region between point and mark is highlighted.
+	Commands SelfInsert, Yank*, *DeleteChar remove this region
+		if $rl_delete_selection is TRUE (default).
+			(Set mark again to insert without removing.)
