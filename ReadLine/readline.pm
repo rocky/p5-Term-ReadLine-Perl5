@@ -16,8 +16,7 @@
 ## Call rl_set to set mode variables yourself, as in
 ##	&readline'rl_set('TcshCompleteMode', 'On');
 ##
-## If $ENV{EDITOR} is a string containing the substring 'vi', we start in vi
-## input mode; otherwise start in emacs mode.  To override this behavior, do
+## To change the input mode (emacs or vi) use ~/.inputrc or call
 ## 	   &readline::rl_set('EditingMode', 'vi');
 ## 	or &readline::rl_set('EditingMode', 'emacs');
 ##
@@ -50,8 +49,13 @@ BEGIN {			# Some old systems have ioctl "unsupported"
 ## while writing this), and for Roland Schemers whose line_edit.pl I used
 ## as an early basis for this.
 ##
-$VERSION = $VERSION = '1.0203';
+$VERSION = $VERSION = '1.0204';
 
+##            - Changes from Slaven Rezic (slaven@rezic.de):
+##		* reverted the usage of $ENV{EDITOR} to set startup mode
+##		  only ~/.inputrc or an explicit call to rl_set should
+##		  be used to set startup mode
+##
 # 1011109.011 - Changes from Russ Southern (russ@dvns.com):
 ##             * Added $rl_vi_replace_default_on_insert
 # 1000510.010 - Changes from Joe Petolino (petolino@eng.sun.com), requested
@@ -111,7 +115,7 @@ $VERSION = $VERSION = '1.0203';
 ##		             of packing the fields into a string.
 ##
 ##		* F_AcceptLine(): Code moved to new sub add_line_to_history(),
-##			     so that it may be called by F_ViSaveLine()
+##			     so that it may be called by F_SaveLine()
 ##			     as well as by F_AcceptLine().
 ##
 ##		* F_QuotedInsert(): Calls getc_with_pending() instead of &$rl_getc().
@@ -558,6 +562,9 @@ sub preinit
       $TERMIOS_VTIME = 5 + 5;
     }
     $rl_correct_sw = ($inDOS ? 1 : 0);
+    $rl_scroll_nextline = 1 unless defined $rl_scroll_nextline;
+    $rl_last_pos_can_backspace = ($inDOS ? 0 : 1) # Can backspace when the 
+      unless defined $rl_last_pos_can_backspace;  # whole line is filled?
 
     $rl_start_default_at_beginning = 0;
     $rl_vi_replace_default_on_insert = 0;
@@ -638,6 +645,7 @@ sub preinit
 		'M-c',	'CapitalizeWord',
 		'M-d',	'KillWord',
 		'M-f',	'ForwardWord',
+		'M-h',	'PrintHistory',
 		'M-l',	'DownCaseWord',
 		'M-r',	'RevertLine',
 		'M-t',	'TransposeWords',
@@ -646,6 +654,7 @@ sub preinit
 		'M-y',	'YankPop',
 		"M-?",	'PossibleCompletions',
 		"M-TAB",	'TabInsert',
+		'M-#',	'SaveLine',
 		qq/"\e[A"/,  'previous-history',
 		qq/"\e[B"/,  'next-history',
 		qq/"\e[C"/,  'forward-char',
@@ -740,6 +749,7 @@ sub preinit
 		  qq/"\0\204"/, 'BeginningOfHistory', # 132: <Ctrl>+<Page Up>
 		  qq/"\0\x92"/, 'CopyRegionAsKill', # 146: <Ctrl>+<Insert>
 		  qq/"\0\223"/, 'KillWord', # 147: <Ctrl>+<Delete>
+		  qq/"\0#"/, 'PrintHistory', # Alt-H
 		 )
 		 : ( 'C-@',	'Ding')
 		)
@@ -780,13 +790,13 @@ sub preinit
 		"\r",	'ViAcceptLine',
 
 		' ',	'ViMoveCursor',
-		'#',	'ViSaveLine',
+		'#',	'SaveLine',
 		'$',	'ViMoveCursor',
 		'%',	'ViMoveCursor',
 		'*',    'ViInsertPossibleCompletions',
-		'+',	'ViNextHistory',
+		'+',	'NextHistory',
 		',',	'ViMoveCursor',
-		'-',	'ViPreviousHistory',
+		'-',	'PreviousHistory',
 		'.',	'ViRepeatLastCommand',
 		'/',	'ViSearch',
 
@@ -812,7 +822,7 @@ sub preinit
 		'E',	'ViMoveCursor',
 		'F',	'ViMoveCursor',
 		'G',	'ViHistoryLine',
-		'H',	'ViPrintHistory',
+		'H',	'PrintHistory',
 		'I',	'ViBeginInput',
 		'N',	'ViRepeatSearch',
 		'P',	'ViPutBefore',
@@ -835,8 +845,8 @@ sub preinit
 		'f',	'ViMoveCursorFind',
 		'h',	'ViMoveCursor',
 		'i',	'ViInput',
-		'j',	'ViNextHistory',
-		'k',	'ViPreviousHistory',
+		'j',	'NextHistory',
+		'k',	'PreviousHistory',
 		'l',	'ViMoveCursor',
 		'n',	'ViRepeatSearch',
 		'p',	'ViPut',
@@ -854,8 +864,8 @@ sub preinit
 		(($inDOS
 		  and (not $ENV{'TERM'} or $ENV{'TERM'} !~ /^(vt|xterm)/i)) ?
 		 (
-		  qq/"\0\110"/, 'ViPreviousHistory',   # 72: <Up arrow>
-		  qq/"\0\120"/, 'ViNextHistory',       # 80: <Down arrow>
+		  qq/"\0\110"/, 'PreviousHistory',   # 72: <Up arrow>
+		  qq/"\0\120"/, 'NextHistory',       # 80: <Down arrow>
 		  qq/"\0\113"/, 'BackwardChar',        # 75: <Left arrow>
 		  qq/"\0\115"/, 'ForwardChar',         # 77: <Right arrow>
 		  "\e",	        'ViCommandMode',
@@ -864,8 +874,8 @@ sub preinit
 		 (('M-C-j','EmacsEditingMode'),	# Conflicts with \e otherwise
 		  (($ENV{'TERM'} and $ENV{'TERM'} eq 'hpterm') ?
 		   (
-		    qq/"\eA"/,    'ViPreviousHistory',   # up    arrow
-		    qq/"\eB"/,    'ViNextHistory',       # down  arrow
+		    qq/"\eA"/,    'PreviousHistory',   # up    arrow
+		    qq/"\eB"/,    'NextHistory',       # down  arrow
 		    qq/"\eC"/,    'ForwardChar',	       # right arrow
 		    qq/"\eD"/,    'BackwardChar',	       # left  arrow
 		    qq/"\e\\*"/,  'ViAfterEsc',
@@ -873,8 +883,8 @@ sub preinit
 
 		   # Default
 		   (
-		    qq/"\e[A"/,   'ViPreviousHistory',	# up    arrow
-		    qq/"\e[B"/,   'ViNextHistory',	# down  arrow
+		    qq/"\e[A"/,   'PreviousHistory',	# up    arrow
+		    qq/"\e[B"/,   'NextHistory',	# down  arrow
 		    qq/"\e[C"/,   'ForwardChar',		# right arrow
 		    qq/"\e[D"/,   'BackwardChar',		# left  arrow
 		    qq/"\e\\*"/,  'ViAfterEsc', 
@@ -1010,8 +1020,7 @@ sub preinit
 	ord('E')  =>  q{.\s*\S*(?=\S)|.?\s*(?=\s$)},
     };
 
-    my $default_mode =
-	(defined $ENV{EDITOR} and $ENV{EDITOR} =~ /vi/) ? 'vi' : 'emacs';
+    my $default_mode = 'emacs';
 
     *KeyMap = $var_EditingMode = $var_EditingMode{$default_mode};
 
@@ -1331,6 +1340,30 @@ sub F_ReReadInitFile
     read_an_init_file($file, 0);
 }
 
+sub get_ornaments_selected {
+    return if @$rl_term_set >= 6;
+    local $^W=0;
+    my $Orig = $Term::ReadLine::Perl::term->ornaments(); 
+    eval {
+        # Term::ReadLine does not expose its $terminal, so make another
+        require Term::Cap;
+        my $terminal = Tgetent Term::Cap ({OSPEED=>9600});
+        # and be sure the terminal supports highlighting
+        $terminal->Trequire('mr');
+    };
+    if (!$@ and $Orig ne ',,,'){
+	my @set = @$rl_term_set;
+
+        $Term::ReadLine::Perl::term->ornaments
+            (join(',', (split(/,/, $Orig))[0,1]) . ',mr,me') ;
+        @set[4,5] = @$rl_term_set[2,3];
+        $Term::ReadLine::Perl::term->ornaments($Orig);
+	@$rl_term_set = @set;
+    } else {
+        @$rl_term_set[4,5] = @$rl_term_set[2,3];
+    }
+}
+
 sub readline_dumb {
 	local $\ = '';
 	print $term_OUT $prompt;
@@ -1367,6 +1400,20 @@ sub readline
 
     ## prompt should be given to us....
     $prompt = defined($_[0]) ? $_[0] : 'INPUT> ';
+
+    # Try to move cursor to the beginning of the next line if this line
+    # contains anything.
+
+    # On DOSish 80-wide console
+    #	perl -we "print 1 x shift, qq(\b2\r3); sleep 2" 79
+    # prints 3 on the same line,
+    #	perl -we "print 1 x shift, qq(\b2\r3); sleep 2" 80
+    # on the next; $rl_screen_width is 79.
+
+    # on XTerm one needs to increase the number by 1.
+
+    print $term_OUT ' ' x ($rl_screen_width - !$rl_last_pos_can_backspace) . "\b  \r"
+      if $rl_scroll_nextline;
 
     if ($dumb_term) {
 	return readline_dumb;
@@ -1465,20 +1512,40 @@ sub readline
         }
     }
 
-    &redisplay();              ## Show the line (just prompt at this point).
+    if ($rl_default_selected) {
+	get_ornaments_selected();
+	@$rl_term_set[2,3,4,5] = @$rl_term_set[4,5,2,3];
+	&redisplay();          ## Show the line, default inverted.
+	@$rl_term_set[2,3,4,5] = @$rl_term_set[4,5,2,3];
+    } else {
+	&redisplay();          ## Show the line (prompt+default at this point).
+    }
 
     # pretend input if we 'Operate' on more than one line
     &F_OperateAndGetNext($rl_OperateCount) if $rl_OperateCount > 0;
 
+    $rl_first_char = 1;
     while (!defined($AcceptLine)) {
 	## get a character of input
 	$input = &getc_with_pending(); # bug in debugger, returns 42. - No more!
 
+	unless (defined $input) {
+	  # XXX What to do???  Until this is clear, just pretend we got EOF
+	  $AcceptLine = $ReturnEOF = 1;
+	  last;
+	}
 	push(@undo, &savestate) unless $Vi_mode; ## save state so we can undo.
 
 	$ThisCommandKilledText = 0;
 	##print "\n\rline is @$D:[$line]\n\r"; ##DEBUG
-	&do_command($var_EditingMode, 1, ord($input)); ## actually execute input
+	my $cmd = get_command($var_EditingMode, ord($input));
+	if ( $rl_first_char && $cmd =~ /^F_(SelfInsert|BackwardDeleteChar)$/
+	     && length $line && $rl_default_selected ) {
+	    $line = '';
+	    $D = 0;
+	}
+	$rl_first_char = 0;
+	&$cmd(1, ord($input));			## actually execute input
 	*KeyMap = $var_EditingMode;           # JP: added
 
 	# In Vi command mode, don't position the cursor beyond the last
@@ -1582,6 +1649,10 @@ sub substr_with_props {
 
   defined $from or $from = 0;
   defined $len or $len = length($p) + length($s) - $from;
+  unless (defined $ket) {
+    warn "bug in Term::ReadLine::Perl, please report to its author";
+    $ket = '';
+  }
   $ket = '' if $len < length($p) + length($s) - $from; # Not redrawn
 
   if ($from >= $lp) {
@@ -1825,6 +1896,25 @@ sub rl_getc {
 }
 
 ##
+## get_command(keymap, numericarg, command)
+##
+## If the KEYMAP has an entry for COMMAND, it is returned.
+## Otherwise, the default command is returned.
+##
+sub get_command
+{
+    local *KeyMap = shift;
+    my ($key) = @_;
+    my $cmd = defined($KeyMap[$key]) ? $KeyMap[$key]
+                                     : ($KeyMap{'default'} || 'F_Ding');
+    if (!defined($cmd) || $cmd eq ''){
+	warn "internal error (key=$key)";
+	$cmd = 'F_Ding';
+    }
+    $cmd
+}
+
+##
 ## do_command(keymap, numericarg, command)
 ##
 ## If the KEYMAP has an entry for COMMAND, it is executed.
@@ -1832,16 +1922,11 @@ sub rl_getc {
 ##
 sub do_command
 {
-    local *KeyMap = shift;
-    my ($count, $key) = @_;
-    my $cmd = defined($KeyMap[$key]) ? $KeyMap[$key]
-                                     : ($KeyMap{'default'} || 'F_Ding');
-    if (!defined($cmd) || $cmd eq ''){
-	warn "internal error (key=$key)";
-    } else {
-	## print "COMMAND [$cmd($count, $key)]\r\n"; ##DEBUG
-	&$cmd($count, $key);
-    }
+    my ($keymap, $count, $key) = @_;
+    my $cmd = get_command($keymap, $key);
+
+    local *KeyMap = $keymap;		# &$cmd may expect it...
+    &$cmd($count, $key);
     $lastcommand = $cmd;
 }
 
@@ -2469,51 +2554,24 @@ sub F_TransposeChars
     }
 }
 
-##
-## Use the previous entry in the history buffer (if there is one)
-##
-sub F_PreviousHistory
-{
-    return if $rl_HistoryIndex == 0;
-
-    $rl_HistoryIndex--;
-    ($D, $line) = (0, $rl_History[$rl_HistoryIndex]);
-    &F_EndOfLine;
+sub F_PreviousHistory {
+    &get_line_from_history($rl_HistoryIndex - shift);
 }
 
-##
-## Use the next entry in the history buffer (if there is one)
-##
-sub F_NextHistory
-{
-    return if $rl_HistoryIndex > $#rl_History;
-
-    $rl_HistoryIndex++;
-    if ($rl_HistoryIndex > $#rl_History) {
-	$D = 0;
-	$line = '';
-    } else {
-	($D, $line) = (0, $rl_History[$rl_HistoryIndex]);
-	&F_EndOfLine;
-    }
+sub F_NextHistory {
+    &get_line_from_history($rl_HistoryIndex + shift);
 }
+
+
 
 sub F_BeginningOfHistory
 {
-    if ($rl_HistoryIndex != 0) {
-	$rl_HistoryIndex = 0;
-	($D, $line) = (0, $rl_History[$rl_HistoryIndex]);
-	&F_EndOfLine;
-    }
+    &get_line_from_history(0);
 }
 
 sub F_EndOfHistory
 {
-    if (@rl_History != 0 && $rl_HistoryIndex != $#rl_History) {
-	$rl_HistoryIndex = $#rl_History;
-	($D, $line) = (0, $rl_History[$rl_HistoryIndex]);
-	&F_EndOfLine;
-    }
+    &get_line_from_history(@rl_History);
 }
 
 sub F_ReverseSearchHistory
@@ -2816,12 +2874,13 @@ sub F_UniversalArgument
 ##
 sub F_DigitArgument
 {
-    my $ord = $_[1];
+    my $in = chr $_[1];
     my ($NumericArg, $sign, $explicit) = (1, 1, 0);
-    my $increment;
+    my ($increment, $ord);
 
     do
     {
+	$ord = ord $in;
 	if (defined($KeyMap[$ord]) && $KeyMap[$ord] eq 'F_UniversalArgument') {
 	    $NumericArg *= 4;
 	} elsif ($ord == ord('-') && !$explicit) {
@@ -2848,7 +2907,7 @@ sub F_DigitArgument
 	    $NumericArg = -$rl_max_numeric_arg;
 	}
 	&redisplay(sprintf("(arg %d) ", $NumericArg));
-    } while $ord = ord(&getc_with_pending);
+    } while defined($in = &getc_with_pending);
 }
 
 sub F_OverwriteMode
@@ -3472,7 +3531,7 @@ sub F_ViBackwardDeleteChar {
 ## Prepend line with '#', add to history, and clear the input buffer
 ##     (this feature was borrowed from ksh).
 ##
-sub F_ViSaveLine
+sub F_SaveLine
 {
     local $\ = '';
     $line = '#'.$line;
@@ -3481,7 +3540,7 @@ sub F_ViSaveLine
     &add_line_to_history;
     $line_for_revert = '';
     &get_line_from_history(scalar @rl_History);
-    &F_ViInput();
+    &F_ViInput() if $Vi_mode;
 }
 
 #
@@ -3580,14 +3639,6 @@ sub F_ViToggleCase {
     }
 }
 
-sub F_ViPreviousHistory {
-    &get_line_from_history($rl_HistoryIndex - 1);
-}
-
-sub F_ViNextHistory {
-    &get_line_from_history($rl_HistoryIndex + 1);
-}
-
 # Go to the numbered history line, as listed by the 'H' command, i.e. the
 #     current $line is line 1, the youngest line in @rl_History is 2, etc.
 sub F_ViHistoryLine {
@@ -3605,15 +3656,15 @@ sub get_line_from_history {
 
     # Get line from history buffer (or from saved edit line).
     $line = ($n == @rl_History) ? $line_for_revert : $rl_History[$n];
-    $D = 0;
+    $D = $Vi_mode ? 0 : length $line;
 
     # Subsequent 'U' will bring us back to this point.
-    $Vi_undo_all_state = &savestate;
+    $Vi_undo_all_state = &savestate if $Vi_mode;
 
     $rl_HistoryIndex = $n;
 }
 
-sub F_ViPrintHistory {
+sub F_PrintHistory {
     my($count) = @_;
 
     $count = 20 if $count == 1;             # Default - assume 'H', not '1H'
@@ -3625,16 +3676,19 @@ sub F_ViPrintHistory {
     my $lmh = length $rl_MaxHistorySize;
 
     my $lspace = ' ' x ($lmh+3);
-    my $hdr = "$lspace----- (Use '<num>G' to retrieve command <num>) -----\n";
+    my $hdr = "$lspace-----";
+    $hdr .= " (Use ESC <num> UP to retrieve command <num>) -----" unless $Vi_mode;
+    $hdr .= " (Use '<num>G' to retrieve command <num>) -----" if $Vi_mode;
 
     local ($\, $,) = ('','');
-    print "\n", $hdr;
+    print "\n$hdr\n";
     print $lspace, ". . .\n" if $start > 0;
     my $i;
+    my $shift = ($Vi_mode != 0);
     for $i ($start .. $end) {
 	print + ($i == $rl_HistoryIndex) ? '>' : ' ',
 
-		sprintf("%${lmh}d: ", @rl_History - $i + 1),
+		sprintf("%${lmh}d: ", @rl_History - $i + $shift),
 
 		($i < @rl_History)       ? $rl_History[$i] :
 		($i == $rl_HistoryIndex) ? $line           :
@@ -3643,11 +3697,11 @@ sub F_ViPrintHistory {
 		"\n";
     }
     print $lspace, ". . .\n" if $end < @rl_History;
-    print $hdr;
+    print "$hdr\n";
 
     &force_redisplay();
 
-    &F_ViInput() if $line eq '';
+    &F_ViInput() if $line eq '' && $Vi_mode;
 }
 
 # Redisplay the line, without attempting any optimization
@@ -3926,6 +3980,7 @@ sub F_ViCommandMode
 }
 
 sub F_ViAcceptInsert {
+    local $in_accept_line = 1;
     &F_ViEndInsert;
     &F_ViAcceptLine;
 }
@@ -3946,7 +4001,9 @@ sub F_ViEndInsert
 	}
     }
     &F_ViCommandMode;
-    &F_BackwardChar;
+    # Move cursor back to the last inserted character, but not when
+    # we're about to accept a line of input
+    &F_BackwardChar(1) unless $in_accept_line;
 }
 
 sub F_ViDigit {

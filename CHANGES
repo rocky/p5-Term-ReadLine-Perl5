@@ -119,3 +119,28 @@ After 0.91:
 	(thanks to Slaven Rezic).
 1.0203:	Unconditional titlecasing of .inputrc "values" broke settings with
 	values such as 'vi' etc (thanks to Russ Southern for a report).
+
+1.0204:	Applied patches from Gurusamy and Slaven for vi mode:
+		Logic to move insertion point one char back was wrong;
+		Disable (YES!) choice of vi-mode based on $ENV{EDITOR}.
+	Just in case: generate proper warning if an old $ket-bug resurrects.
+	If readkey() returns undef, behave as on EOF.
+	New option --no-print to test.pl.
+	Try to move prompt to the next line if something is already on the
+ 		current line (controlled by $rl_scroll_nextline, 
+		$rl_last_pos_can_backspace);
+		Wrong setting of $rl_last_pos_can_backspace will result:
+			a) 1 and wrong: empty line before the prompt;
+			b) 0 and wrong: if the line contains 1 char only,
+				(and no NL), the prompt will overwrite it;
+				test with `perl -Mblib test.pl --no-print',
+				type `print 1'.
+			[This is not the same as termcap/am!].
+	New variable $readline::rl_default_selected; if true, default string
+		is removed if the first keystroke is self-insert or BackSpace;
+			test.pl modified to test this too;
+		uses mr,me capabilities to highlight the default string.
+	New command: SaveLine (on M-#).
+	New command: PrintHistory (on M-h),
+	PreviousHistory and NextHistory take count.
+	The edited line is saved when one moves to history.
