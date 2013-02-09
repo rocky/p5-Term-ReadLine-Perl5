@@ -1,30 +1,5 @@
-##
-## Perl Readline -- The Quick Help
-## (see the manual for complete info)
-##
-## Once this package is included (require'd), you can then call
-##	$text = &readline'readline($input);
-## to get lines of input from the user.
-##
-## Normally, it reads ~/.inputrc when loaded... to suppress this, set
-## 	$readline'rl_NoInitFromFile = 1;
-## before requiring the package.
-##
-## Call rl_bind to add your own key bindings, as in
-##	&readline'rl_bind('C-L', 'possible-completions');
-##
-## Call rl_set to set mode variables yourself, as in
-##	&readline'rl_set('TcshCompleteMode', 'On');
-##
-## To change the input mode (emacs or vi) use ~/.inputrc or call
-## 	   &readline::rl_set('EditingMode', 'vi');
-## 	or &readline::rl_set('EditingMode', 'emacs');
-##
-## Call rl_basic_commands to set your own command completion, as in
-##      &readline'rl_basic_commands('print', 'list', 'quit', 'run', 'status');
-##
-##
-
+# -*- Perl -*-
+# POD doc after __END__
 # Wrap the code below (initially Perl4, now partially Perl4) into a fake
 # Perl5 pseudo-module; mismatch of package and file name is intentional
 # to make is harder to abuse this (very fragile) code...
@@ -39,19 +14,6 @@ BEGIN {			# Some old systems have ioctl "unsupported"
   *ioctl = sub ($$$) { eval { ioctl $_[0], $_[1], $_[2] } };
 }
 
-##
-## BLURB:
-## A pretty full-function package similar to GNU's readline.
-## Includes support for EUC-encoded Japanese text.
-##
-## Written by Jeffrey Friedl, Omron Corporation (jfriedl@omron.co.jp)
-##
-## Comments, corrections welcome.
-##
-## Thanks to the people at FSF for readline (and the code I referenced
-## while writing this), and for Roland Schemers whose line_edit.pl I used
-## as an early basis for this.
-##
 $VERSION = '1.04';
 
 
@@ -122,136 +84,6 @@ $rl_getc = \&rl_getc;
 # # # # my $Vi_search_re;       # Regular expression (compiled by qr{})
 # # # # my $Vi_search_reverse;  # True for '?' search, false for '/'
 
-
-##
-## What's Cool
-## ----------------------------------------------------------------------
-## * hey, it's in perl.
-## * Pretty full GNU readline like library...
-## *	support for ~/.inputrc
-## *    horizontal scrolling
-## *	command/file completion
-## *	rebinding
-## *	history (with search)
-## *	undo
-## *	numeric prefixes
-## * supports multi-byte characters (at least for the Japanese I use).
-## * Has a tcsh-like completion-function mode.
-##     call &readline'rl_set('tcsh-complete-mode', 'On') to turn on.
-##
-
-##
-## What's not Cool
-## ----------------------------------------------------------------------
-## Can you say HUGE?
-## I can't spell, so comments riddled with misspellings.
-## Written by someone that has never really used readline.
-## History mechanism is slightly different than GNU... may get fixed
-##     someday, but I like it as it is now...
-## Killbuffer not a ring.. just one level.
-## Obviously not well tested yet.
-## Written by someone that doesn't have a bell on his terminal, so
-##     proper readline use of the bell may not be here.
-##
-
-
-##
-## Functions beginning with F_ are functions that are mapped to keys.
-## Variables and functions beginning rl_ may be accessed/set/called/read
-## from outside the package.  Other things are internal.
-##
-## Some notable internal-only variables of global proportions:
-##   $prompt -- line prompt (passed from user)
-##   $line  -- the line being input
-##   $D     -- ``Dot'' -- index into $line of the cursor's location.
-##   $InsertMode -- usually true. False means overwrite mode.
-##   $InputLocMsg -- string for error messages, such as "[~/.inputrc line 2]"
-##   *emacs_keymap -- keymap for emacs-mode bindings:
-##	@emacs_keymap - bindings indexed by ASCII ordinal
-##      $emacs_keymap{'name'} = "emacs_keymap"
-##      $emacs_keymap{'default'} = "SelfInsert"  (default binding)
-##   *vi_keymap -- keymap for vi input mode bindings
-##   *vicmd_keymap -- keymap for vi command mode bindings
-##   *vipos_keymap -- keymap for vi positioning command bindings
-##   *visearch_keymap -- keymap for vi search pattern input mode bindings
-##   *KeyMap -- current keymap in effect.
-##   $LastCommandKilledText -- needed so that subsequent kills accumulate
-##   $lastcommand -- name of command previously run
-##   $lastredisplay -- text placed upon screen during previous &redisplay
-##   $si -- ``screen index''; index into $line of leftmost char &redisplay'ed
-##   $force_redraw -- if set to true, causes &redisplay to be verbose.
-##   $AcceptLine -- when set, its value is returned from &readline.
-##   $ReturnEOF -- unless this also set, in which case undef is returned.
-##   @Pending -- characters to be used as input.
-##   @undo -- array holding all states of current line, for undoing.
-##   $KillBuffer -- top of kill ring (well, don't have a kill ring yet)
-##   @tcsh_complete_selections -- for tcsh mode, possible selections
-##
-## Some internal variables modified by &rl_set (see comment at &rl_set for
-## info about how these set'able variables work)
-##   $var_EditingMode -- a keymap typeglob like *emacs_keymap or *vi_keymap
-##   $var_TcshCompleteMode -- if true, the completion function works like
-##      in tcsh.  That is, the first time you try to complete something,
-##	the common prefix is completed for you. Subsequent completion tries
-##	(without other commands in between) cycles the command line through
-##	the various possibilities.  If/when you get the one you want, just
-##	continue typing.
-## Other $var_ things not supported yet.
-##
-## Some variables used internally, but may be accessed from outside...
-##   $VERSION -- just for good looks.
-##   $rl_readline_name = name of program -- for .initrc if/endif stuff.
-##   $rl_NoInitFromFile -- if defined when package is require'd, ~/.inputrc
-##  	will not be read.
-##   @rl_History -- array of previous lines input
-##   $rl_HistoryIndex -- history pointer (for moving about history array)
-##   $rl_completion_function -- see "How Command Completion Works" (way) below.
-##   $rl_basic_word_break_characters -- string of characters that can cause
-##	a word break for forward-word, etc.
-##   $rl_start_default_at_beginning --
-##	Normally, the user's cursor starts at the end of any default text
-##	passed to readline.  If this variable is true, it starts at the
-##	beginning.
-##   $rl_completer_word_break_characters --
-##	like $rl_basic_word_break_characters (and in fact defaults to it),
-##	but for the completion function.
-##   $rl_completer_terminator_character -- what to insert to separate
-##      a completed token from the rest.  Reset at beginning of
-##      completion to ' ' so completion function can change it.
-##   $rl_special_prefixes -- characters that are part of this string as well
-##      as of $rl_completer_word_break_characters cause a word break for the
-##	completer function, but remain part of the word.  An example: consider
-##      when the input might be perl code, and one wants to be able to
-##      complete on variable and function names, yet still have the '$',
-##	'&', '@',etc. part of the $text to be completed. Then set this var
-## 	to '&@$%' and make sure each of these characters is in
-## 	$rl_completer_word_break_characters as well....
-##   $rl_MaxHistorySize -- maximum size that the history array may grow.
-##   $rl_screen_width -- width readline thinks it can use on the screen.
-##   $rl_correct_sw -- is substructed from the real width of the terminal
-##   $rl_margin -- scroll by moving to within this far from a margin.
-##   $rl_CLEAR -- what to output to clear the screen.
-##   $rl_max_numeric_arg -- maximum numeric arg allowed.
-##   $rl_vi_replace_default_on_insert
-##     Normally, the text you enter is added to any default text passed to
-##     readline.  If this variable is true, default text will start out 
-##     highlighted (if supported by your terminal) and text entered while the 
-##     default is highlighted (during the _first_ insert mode only) will 
-##     replace the entire default line.  Once you have left insert mode (hit 
-##     escape), everything works as normal.  
-##     - This is similar to many GUI controls' behavior, which select the 
-##       default text so that new text replaces the old.
-##     - Use with $rl_start_default_at_beginning for normal-looking behavior
-##       (though it works just fine without it).
-##     Notes/Bugs: 
-##     - Control characters (like C-w) do not actually terminate this replace
-##       mode, for the same reason it does not work in emacs mode.
-##     - Spine-crawlingly scary subroutine redefinitions
-##   $rl_mark - start of the region
-##   $line_rl_mark - the line on which $rl_mark is active
-##   $_rl_japanese_mb - For character movement suppose Japanese (which?!)
-##     multi-byte encoding.  (How to make a sane default?)
-##
 
 sub get_window_size
 {
@@ -4466,3 +4298,322 @@ sub F_EndEditGroup {
 
 1;
 __END__
+=pod
+
+=head1 readline
+
+A pretty full-function package similar to GNU's readline.
+Includes support for EUC-encoded Japanese text.
+
+Written by Jeffrey Friedl, Omron Corporation (jfriedl@omron.co.jp)
+
+Comments, corrections welcome.
+
+Thanks to the people at FSF for readline (and the code I referenced
+while writing this), and for Roland Schemers whose line_edit.pl I used
+as an early basis for this.
+
+=head2 The Quick Help
+
+(see the manual for complete info)
+
+Once this package is included (require'd), you can then call:
+
+    $text = &readline'readline($input);
+
+to get lines of input from the user.
+
+Normally, it reads C<~/.inputrc> when loaded. To suppress this, set
+
+ 	$readline'rl_NoInitFromFile = 1;
+
+before requiring the package.
+
+Call I<rl_bind()> to add your own key bindings, as in:
+
+	&readline'rl_bind('C-L', 'possible-completions');
+
+Call rl_set to set mode variables yourself, as in:
+
+	&readline'rl_set('TcshCompleteMode', 'On');
+
+To change the input mode (emacs or vi) use C<~/.inputrc> or call
+
+ 	&readline::rl_set('EditingMode', 'vi');
+or:
+ 	&readline::rl_set('EditingMode', 'emacs');
+
+Call rl_basic_commands to set your own command completion, as in:
+
+       &readline'rl_basic_commands('print', 'list', 'quit', 'run', 'status');
+
+=head2 What's Cool
+
+=over
+
+=item *
+hey, it's in perl.
+
+=item *
+Pretty full GNU readline like library...
+
+=item *
+support for C<~/.inputrc>
+
+=item *
+horizontal scrolling
+
+=item *
+command/file completion
+
+=item *
+rebinding
+
+=item *
+history (with search)
+
+=item *
+undo
+
+=item *
+numeric prefixes
+
+=item *
+supports multi-byte characters (at least for the Japanese I use).
+
+=item *
+Has a tcsh-like completion-function mode.call &readline'rl_set('tcsh-complete-mode', 'On') to turn on.
+
+=back
+
+
+=head2 What's not Cool
+
+=over
+
+=item *
+Can you say HUGE?
+
+=item *
+I can't spell, so comments riddled with misspellings.
+
+=item *
+Written by someone that has never really used readline.
+
+=item * 
+History mechanism is slightly different than GNU... may get
+fixed someday, but I like it as it is now...
+
+=item *
+Killbuffer not a ring.. just one level.
+
+=item *
+Obviously not well tested yet.
+
+=item *
+Written by someone that doesn't have a bell on his terminal, so
+
+=item *
+proper readline use of the bell may not be here.
+
+=back
+
+=head2 Functions and variables
+
+Functions beginning with C<F_ >are functions that are mapped to keys.
+Variables and functions beginning C<rl_> may be accessed/set/called/read
+from outside the package.  Other things are internal.
+
+Some notable internal-only variables of global proportions:
+
+=over
+
+=item  C<$prompt>
+line prompt (passed from user)
+
+=item  C<$line>
+the line being input
+
+=item  C<$D>
+`Dot'' -- index into $line of the cursor's location.
+
+=item  C<$InsertMode>
+usually true. False means overwrite mode.
+
+=item  C<$InputLocMsg>
+string for error messages, such as "[~/.inputrc line 2]"
+
+=item  C<*emacs_keymap>
+keymap for emacs-mode bindings:
+
+=item C<@emacs_keymap>
+bindings indexed by ASCII ordinal
+
+=item C<$emacs_keymap{'name'}>
+Is "emacs_keymap"
+
+=item  C<$emacs_keymap{'default'}>
+is "SelfInsert"  (default binding)
+
+=item  C<*vi_keymap>
+keymap for vi input mode bindings
+
+=item  C<*vicmd_keymap>
+keymap for vi command mode bindings
+
+=item  C<*vipos_keymap>
+keymap for vi positioning command bindings
+
+=item  C<*visearch_keymap>
+keymap for vi search pattern input mode bindings
+
+=item  C<*KeyMap>
+current keymap in effect.
+
+=item  C<$LastCommandKilledText>
+needed so that subsequent kills accumulate
+
+=item  C<$lastcommand>
+name of command previously run
+
+=item C<$lastredisplay>
+text placed upon screen during previous &redisplay
+
+=item  $si -- ``screen index''; index into $line of leftmost char &redisplay'ed
+
+=item  $force_redraw -- if set to true, causes &redisplay to be verbose.
+
+=item  $AcceptLine -- when set, its value is returned from &readline.
+
+=item  $ReturnEOF -- unless this also set, in which case undef is returned.
+
+=item  @Pending -- characters to be used as input.
+
+=item  @undo -- array holding all states of current line, for undoing.
+
+=item  $KillBuffer -- top of kill ring (well, don't have a kill ring yet)
+
+=item  @tcsh_complete_selections -- for tcsh mode, possible selections
+
+=back
+
+Some internal variables modified by I<&rl_set()>. See comment at I<&rl_set> for
+info about how these set'able variables work.
+
+=over
+
+=item   $var_EditingMode -- a keymap typeglob like *emacs_keymap or *vi_keymap
+
+=item $var_TcshCompleteMode -- if true, the completion function works
+like in tcsh.  That is, the first time you try to complete something,
+the common prefix is completed for you. Subsequent completion tries
+thout other commands in between) cycles the command line through the
+various possibilities.  If/when you get the one you want, just
+continue typing.
+
+=back
+
+Other $var_ things not supported yet.
+
+Some variables used internally, but may be accessed from outside...
+
+=over
+
+=item  $VERSION -- just for good looks.
+
+=item  $rl_readline_name = name of program -- for .initrc if/endif stuff.
+
+=item  $rl_NoInitFromFile -- if defined when package is require'd, ~/.inputrc
+  	will not be read.
+
+=item  @rl_History -- array of previous lines input
+
+=item $rl_HistoryIndex -- history pointer (for moving about history array)
+
+=item  $rl_completion_function -- see "How Command Completion Works" (way) below.
+
+=item  $rl_basic_word_break_characters -- string of characters that can cause
+	a word break for forward-word, etc.
+
+=item  $rl_start_default_at_beginning --
+	Normally, the user's cursor starts at the end of any default text
+	passed to readline.  If this variable is true, it starts at the
+	beginning.
+
+=item
+   $rl_completer_word_break_characters --
+	like $rl_basic_word_break_characters (and in fact defaults to it),
+	but for the completion function.
+
+=item  $rl_completer_terminator_character -- what to insert to separate
+     a completed token from the rest.  Reset at beginning of
+      completion to ' ' so completion function can change it.
+
+=item  $rl_special_prefixes -- characters that are part of this string as well
+     as of $rl_completer_word_break_characters cause a word break for the
+	completer function, but remain part of the word.  An example: consider
+      when the input might be perl code, and one wants to be able to
+      complete on variable and function names, yet still have the '$',
+	'&', '@',etc. part of the $text to be completed. Then set this var
+ 	to '&@$%' and make sure each of these characters is in
+ 	$rl_completer_word_break_characters as well....
+
+=item  $rl_MaxHistorySize -- maximum size that the history array may grow.
+
+=item  $rl_screen_width -- width readline thinks it can use on the screen.
+
+=item $rl_correct_sw -- is substructed from the real width of the terminal
+
+=item $rl_margin -- scroll by moving to within this far from a margin.
+
+=item $rl_CLEAR -- what to output to clear the screen.
+
+=item  $rl_max_numeric_arg -- maximum numeric arg allowed.
+
+=item $rl_vi_replace_default_on_insert
+    Normally, the text you enter is added to any default text passed to
+    readline.  If this variable is true, default text will start out 
+    highlighted (if supported by your terminal) and text entered while the 
+    default is highlighted (during the _first_ insert mode only) will 
+    replace the entire default line.  Once you have left insert mode (hit 
+    escape), everything works as normal.  
+
+=over
+
+=item -
+This is similar to many GUI controls' behavior, which select the 
+ default text so that new text replaces the old.
+
+=item -
+Use with $rl_start_default_at_beginning for normal-looking behavior
+(though it works just fine without it).
+
+=back
+
+     Notes/Bugs: 
+
+=over
+
+=item -
+Control characters (like C-w) do not actually terminate this replace
+mode, for the same reason it does not work in emacs mode.
+
+=item -
+Spine-crawlingly scary subroutine redefinitions
+
+=back
+
+=item $rl_mark 
+start of the region
+
+=item $line_rl_mark
+the line on which $rl_mark is active
+
+=item $_rl_japanese_mb
+For character movement suppose Japanese (which?!)
+multi-byte encoding.  (How to make a sane default?)
+
+=back
+
+
+=cut
