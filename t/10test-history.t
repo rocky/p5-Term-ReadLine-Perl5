@@ -21,8 +21,8 @@ BEGIN {
 }
 END {print "not ok $n\n" unless $loaded;}
 
-$^W = 1;			# perl -w
-use strict;
+use strict; use warnings;
+
 use vars qw($loaded $n);
 use lib './blib/lib';
 use Term::ReadLine;
