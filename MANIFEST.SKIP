@@ -1,20 +1,8 @@
 
 #!start included /usr/local/share/perl/5.10.1/ExtUtils/MANIFEST.SKIP
 # Avoid version control files.
-\bRCS\b
-\bCVS\b
-\bSCCS\b
-,v$
-\B\.svn\b
 \B\.git\b
 \B\.gitignore\b
-\b_darcs\b
-\B\.cvsignore$
-
-# Avoid VMS specific MakeMaker generated files
-\bDescrip.MMS$
-\bDESCRIP.MMS$
-\bdescrip.mms$
 
 # Avoid Makemaker generated and utility files.
 \bMANIFEST\.bak
@@ -25,22 +13,13 @@
 \bpm_to_blib$
 \bblibdirs\.ts$         # 6.18 through 6.25 generated this
 
-# Avoid Module::Build generated and utility files.
-\bBuild$
-\bMakefile.PL$
-\b_build/
-\bBuild.bat$
-\bBuild.COM$
-\bBUILD.COM$
-\bbuild.com$
-
 # No tarballs please
-\bDevel-Trepan-v
+\bTerm-ReadLine-
 
 # Nothing in tmp
 \btmp/
 
-how-to-make-a-release\.txt
+\bhow-to-make-a-release\.txt
 
 # Avoid temp and backup files.
 ~$

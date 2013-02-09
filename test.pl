@@ -4,6 +4,7 @@
 # If argument is '--no-print', do not print the result.
 
 BEGIN{ $ENV{PERL_RL} = 'Perl' };	# Do not test TR::Gnu !
+use lib './lib';
 use Term::ReadLine;
 
 use Carp;

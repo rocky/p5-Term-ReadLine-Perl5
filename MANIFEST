@@ -1,8 +1,9 @@
 CHANGES
 MANIFEST
 Makefile.PL
-ReadLine/Perl.pm
-ReadLine/readline.pm
+lib/Term/ReadLine/Perl.pm
+lib/Term/ReadLine/readline.pm
+lib/Term/ReadLine/readline.CHANGES
 README
 test.pl
 t/00test-pod.t

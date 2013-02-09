@@ -1,4 +1,7 @@
+# -*- Perl -*-
 package Term::ReadLine::Perl;
+
+use Term::ReadLine;  # Needed for Term::ReadLine::Stub
 
 =head1 NAME
 

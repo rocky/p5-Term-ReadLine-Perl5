@@ -7,10 +7,18 @@ use blib;
 use Test::More;
 
 BEGIN {
-use_ok( 'Term::ReadLine' );
+  use_ok( 'Term::ReadLine::Perl' );
 }
 
-ok(defined($Term::ReadLine::VERSION), 
-   "\$Term::ReadLine::Version number is set");
+require 'Term/ReadLine/readline.pm';
+ok(defined($Term::ReadLine::Perl::VERSION), 
+   "\$Term::ReadLine::Perl::Version number is set");
+
+# stop reading ~/.inputrc
+$ENV{'INPUTRC'} = '/dev/null';
+
+note('ctrl()');
+is(readline::ctrl(ord('A')), 1);
+is(readline::ctrl(ord('a')), 1);
 done_testing();
 
