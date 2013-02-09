@@ -311,7 +311,8 @@ __END__
 
 =head1 AUTHORS
 
-Jeffrey Friedl and Ilya Zakharevich
+Ilya Zakharevich
+Jeffrey Friedl (Original Perl4 code)
 
 =head1 SEE ALSO
 
@@ -321,9 +322,13 @@ Jeffrey Friedl and Ilya Zakharevich
 
 =item GNU History Library Manual
 
-=item C<Term::ReadLine>
+=item L<Term::ReadLine>
 
-=item C<Term::ReadLine::Perl> (Term-ReadLine-Perl-xx.tar.gz)
+=item L<Term::ReadLine::readline>
+
+=item L<Term::ReadLine::Perl>
+
+=item L<Term::ReadLine::Gnu>
 
 =back
 

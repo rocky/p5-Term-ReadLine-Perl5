@@ -1,8 +1,21 @@
 # -*- Perl -*-
 # POD doc after __END__
-# Wrap the code below (initially Perl4, now partially Perl4) into a fake
-# Perl5 pseudo-module; mismatch of package and file name is intentional
-# to make is harder to abuse this (very fragile) code...
+
+=head1 NAME
+
+Term::ReadLine::readline
+
+=head1 DESCRIPTION
+
+Wraps what was initially Perl4 and now partially Perl4) into a fake
+Perl5 pseudo-module.
+
+The mismatch of the package name, C<readline> and file name
+C<Term::ReadLine::readline> was intentional to make is harder to abuse
+this (very fragile) code...
+
+=cut
+
 package readline;
 
 my $autoload_broken = 1;	# currently: defined does not work with a-l
@@ -22,68 +35,66 @@ $rl_getc = \&rl_getc;
 &preinit;
 &init;
 
-# # # # use strict 'vars';
+# # use strict 'vars';
 
-# # # # # Separation into my and vars needs some thought...
+# # Separation into my and vars needs some thought...
 
-# # # # use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
-# # # # 	    $rl_completion_function $rl_basic_word_break_characters
-# # # # 	    $rl_completer_word_break_characters $rl_special_prefixes
-# # # # 	    $rl_readline_name @rl_History $rl_MaxHistorySize
-# # # #             $rl_max_numeric_arg $rl_OperateCount
-# # # # 	    $KillBuffer $dumb_term $stdin_not_tty $InsertMode 
-# # # # 	    $rl_NoInitFromFile);
+# # use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
+# # 	    $rl_completion_function $rl_basic_word_break_characters
+# # 	    $rl_completer_word_break_characters $rl_special_prefixes
+# # 	    $rl_readline_name @rl_History $rl_MaxHistorySize
+# #             $rl_max_numeric_arg $rl_OperateCount
+# # 	    $KillBuffer $dumb_term $stdin_not_tty $InsertMode 
+# # 	    $rl_NoInitFromFile);
 
-# # # # my ($InputLocMsg, $term_OUT, $term_IN);
-# # # # my ($winsz_t, $TIOCGWINSZ, $winsz, $rl_margin, $hooj, $force_redraw);
-# # # # my ($hook, %var_HorizontalScrollMode, %var_EditingMode, %var_OutputMeta);
-# # # # my ($var_HorizontalScrollMode, $var_EditingMode, $var_OutputMeta);
-# # # # my (%var_ConvertMeta, $var_ConvertMeta, %var_MarkModifiedLines, $var_MarkModifiedLines);
-# # # # my ($term_readkey, $inDOS);
-# # # # my (%var_PreferVisibleBell, $var_PreferVisibleBell);
-# # # # my (%var_TcshCompleteMode, $var_TcshCompleteMode);
-# # # # my (%var_CompleteAddsuffix, $var_CompleteAddsuffix);
-# # # # my ($minlength, @winchhooks);
-# # # # my ($BRKINT, $ECHO, $FIONREAD, $ICANON, $ICRNL, $IGNBRK, $IGNCR, $INLCR,
-# # # #     $ISIG, $ISTRIP, $NCCS, $OPOST, $RAW, $TCGETS, $TCOON, $TCSETS, $TCXONC,
-# # # #     $TERMIOS_CFLAG, $TERMIOS_IFLAG, $TERMIOS_LFLAG, $TERMIOS_NORMAL_IOFF,
-# # # #     $TERMIOS_NORMAL_ION, $TERMIOS_NORMAL_LOFF, $TERMIOS_NORMAL_LON, 
-# # # #     $TERMIOS_NORMAL_OOFF, $TERMIOS_NORMAL_OON, $TERMIOS_OFLAG, 
-# # # #     $TERMIOS_READLINE_IOFF, $TERMIOS_READLINE_ION, $TERMIOS_READLINE_LOFF, 
-# # # #     $TERMIOS_READLINE_LON, $TERMIOS_READLINE_OOFF, $TERMIOS_READLINE_OON, 
-# # # #     $TERMIOS_VMIN, $TERMIOS_VTIME, $TIOCGETP, $TIOCGWINSZ, $TIOCSETP, 
-# # # #     $fion, $fionread_t, $mode, $sgttyb_t, 
-# # # #     $termios, $termios_t, $winsz, $winsz_t);
-# # # # my ($line, $initialized, $term_readkey);
+# # my ($InputLocMsg, $term_OUT, $term_IN);
+# # my ($winsz_t, $TIOCGWINSZ, $winsz, $rl_margin, $hooj, $force_redraw);
+# # my ($hook, %var_HorizontalScrollMode, %var_EditingMode, %var_OutputMeta);
+# # my ($var_HorizontalScrollMode, $var_EditingMode, $var_OutputMeta);
+# # my (%var_ConvertMeta, $var_ConvertMeta, %var_MarkModifiedLines, $var_MarkModifiedLines);
+# # my ($term_readkey, $inDOS);
+# # my (%var_PreferVisibleBell, $var_PreferVisibleBell);
+# # my (%var_TcshCompleteMode, $var_TcshCompleteMode);
+# # my (%var_CompleteAddsuffix, $var_CompleteAddsuffix);
+# # my ($minlength, @winchhooks);
+# # my ($BRKINT, $ECHO, $FIONREAD, $ICANON, $ICRNL, $IGNBRK, $IGNCR, $INLCR,
+# #     $ISIG, $ISTRIP, $NCCS, $OPOST, $RAW, $TCGETS, $TCOON, $TCSETS, $TCXONC,
+# #     $TERMIOS_CFLAG, $TERMIOS_IFLAG, $TERMIOS_LFLAG, $TERMIOS_NORMAL_IOFF,
+# #     $TERMIOS_NORMAL_ION, $TERMIOS_NORMAL_LOFF, $TERMIOS_NORMAL_LON, 
+# #     $TERMIOS_NORMAL_OOFF, $TERMIOS_NORMAL_OON, $TERMIOS_OFLAG, 
+# #     $TERMIOS_READLINE_IOFF, $TERMIOS_READLINE_ION, $TERMIOS_READLINE_LOFF, 
+# #     $TERMIOS_READLINE_LON, $TERMIOS_READLINE_OOFF, $TERMIOS_READLINE_OON, 
+# #     $TERMIOS_VMIN, $TERMIOS_VTIME, $TIOCGETP, $TIOCGWINSZ, $TIOCSETP, 
+# #     $fion, $fionread_t, $mode, $sgttyb_t, 
+# #     $termios, $termios_t, $winsz, $winsz_t);
+# # my ($line, $initialized, $term_readkey);
 
+# # # Global variables added for vi mode (I'm leaving them all commented
+# # #     out, like the declarations above, until SelfLoader issues
+# # #     are resolved).
 
-# # # # # Global variables added for vi mode (I'm leaving them all commented
-# # # # #     out, like the declarations above, until SelfLoader issues
-# # # # #     are resolved).
+# # # True when we're in one of the vi modes.
+# # my $Vi_mode;
 
-# # # # # True when we're in one of the vi modes.
-# # # # my $Vi_mode;
+# # # Array refs: saves keystrokes for '.' command.  Undefined when we're
+# # #     not doing a '.'-able command.
+# # my $Dot_buf;                # Working buffer
+# # my $Last_vi_command;        # Gets $Dot_buf when a command is parsed
 
-# # # # # Array refs: saves keystrokes for '.' command.  Undefined when we're
-# # # # #     not doing a '.'-able command.
-# # # # my $Dot_buf;                # Working buffer
-# # # # my $Last_vi_command;        # Gets $Dot_buf when a command is parsed
+# # # These hold state for vi 'u' and 'U'.
+# # my($Dot_state, $Vi_undo_state, $Vi_undo_all_state);
 
-# # # # # These hold state for vi 'u' and 'U'.
-# # # # my($Dot_state, $Vi_undo_state, $Vi_undo_all_state);
+# # # Refs to hashes used for cursor movement
+# # my($Vi_delete_patterns, $Vi_move_patterns,
+# #    $Vi_change_patterns, $Vi_yank_patterns);
 
-# # # # # Refs to hashes used for cursor movement
-# # # # my($Vi_delete_patterns, $Vi_move_patterns,
-# # # #    $Vi_change_patterns, $Vi_yank_patterns);
+# # # Array ref: holds parameters from the last [fFtT] command, for ';'
+# # #     and ','.
+# # my $Last_findchar;
 
-# # # # # Array ref: holds parameters from the last [fFtT] command, for ';'
-# # # # #     and ','.
-# # # # my $Last_findchar;
-
-# # # # # Globals for history search commands (/, ?, n, N)
-# # # # my $Vi_search_re;       # Regular expression (compiled by qr{})
-# # # # my $Vi_search_reverse;  # True for '?' search, false for '/'
-
+# # # Globals for history search commands (/, ?, n, N)
+# # my $Vi_search_re;       # Regular expression (compiled by qr{})
+# # my $Vi_search_reverse;  # True for '?' search, false for '/'
 
 sub get_window_size
 {
@@ -112,6 +123,9 @@ sub get_window_size
     local $^W = 0;		# WINCH may be illegal...
     $SIG{'WINCH'} = "readline::get_window_size";
 }
+
+=head2 SUBROUTINES
+=cut 
 
 # Fix: case-sensitivity of inputrc on/off keywords in
 #      `set' commands. readline lib doesn't care about case.
@@ -806,9 +820,12 @@ sub init
 }
 
 
-##
-## InitKeymap(*keymap, 'default', 'name', bindings.....)
-##
+=head2 InitKeyMap
+
+C<InitKeymap(*keymap, 'default', 'name', bindings...)>
+
+=cut
+
 sub InitKeymap
 {
     local(*KeyMap) = shift(@_);
@@ -828,54 +845,6 @@ sub InitKeymap
     &rl_bind if @_ > 0;	## The rest of @_ gets passed silently.
 }
 
-##
-## Accepts an array as pairs ($keyspec, $function, [$keyspec, $function]...).
-## and maps the associated bindings to the current KeyMap.
-##
-## keyspec should be the name of key sequence in one of two forms:
-##
-## Old (GNU readline documented) form:
-##	     M-x	to indicate Meta-x
-##	     C-x	to indicate Ctrl-x
-##	     M-C-x	to indicate Meta-Ctrl-x
-##	     x		simple char x
-##      where 'x' above can be a single character, or the special:
-##          special  	means
-##         --------  	-----
-##	     space	space   ( )
-##	     spc	space   ( )
-##	     tab	tab     (\t)
-##	     del	delete  (0x7f)
-##	     rubout	delete  (0x7f)
-##	     newline 	newline (\n)
-##	     lfd     	newline (\n)
-##	     ret     	return  (\r)
-##	     return  	return  (\r)
-##	     escape  	escape  (\e)
-##	     esc     	escape  (\e)
-##
-## New form:
-##	  "chars"   (note the required double-quotes)
-##   where each char in the list represents a character in the sequence, except
-##   for the special sequences:
-##	  \\C-x		Ctrl-x
-##	  \\M-x		Meta-x
-##	  \\M-C-x	Meta-Ctrl-x
-##	  \\e		escape.
-##	  \\x		x (if not one of the above)
-##
-##
-## FUNCTION should be in the form 'BeginningOfLine' or 'beginning-of-line'.
-## It is an error for the function to not be known....
-##
-## As an example, the following lines in .inputrc will bind one's xterm
-## arrow keys:
-##     "\e[[A": previous-history
-##     "\e[[B": next-history
-##     "\e[[C": forward-char
-##     "\e[[D": backward-char
-##
-
 sub filler_Pending ($) {
   my $keys = shift;
   sub {
@@ -890,20 +859,20 @@ sub filler_Pending ($) {
   }
 }
 
+## New-style bindings are enclosed in double-quotes.
+## Characters are taken verbatim except the special cases:
+##    \C-x    Control x (for any x)
+##    \M-x    Meta x (for any x)
+##    \e	  Escape
+##    \*      Set the keymap default   (JP: added this)
+##               (must be the last character of the sequence)
+##
+##    \x      x  (unless it fits the above pattern)
+##
+## Look for special case of "\C-\M-x", which should be treated
+## like "\M-\C-x".
 sub _unescape ($) {
   my($key, @keys) = shift;
-  ## New-style bindings are enclosed in double-quotes.
-  ## Characters are taken verbatim except the special cases:
-  ##    \C-x    Control x (for any x)
-  ##    \M-x    Meta x (for any x)
-  ##    \e	  Escape
-  ##    \*      Set the keymap default   (JP: added this)
-  ##               (must be the last character of the sequence)
-  ##
-  ##    \x      x  (unless it fits the above pattern)
-  ##
-  ## Look for special case of "\C-\M-x", which should be treated
-  ## like "\M-\C-x".
 
   while (length($key) > 0) {
 
@@ -946,19 +915,22 @@ sub RL_func ($) {
   }
 }
 
+=head2 actually_do_binding
+
+C<actually_do_binding($function1, \@sequence1, ...)>
+
+Actually inserts the binding for C<@sequence> to C<$function> into the
+current map. C<@sequence> is an array of character ordinals.
+
+If C<sequence> is more than one element long, all but the last will
+cause meta maps to be created.
+
+C<$Function> will have an implicit C<F_> prepended to it.
+
+=cut
+
 sub actually_do_binding
 {
-  ##
-  ## actually_do_binding($function1, \@sequence1, ...)
-  ##
-  ## Actually inserts the binding for @sequence to $function into the
-  ## current map.  @sequence is an array of character ordinals.
-  ##
-  ## If @sequence is more than one element long, all but the last will
-  ## cause meta maps to be created.
-  ##
-  ## $Function will have an implicit "F_" prepended to it.
-  ##
   while (@_) {
     my $func = shift;
     my ($key, @keys) = @{shift()};
@@ -998,6 +970,62 @@ sub actually_do_binding
     }
   }
 }
+
+=head2 rl_bind
+
+Accepts an array as pairs ($keyspec, $function, [$keyspec, $function]...).
+and maps the associated bindings to the current KeyMap.
+
+C<$keyspec> should be the name of key sequence in one of two forms:
+
+Old (GNU readline documented) form:
+     M-x	to indicate Meta-x
+     C-x	to indicate Ctrl-x
+     M-C-x	to indicate Meta-Ctrl-x
+     x		simple char x
+
+where 'x' above can be a single character, or the special:
+
+     special  	means
+     --------  	-----
+     space	space   ( )
+     spc	space   ( )
+     tab	tab     (\t)
+     del	delete  (0x7f)
+     rubout	delete  (0x7f)
+     newline 	newline (\n)
+     lfd     	newline (\n)
+     ret     	return  (\r)
+     return  	return  (\r)
+     escape  	escape  (\e)
+     esc     	escape  (\e)
+
+New form:
+  "chars"   (note the required double-quotes)
+
+where each char in the list represents a character in the sequence, except
+for the special sequences:
+
+	  \\C-x		Ctrl-x
+	  \\M-x		Meta-x
+	  \\M-C-x	Meta-Ctrl-x
+	  \\e		escape.
+	  \\x		x (if not one of the above)
+
+
+C<$function> should be in the form C<BeginningOfLine> or C<beginning-of-line>.
+
+It is an error for the function to not be known....
+
+As an example, the following lines in .inputrc will bind one's xterm
+arrow keys:
+
+    "\e[[A": previous-history
+    "\e[[B": next-history
+    "\e[[C": forward-char
+    "\e[[D": backward-char
+
+=cut 
 
 sub rl_bind
 {
@@ -1169,22 +1197,37 @@ sub get_ornaments_selected {
     }
 }
 
-sub readline_dumb {
-	local $\ = '';
-	print $term_OUT $prompt;
-	local $/ = "\n";
-	return undef
-          if !defined($line = $Term::ReadLine::Perl::term->get_line);
-	chomp($line);
-	$| = $oldbar;
-	select $old;
-	return $line;
+=head2 readline_dumb
+
+A version readline for a dumb terminal, that is one that doesn't have
+many terminal editing capabilities.
+
+=cut 
+
+sub readline_dumb 
+{
+    local $\ = '';
+    print $term_OUT $prompt;
+    local $/ = "\n";
+    return undef
+	if !defined($line = $Term::ReadLine::Perl::term->get_line);
+    chomp($line);
+    $| = $oldbar;
+    select $old;
+    return $line;
 }
 
-##
-## This is it. Called as &readline'readline($prompt, $default),
-## (DEFAULT can be omitted) the next input line is returned (undef on EOF).
-##
+=head2 readline
+
+C<&readline'readline($prompt, $default)> 
+
+The main routine to call interactively read lines. 
+
+C<$default> can be omitted. The next input line is returned or 
+C<undef> on EOF.
+
+=cut 
+
 sub readline
 {
     $Term::ReadLine::Perl::term->register_Tk 
@@ -1460,8 +1503,14 @@ sub ResetTTY {
   }
 }
 
-# Substr_with_props: gives the substr of prompt+string with embedded
-# face-change commands
+=head2 substr_with_props
+
+C<substr_with_props($prompt, $string, $from, $len, $ket, $bsel, $esel)>
+
+Gives the I<substr()> of C<$prompt.$string> with embedded face-change
+commands.
+
+=cut
 
 sub substr_with_props {
   my ($p, $s, $from, $len, $ket, $bsel, $esel) = @_;
@@ -1528,23 +1577,26 @@ sub redisplay_high {
   $force_redraw = 1;
 }
 
-##
-## redisplay()
-##
-## Updates the screen to reflect the current $line.
-##
-## For the purposes of this routine, we prepend the prompt to a local copy of
-## $line so that we display the prompt as well.  We then modify it to reflect
-## that some characters have different sizes (i.e. control-C is represented
-## as ^C, tabs are expanded, etc.)
-##
-## This routine is somewhat complicated by two-byte characters.... must
-## make sure never to try do display just half of one.
-##
-## NOTE: If an argument is given, it is used instead of the prompt.
-##
-## This is some nasty code.
-##
+=head2 redisplay
+
+C<redisplay()>
+
+Updates the screen to reflect the current value if C<$line>.
+
+For the purposes of this routine, we prepend the prompt to a local copy of
+C<$line> so that we display the prompt as well.  We then modify it to reflect
+that some characters have different sizes. That is, control-C is represented
+as C<^C>, tabs are expanded, etc.
+
+This routine is somewhat complicated by two-byte characters.... must
+make sure never to try do display just half of one.
+
+I<Note>: If an argument is given, it is used instead of the prompt.
+
+This is some nasty code.
+
+=cut 
+
 sub redisplay
 {
     ## local $line has prompt also; take that into account with $D.
@@ -1751,7 +1803,7 @@ sub redisplay
     $force_redraw = 0;
 }
 
-sub min     { $_[0] < $_[1] ? $_[0] : $_[1]; }
+sub min { $_[0] < $_[1] ? $_[0] : $_[1]; }
 
 sub getc_with_pending {
 
@@ -1774,12 +1826,16 @@ sub rl_getc {
 	  }
 }
 
-##
-## get_command(keymap, ord_command_char)
-##
-## If the KEYMAP has an entry for COMMAND, it is returned.
-## Otherwise, the default command is returned.
-##
+=head2 get_command 
+
+C<get_command(*keymap, $ord_command_char)>
+
+If the C<*keymap>) has an entry for C<$ord_command_char>, it is returned.
+Otherwise, the default command in C<$Keymap{'default'}> is returned if that
+exists. If C<$Keymap{'default'}> is false, C<'F_Ding'> is returned.
+
+=cut 
+
 sub get_command
 {
     local *KeyMap = shift;
@@ -1793,12 +1849,15 @@ sub get_command
     $cmd
 }
 
-##
-## do_command(keymap, numericarg, command)
-##
-## If the KEYMAP has an entry for COMMAND, it is executed.
-## Otherwise, the default command for the keymap is executed.
-##
+=head2 do_command
+
+C<do_command(*keymap, $numericarg, $key)>
+
+If the C<*keymap> has an entry for C<$key>, it is executed.
+Otherwise, the default command for the keymap is executed.
+
+=cut 
+
 sub do_command
 {
     my ($keymap, $count, $key) = @_;
@@ -1809,16 +1868,27 @@ sub do_command
     $lastcommand = $cmd;
 }
 
-##
-## Save whatever state we wish to save as an anonymous array.
-## The only other function that needs to know about its encoding is getstate/preserve_state.
-##
+=head2 savestate
+
+C<savestate()>
+
+Save whatever state we wish to save as an anonymous array.  The only
+other function that needs to know about its encoding is
+getstate/preserve_state.
+
+=cut
+
 sub savestate
 {
     [$D, $si, $LastCommandKilledText, $KillBuffer, $line, @_];
 }
 
-# consolidate only-movement changes together...
+=head2 preserve_state
+
+C<preserve_tate()>
+
+=cut 
+
 sub preserve_state {
     return if $Vi_mode;
     push(@undo, savestate()), return unless @undo;
@@ -1834,9 +1904,14 @@ sub preserve_state {
     push(@undo, savestate(@only_movement));
 }
 
-##
-## $_[1] is an ASCII ordinal; inserts as per $count.
-##
+=head2 F_SelfInsert
+
+C<F_SelfInsert($count, $ord)>
+
+C<$ord> is an ASCII ordinal; inserts C<$count> of them into C<$line>.
+
+=cut
+
 sub F_SelfInsert
 {
     remove_selection();
@@ -1851,9 +1926,12 @@ sub F_SelfInsert
     $D += length($text2add);
 }
 
-##
-## Return the line as-is to the user.
-##
+=head2 F_AcceptLine
+
+Return the line as-is to the user.
+
+=cut 
+
 sub F_AcceptLine
 {
     &add_line_to_history;
@@ -1864,12 +1942,26 @@ sub F_AcceptLine
     (pos $line) = undef;	# Another way to force redraw...
 }
 
+=head2 add_line_to_history
+
+Insert into history list if:
+
+=over
+
+=item *
+
+bigger than the minimal length
+
+=item * 
+
+not same as last entry
+
+=back
+
+=cut
+
 sub add_line_to_history
 {
-    ## Insert into history list if:
-    ##	 * bigger than the minimal length
-    ##   * not same as last entry
-    ##
     if (length($line) >= $minlength 
 	&& (!@rl_History || $rl_History[$#rl_History] ne $line)
        ) {
@@ -1988,37 +2080,43 @@ sub islower { ord($_[0]) >= ord('a') && ord($_[0]) <= ord('z'); }
 sub toupper { &islower ? pack('c', ord($_[0])-ord('a')+ord('A')) : $_[0];}
 sub tolower { &isupper ? pack('c', ord($_[0])-ord('A')+ord('a')) : $_[0];}
 
-##
-## rl_set(var_name, value_string)
-##
-## Sets the named variable as per the given value, if both are appropriate.
-## Allows the user of the package to set such things as HorizontalScrollMode
-## and EditingMode.  Value_string may be of the form
-##	HorizontalScrollMode
-##      horizontal-scroll-mode
-##
-## Also called during the parsing of ~/.inputrc for "set var value" lines.
-##
-## The previous value is returned, or undef on error.
-###########################################################################
-## Consider the following example for how to add additional variables
-## accessible via rl_set (and hence via ~/.inputrc).
-##
-## Want:
-## We want an external variable called "FooTime" (or "foo-time").
-## It may have values "January", "Monday", or "Noon".
-## Internally, we'll want those values to translate to 1, 2, and 12.
-##
-## How:
-## Have an internal variable $var_FooTime that will represent the current
-## internal value, and initialize it to the default value.
-## Make an array %var_FooTime whose keys and values are are the external
-## (January, Monday, Noon) and internal (1, 2, 12) values:
-##
-##	    $var_FooTime = $var_FooTime{'January'} =  1; #default
-##	                   $var_FooTime{'Monday'}  =  2;
-##	                   $var_FooTime{'Noon'}    = 12;
-##
+=head2 rl_set 
+
+C<rl_set($var_name, $value_string)>
+
+Sets the named variable as per the given value, if both are appropriate.
+Allows the user of the package to set such things as HorizontalScrollMode
+and EditingMode.  Value_string may be of the form
+
+      HorizontalScrollMode
+      horizontal-scroll-mode
+
+Also called during the parsing of F<~/.inputrc> for "set var value" lines.
+
+The previous value is returned, or undef on error.
+
+Consider the following example for how to add additional variables
+accessible via rl_set (and hence via F<~/.inputrc>).
+
+Want:
+
+We want an external variable called "FooTime" (or "foo-time").
+It may have values "January", "Monday", or "Noon".
+Internally, we'll want those values to translate to 1, 2, and 12.
+
+How:
+
+Have an internal variable $var_FooTime that will represent the current
+internal value, and initialize it to the default value.
+Make an array %var_FooTime whose keys and values are are the external
+(January, Monday, Noon) and internal (1, 2, 12) values:
+
+    $var_FooTime = $var_FooTime{'January'} =  1; #default
+                   $var_FooTime{'Monday'}  =  2;
+                   $var_FooTime{'Noon'}    = 12;
+
+=cut
+
 sub rl_set
 {
     local($var, $val) = @_;
@@ -2052,12 +2150,15 @@ sub rl_set
     $return;
 }
 
-##
-## OnSecondByte($index)
-##
-## Returns true if the byte at $index into $line is the second byte
-## of a two-byte character.
-##
+=head2 OnSecondByte
+
+C<OnSecondByte($index)>
+
+Returns true if the byte at C<$index> into C<$line> is the second byte
+of a two-byte character.
+
+=cut 
+
 sub OnSecondByte
 {
     return 0 if !$_rl_japanese_mb || $_[0] == 0 || $_[0] == length($line);
@@ -2080,17 +2181,21 @@ sub OnSecondByte
     0; ## seemed to be OK.
 }
 
-##
-## CharSize(index)
-##
-## Returns the size of the character at the given INDEX in the
-## current line.  Most characters are just one byte in length,
-## but if the byte at the index and the one after has the high
-## bit set those two bytes are one character of size=2.
-##
-## Assumes that index points to the first of a 2-byte char if not
-## pointing to a 2-byte char.
-##
+
+=head2 CharSize
+
+C<CharSize($index)>
+
+Returns the size of the character at the given C<$index> in the
+current line.  Most characters are just one byte in length,
+but if the byte at the index and the one after has the high
+bit set those two bytes are one character of size=2.
+
+Assumes that C<$index> points to the first of a 2-byte char if not
+pointing to a 2-byte char.
+
+=cut 
+
 sub CharSize
 {
     return 2 if $_rl_japanese_mb &&
@@ -2978,60 +3083,6 @@ sub F_Ding {
 ##########################################################################
 #### command/file completion  ############################################
 ##########################################################################
-
-##
-## How Command Completion Works
-##
-## When asked to do a completion operation, readline isolates the word
-## to the immediate left of the cursor (i.e. what's just been typed).
-## This information is then passed to some function (which may be supplied
-## by the user of this package) which will return an array of possible
-## completions.
-##
-## If there is just one, that one is used.  Otherwise, they are listed
-## in some way (depends upon $var_TcshCompleteMode).
-##
-## The default is to do filename completion.  The function that performs
-## this task is readline'rl_filename_list.
-##
-## A minimal-trouble way to have command-completion is to call
-## readline'rl_basic_commands with an array of command names, such as
-##    &readline'rl_basic_commands('quit', 'run', 'set', 'list')
-## Those command names will then be used for completion if the word being
-## completed begins the line. Otherwise, completion is disallowed.
-##
-## The way to have the most power is to provide a function to readline
-## which will accept information about a partial word that needs completed,
-## and will return the appropriate list of possibilities.
-## This is done by setting $readline'rl_completion_function to the name of
-## the function to run.
-##
-## That function will be called with three args ($text, $line, $start).
-## TEXT is the partial word that should be completed.  LINE is the entire
-## input line as it stands, and START is the index of the TEXT in LINE
-## (i.e. zero if TEXT is at the beginning of LINE).
-##
-## A cool completion function will look at LINE and START and give context-
-## sensitive completion lists. Consider something that will do completion
-## for two commands
-## 	cat FILENAME
-##	finger USERNAME
-##	status [this|that|other]
-##
-## It (untested) might look like:
-##
-##	$readline'rl_completion_function = "main'complete";
-##	sub complete { local($text, $_, $start) = @_;
-##	    ## return commands which may match if at the beginning....
-##	    return grep(/^$text/, 'cat', 'finger') if $start == 0;
-##	    return &rl_filename_list($text) if /^cat\b/;
-##	    return &my_namelist($text) if /^finger\b/;
-##	    return grep(/^text/, 'this', 'that','other') if /^status\b/;
-##	    ();
-##	}
-## Of course, a real completion function would be more robust, but you
-## get the idea (I hope).
-##
 
 ##
 ## List possible completions
@@ -4300,7 +4351,7 @@ sub F_EndEditGroup {
 __END__
 =pod
 
-=head1 readline
+=head1 Term::ReadLine::readline
 
 A pretty full-function package similar to GNU's readline.
 Includes support for EUC-encoded Japanese text.
@@ -4320,10 +4371,10 @@ as an early basis for this.
 Once this package is included (require'd), you can then call:
 
     $text = &readline'readline($input);
-
+g
 to get lines of input from the user.
 
-Normally, it reads C<~/.inputrc> when loaded. To suppress this, set
+Normally, it reads F<~/.inputrc> when loaded. To suppress this, set
 
  	$readline'rl_NoInitFromFile = 1;
 
@@ -4337,7 +4388,7 @@ Call rl_set to set mode variables yourself, as in:
 
 	&readline'rl_set('TcshCompleteMode', 'On');
 
-To change the input mode (emacs or vi) use C<~/.inputrc> or call
+To change the input mode (emacs or vi) use F<~/.inputrc> or call
 
  	&readline::rl_set('EditingMode', 'vi');
 or:
@@ -4358,7 +4409,7 @@ hey, it's in perl.
 Pretty full GNU readline like library...
 
 =item *
-support for C<~/.inputrc>
+support for F<~/.inputrc>
 
 =item *
 horizontal scrolling
@@ -4428,14 +4479,14 @@ Some notable internal-only variables of global proportions:
 
 =over
 
-=item  C<$prompt>
+=item  C<$prompt> 
 line prompt (passed from user)
 
 =item  C<$line>
 the line being input
 
 =item  C<$D>
-`Dot'' -- index into $line of the cursor's location.
+`Dot'' index into $line of the cursor's location.
 
 =item  C<$InsertMode>
 usually true. False means overwrite mode.
@@ -4443,7 +4494,7 @@ usually true. False means overwrite mode.
 =item  C<$InputLocMsg>
 string for error messages, such as "[~/.inputrc line 2]"
 
-=item  C<*emacs_keymap>
+=item  C<%emacs_keymap>
 keymap for emacs-mode bindings:
 
 =item C<@emacs_keymap>
@@ -4455,19 +4506,19 @@ Is "emacs_keymap"
 =item  C<$emacs_keymap{'default'}>
 is "SelfInsert"  (default binding)
 
-=item  C<*vi_keymap>
+=item  C<%vi_keymap>
 keymap for vi input mode bindings
 
-=item  C<*vicmd_keymap>
+=item  C<%vicmd_keymap>
 keymap for vi command mode bindings
 
-=item  C<*vipos_keymap>
+=item  C<%vipos_keymap>
 keymap for vi positioning command bindings
 
-=item  C<*visearch_keymap>
+=item  C<%visearch_keymap>
 keymap for vi search pattern input mode bindings
 
-=item  C<*KeyMap>
+=item  C<%KeyMap>
 current keymap in effect.
 
 =item  C<$LastCommandKilledText>
@@ -4479,21 +4530,29 @@ name of command previously run
 =item C<$lastredisplay>
 text placed upon screen during previous &redisplay
 
-=item  $si -- ``screen index''; index into $line of leftmost char &redisplay'ed
+=item  C$<si>
+screen index; index into $line of leftmost char &redisplay'ed
 
-=item  $force_redraw -- if set to true, causes &redisplay to be verbose.
+=item  C<$force_redraw>
+if set to true, causes &redisplay to be verbose.
 
-=item  $AcceptLine -- when set, its value is returned from &readline.
+=item  C<$AcceptLine>
+when set, its value is returned from &readline.
 
-=item  $ReturnEOF -- unless this also set, in which case undef is returned.
+=item  C<$ReturnEOF>
+unless this also set, in which case undef is returned.
 
-=item  @Pending -- characters to be used as input.
+=item  C<@Pending>
+characters to be used as input.
 
-=item  @undo -- array holding all states of current line, for undoing.
+=item  C<@undo>
+array holding all states of current line, for undoing.
 
-=item  $KillBuffer -- top of kill ring (well, don't have a kill ring yet)
+=item  C<$KillBuffer>
+top of kill ring (well, don't have a kill ring yet)
 
-=item  @tcsh_complete_selections -- for tcsh mode, possible selections
+=item  C<@tcsh_complete_selections>
+For tcsh mode, possible selections.
 
 =back
 
@@ -4502,9 +4561,11 @@ info about how these set'able variables work.
 
 =over
 
-=item   $var_EditingMode -- a keymap typeglob like *emacs_keymap or *vi_keymap
+=item C<$var_EditingMode>
+a keymap typeglob like C<%emacs_keymap> or C<%vi_keymap>
 
-=item $var_TcshCompleteMode -- if true, the completion function works
+=item C<$var_TcshCompleteMode> 
+If true, the completion function works
 like in tcsh.  That is, the first time you try to complete something,
 the common prefix is completed for you. Subsequent completion tries
 thout other commands in between) cycles the command line through the
@@ -4513,107 +4574,166 @@ continue typing.
 
 =back
 
-Other $var_ things not supported yet.
+Other C<$var_> things not supported yet.
 
 Some variables used internally, but may be accessed from outside...
 
 =over
 
-=item  $VERSION -- just for good looks.
+=item C<$VERSION> 
+Version of this package. It is used up by C<../Makefile.PL>
 
-=item  $rl_readline_name = name of program -- for .initrc if/endif stuff.
+=item C<$rl_readline_name>
+Name of program, possibly C<$0>. Used in F<.initrc> if/endif stuff.
 
-=item  $rl_NoInitFromFile -- if defined when package is require'd, ~/.inputrc
-  	will not be read.
+=item C<$rl_NoInitFromFile>
+If defined when package is require'd, F<~/.inputrc> will not be read.
 
-=item  @rl_History -- array of previous lines input
+=item C<@rl_History>
+array of previous lines input.
+n
+=item C<$rl_HistoryIndex>
+history pointer (for moving about history array)
 
-=item $rl_HistoryIndex -- history pointer (for moving about history array)
+=item C<$rl_completion_function>
+See L<How Command Completion Works>.
 
-=item  $rl_completion_function -- see "How Command Completion Works" (way) below.
+=item C<$rl_basic_word_break_characters>
+string of characters that can cause a word break for forward-word, etc.
 
-=item  $rl_basic_word_break_characters -- string of characters that can cause
-	a word break for forward-word, etc.
+=item C<$rl_start_default_at_beginning>
+Normally, the user's cursor starts at the end of any default text
+passed to readline.  If this variable is true, it starts at the
+beginning.
 
-=item  $rl_start_default_at_beginning --
-	Normally, the user's cursor starts at the end of any default text
-	passed to readline.  If this variable is true, it starts at the
-	beginning.
+=item C<$rl_completer_word_break_characters>
+like C<$rl_basic_word_break_characters> (and in fact defaults to it),
+but for the completion function.
 
-=item
-   $rl_completer_word_break_characters --
-	like $rl_basic_word_break_characters (and in fact defaults to it),
-	but for the completion function.
+=item C<$rl_completer_terminator_character> what to insert to separate
+a completed token from the rest.  Reset at beginning of completion to
+C<' '> so completion function can change it.
 
-=item  $rl_completer_terminator_character -- what to insert to separate
-     a completed token from the rest.  Reset at beginning of
-      completion to ' ' so completion function can change it.
+=item  C<$rl_special_prefixes>
+characters that are part of this string as well
+as of C<$rl_completer_word_break_characters> cause a word break for the
+completer function, but remain part of the word.  An example: consider
+ when the input might be perl code, and one wants to be able to
+complete on variable and function names, yet still have the sigil (C<$>,
+C<&>, C<@'>, C<%>) part of the C<$text> to be completed. Then set this var
+to C<&@$%> and make sure each of these characters is in $rl_completer_word_break_characters as well.
 
-=item  $rl_special_prefixes -- characters that are part of this string as well
-     as of $rl_completer_word_break_characters cause a word break for the
-	completer function, but remain part of the word.  An example: consider
-      when the input might be perl code, and one wants to be able to
-      complete on variable and function names, yet still have the '$',
-	'&', '@',etc. part of the $text to be completed. Then set this var
- 	to '&@$%' and make sure each of these characters is in
- 	$rl_completer_word_break_characters as well....
+=item C<$rl_MaxHistorySize>
+maximum size that the history array may grow.
 
-=item  $rl_MaxHistorySize -- maximum size that the history array may grow.
+=item C<$rl_screen_width>
+ width readline thinks it can use on the screen.
 
-=item  $rl_screen_width -- width readline thinks it can use on the screen.
+=item C<$rl_correct_sw>
+is substructed from the real width of the terminal
 
-=item $rl_correct_sw -- is substructed from the real width of the terminal
+=item C<$rl_margin>
+scroll by moving to within this far from a margin.
 
-=item $rl_margin -- scroll by moving to within this far from a margin.
+=item C<$rl_CLEAR>
+what to output to clear the screen.
 
-=item $rl_CLEAR -- what to output to clear the screen.
+=item C<$rl_max_numeric_arg>
+maximum numeric arg allowed.
 
-=item  $rl_max_numeric_arg -- maximum numeric arg allowed.
+=item C<$rl_vi_replace_default_on_insert>
+Normally, the text you enter is added to any default text passed to
+readline.  If this variable is true, default text will start out 
+highlighted (if supported by your terminal) and text entered while the 
+default is highlighted (during the _first_ insert mode only) will 
+replace the entire default line.  Once you have left insert mode (hit 
+ escape), everything works as normal.  
 
-=item $rl_vi_replace_default_on_insert
-    Normally, the text you enter is added to any default text passed to
-    readline.  If this variable is true, default text will start out 
-    highlighted (if supported by your terminal) and text entered while the 
-    default is highlighted (during the _first_ insert mode only) will 
-    replace the entire default line.  Once you have left insert mode (hit 
-    escape), everything works as normal.  
+This behavior similar to many GUI controls' behavior, which select the
+default text so that new text replaces the old.
 
-=over
-
-=item -
-This is similar to many GUI controls' behavior, which select the 
- default text so that new text replaces the old.
-
-=item -
-Use with $rl_start_default_at_beginning for normal-looking behavior
+Use with C<$rl_start_default_at_beginning> for normal-looking behavior
 (though it works just fine without it).
 
-=back
-
-     Notes/Bugs: 
+I<Notes/Bugs:>
 
 =over
 
-=item -
+=item *
+
 Control characters (like C-w) do not actually terminate this replace
 mode, for the same reason it does not work in emacs mode.
 
-=item -
+=item *
+
 Spine-crawlingly scary subroutine redefinitions
 
 =back
 
-=item $rl_mark 
+=item C<$rl_mark >
 start of the region
 
-=item $line_rl_mark
+=item C<$line_rl_mark>
 the line on which $rl_mark is active
 
-=item $_rl_japanese_mb
+=item C<$_rl_japanese_mb>
 For character movement suppose Japanese (which?!)
 multi-byte encoding.  (How to make a sane default?)
 
 =back
 
+=head2 How Command Completion Works
+
+When asked to do a completion operation, readline isolates the word
+to the immediate left of the cursor (i.e. what's just been typed).
+This information is then passed to some function (which may be supplied
+by the user of this package) which will return an array of possible
+completions.
+
+If there is just one, that one is used.  Otherwise, they are listed
+in some way depending upon C<$var_TcshCompleteMode>.
+
+The default is to do filename completion.  The function that performs
+this task is _<readline::rl_filename_list()_.
+
+A minimal-trouble way to have command-completion is to call
+_readline::rl_basic_commands()_ with an array of command names, such as
+C<readline::rl_basic_commands('quit', 'run', 'set', 'list')>.
+Those command names will then be used for completion if the word being
+completed begins the line. Otherwise, completion is disallowed.
+
+The way to have the most power is to provide a function to readline
+which will accept information about a partial word that needs completed,
+and will return the appropriate list of possibilities.
+This is done by setting C<$readline::rl_completion_function> to the name of
+the function to run.
+
+That function will be called with three args C<($text, $line, $start)>.
+C<$text> is the partial word that should be completed.  C<$line> is the entire
+input line as it stands, and C<$start> is the index of the C<$text> in C$<line>.
+That is, zero if C<$text> is at the beginning of C<$line>.
+
+A cool completion function will look at C<$line> and C<$start> and give context-
+sensitive completion lists. Consider something that will do completion
+for two commands:
+
+    cat FILENAME
+    finger USERNAME
+    status [this|that|other]
+
+It (untested) might look like:
+
+    $readline'rl_completion_function = "main'complete";
+    sub complete { 
+        local($text, $_, $start) = @_;
+        ## return commands which may match if at the beginning....
+        return grep(/^$text/, 'cat', 'finger') if $start == 0;
+        return &rl_filename_list($text) if /^cat\b/;
+        return &my_namelist($text) if /^finger\b/;
+        return grep(/^text/, 'this', 'that','other') if /^status\b/;
+        ();
+	}
+
+A real completion function would be more robust.
 
 =cut
