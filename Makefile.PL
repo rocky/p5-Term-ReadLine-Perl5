@@ -6,7 +6,7 @@ WriteMakefile(
 	      NAME	   => 'Term::ReadLine',
 	      VERSION_FROM => 'ReadLine/readline.pm',
 	      linkext      => {LINKTYPE => '' },
-              clean        => {FILES => ".history_test"}
+              clean        => {FILES => [".history_test", 'pod2htmd.tmp', 'pod2htmi.tmp']}
 
 	      # dist => {COMPRESS=>'gzip -9f', SUFFIX=>'gz', 
 	      #		     DIST_DEFAULT => 'all uutardist'},
