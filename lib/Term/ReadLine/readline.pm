@@ -16,6 +16,16 @@ this (very fragile) code...
 
 =cut
 
+### TO DO: 
+#
+# * Use of File::HomeDir instead of $ENV{HOME} #8119 
+#
+# * rl_scroll_nextline inserts line full of spaces into the output before 
+#   the prompt #75743 
+#
+# * replace eval() wiht hex() and oct() #59194
+###
+
 package readline;
 
 my $autoload_broken = 1;	# currently: defined does not work with a-l
@@ -35,66 +45,69 @@ $rl_getc = \&rl_getc;
 &preinit;
 &init;
 
-# # use strict 'vars';
-
+# use strict 'vars';
+#
 # # Separation into my and vars needs some thought...
-
-# # use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
-# # 	    $rl_completion_function $rl_basic_word_break_characters
-# # 	    $rl_completer_word_break_characters $rl_special_prefixes
-# # 	    $rl_readline_name @rl_History $rl_MaxHistorySize
-# #             $rl_max_numeric_arg $rl_OperateCount
-# # 	    $KillBuffer $dumb_term $stdin_not_tty $InsertMode 
-# # 	    $rl_NoInitFromFile);
-
-# # my ($InputLocMsg, $term_OUT, $term_IN);
-# # my ($winsz_t, $TIOCGWINSZ, $winsz, $rl_margin, $hooj, $force_redraw);
-# # my ($hook, %var_HorizontalScrollMode, %var_EditingMode, %var_OutputMeta);
-# # my ($var_HorizontalScrollMode, $var_EditingMode, $var_OutputMeta);
-# # my (%var_ConvertMeta, $var_ConvertMeta, %var_MarkModifiedLines, $var_MarkModifiedLines);
-# # my ($term_readkey, $inDOS);
-# # my (%var_PreferVisibleBell, $var_PreferVisibleBell);
-# # my (%var_TcshCompleteMode, $var_TcshCompleteMode);
-# # my (%var_CompleteAddsuffix, $var_CompleteAddsuffix);
-# # my ($minlength, @winchhooks);
-# # my ($BRKINT, $ECHO, $FIONREAD, $ICANON, $ICRNL, $IGNBRK, $IGNCR, $INLCR,
-# #     $ISIG, $ISTRIP, $NCCS, $OPOST, $RAW, $TCGETS, $TCOON, $TCSETS, $TCXONC,
-# #     $TERMIOS_CFLAG, $TERMIOS_IFLAG, $TERMIOS_LFLAG, $TERMIOS_NORMAL_IOFF,
-# #     $TERMIOS_NORMAL_ION, $TERMIOS_NORMAL_LOFF, $TERMIOS_NORMAL_LON, 
-# #     $TERMIOS_NORMAL_OOFF, $TERMIOS_NORMAL_OON, $TERMIOS_OFLAG, 
-# #     $TERMIOS_READLINE_IOFF, $TERMIOS_READLINE_ION, $TERMIOS_READLINE_LOFF, 
-# #     $TERMIOS_READLINE_LON, $TERMIOS_READLINE_OOFF, $TERMIOS_READLINE_OON, 
-# #     $TERMIOS_VMIN, $TERMIOS_VTIME, $TIOCGETP, $TIOCGWINSZ, $TIOCSETP, 
-# #     $fion, $fionread_t, $mode, $sgttyb_t, 
-# #     $termios, $termios_t, $winsz, $winsz_t);
-# # my ($line, $initialized, $term_readkey);
-
-# # # Global variables added for vi mode (I'm leaving them all commented
-# # #     out, like the declarations above, until SelfLoader issues
-# # #     are resolved).
-
-# # # True when we're in one of the vi modes.
+#
+# use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
+# 	    $rl_completion_function $rl_basic_word_break_characters
+# 	    $rl_completer_word_break_characters $rl_special_prefixes
+# 	    $rl_readline_name @rl_History $rl_MaxHistorySize
+#             $rl_max_numeric_arg $rl_OperateCount
+# 	    $KillBuffer $dumb_term $stdin_not_tty $InsertMode 
+# 	    $rl_NoInitFromFile);
+#
+# my ($InputLocMsg, $term_OUT, $term_IN);
+# my ($winsz_t, $TIOCGWINSZ, $winsz, $rl_margin, $hooj, $force_redraw);
+# my ($hook, %var_HorizontalScrollMode, %var_EditingMode, %var_OutputMeta);
+# my ($var_HorizontalScrollMode, $var_EditingMode, $var_OutputMeta);
+# my (%var_ConvertMeta, $var_ConvertMeta, %var_MarkModifiedLines, $var_MarkModifiedLines);
+# my ($term_readkey, $inDOS);
+# my (%var_PreferVisibleBell, $var_PreferVisibleBell);
+# my (%var_TcshCompleteMode, $var_TcshCompleteMode);
+# my (%var_CompleteAddsuffix, $var_CompleteAddsuffix);
+# my ($minlength, @winchhooks);
+# my ($BRKINT, $ECHO, $FIONREAD, $ICANON, $ICRNL, $IGNBRK, $IGNCR, $INLCR,
+#     $ISIG, $ISTRIP, $NCCS, $OPOST, $RAW, $TCGETS, $TCOON, $TCSETS, $TCXONC,
+#     $TERMIOS_CFLAG, $TERMIOS_IFLAG, $TERMIOS_LFLAG, $TERMIOS_NORMAL_IOFF,
+#     $TERMIOS_NORMAL_ION, $TERMIOS_NORMAL_LOFF, $TERMIOS_NORMAL_LON, 
+#     $TERMIOS_NORMAL_OOFF, $TERMIOS_NORMAL_OON, $TERMIOS_OFLAG, 
+#     $TERMIOS_READLINE_IOFF, $TERMIOS_READLINE_ION, $TERMIOS_READLINE_LOFF, 
+#     $TERMIOS_READLINE_LON, $TERMIOS_READLINE_OOFF, $TERMIOS_READLINE_OON, 
+#     $TERMIOS_VMIN, $TERMIOS_VTIME, $TIOCGETP, $TIOCGWINSZ, $TIOCSETP, 
+#     $fion, $fionread_t, $mode, $sgttyb_t, 
+#     $termios, $termios_t, $winsz, $winsz_t);
+# my ($line, $initialized, $term_readkey);
+#
+# # Global variables added for vi mode (I'm leaving them all commented
+# # out, like the declarations above, until SelfLoader issues
+# #     are resolved).
+#
+# # True when we're in one of the vi modes.
 # # my $Vi_mode;
+#
+# # Array refs: saves keystrokes for '.' command.  Undefined when we're
+# #     not doing a '.'-able command.
+# my $Dot_buf;                # Working buffer
+# my $Last_vi_command;        # Gets $Dot_buf when a command is parsed
+#
+# # These hold state for vi 'u' and 'U'.
+# my($Dot_state, $Vi_undo_state, $Vi_undo_all_state);
+#
+# # Refs to hashes used for cursor movement
+# my($Vi_delete_patterns, $Vi_move_patterns,
+#    $Vi_change_patterns, $Vi_yank_patterns);
+#
+# # Array ref: holds parameters from the last [fFtT] command, for ';'
+# #     and ','.
+# my $Last_findchar;
+#
+# # Globals for history search commands (/, ?, n, N)
+# my $Vi_search_re;       # Regular expression (compiled by qr{})
+# my $Vi_search_reverse;  # True for '?' search, false for '/'
 
-# # # Array refs: saves keystrokes for '.' command.  Undefined when we're
-# # #     not doing a '.'-able command.
-# # my $Dot_buf;                # Working buffer
-# # my $Last_vi_command;        # Gets $Dot_buf when a command is parsed
-
-# # # These hold state for vi 'u' and 'U'.
-# # my($Dot_state, $Vi_undo_state, $Vi_undo_all_state);
-
-# # # Refs to hashes used for cursor movement
-# # my($Vi_delete_patterns, $Vi_move_patterns,
-# #    $Vi_change_patterns, $Vi_yank_patterns);
-
-# # # Array ref: holds parameters from the last [fFtT] command, for ';'
-# # #     and ','.
-# # my $Last_findchar;
-
-# # # Globals for history search commands (/, ?, n, N)
-# # my $Vi_search_re;       # Regular expression (compiled by qr{})
-# # my $Vi_search_reverse;  # True for '?' search, false for '/'
+=head1 SUBROUTINES
+=cut 
 
 sub get_window_size
 {
@@ -123,9 +136,6 @@ sub get_window_size
     local $^W = 0;		# WINCH may be illegal...
     $SIG{'WINCH'} = "readline::get_window_size";
 }
-
-=head2 SUBROUTINES
-=cut 
 
 # Fix: case-sensitivity of inputrc on/off keywords in
 #      `set' commands. readline lib doesn't care about case.
@@ -1058,7 +1068,7 @@ sub rl_bind
 	if ($key =~ m/"((?:\\.|[^\\])*)"/s) {
 	    @keys = _unescape "$1";
 	} else {
-	    ## ol-dstyle binding... only one key (or Meta+key)
+	    ## old-style binding... only one key (or Meta+key)
 	    my ($isctrl, $orig) = (0, $key);
 	    $isctrl = $key =~ s/\b(C|Control|CTRL)-//i;
 	    push(@keys, ord("\e")) if $key =~ s/\b(M|Meta)-//i; ## is meta?

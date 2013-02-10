@@ -67,12 +67,35 @@ $readline::rl_history_length = 0;
 $readline::rl_max_input_history = 0;
 
 
+=head2
+
+C<Term::ReadLine::Perl->new($name, [*IN, [*OUT])>
+
+Returns a handle for subsequent calls to readline functions. 
+
+C<$name> is the name of the application. 
+
+Optionally you can add two arguments for input and output
+filehandles. These arguments should be globs.
+
+This routine might also be called via
+C<Term::ReadLine->new($term_name)> if other Term::ReadLine packages
+like L<Term::ReadLine::Gnu> is not available or if you have
+C<$ENV{PERL_RL}> set to 'Perl';
+
+At present, because this code has lots of global state, we currently don't
+support more than one readline instance. 
+
+Somebody please volunteer to rewrite this code!
+
+=cut
+
 sub new {
   if (defined $term) {
     warn "Cannot create second readline interface, falling back to dumb.\n";
     return Term::ReadLine::Stub::new(@_);
   }
-  shift; # Package
+  shift; # Package name
   if (@_) {
     if ($term) {
       warn "Ignoring name of second readline interface.\n" if defined $term;
@@ -126,10 +149,11 @@ sub newTTY {
 sub ReadLine {'Term::ReadLine::Perl'}
 
 =head2
-C<MinLine($minlength)>
 
-Sets C<$readline::minlength> the minimum length a $line for it to go
-into the readline history.
+C<MinLine([$minlength])>
+
+If C<$minlength> is given, set C<$readline::minlength> the minimum
+length a $line for it to go into the readline history.
 
 The previous value is returned.
 

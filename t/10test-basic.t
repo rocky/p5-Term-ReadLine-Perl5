@@ -20,5 +20,6 @@ $ENV{'INPUTRC'} = '/dev/null';
 note('ctrl()');
 is(readline::ctrl(ord('A')), 1);
 is(readline::ctrl(ord('a')), 1);
+
 done_testing();
 

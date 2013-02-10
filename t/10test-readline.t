@@ -19,8 +19,6 @@ BEGIN {
 use Term::ReadLine::Perl;
 
 my $verbose = defined @ARGV && ($ARGV[0] eq 'verbose');
-
-
 ########################################################################
 # test new method
 
@@ -39,16 +37,25 @@ if ($verbose) {
 }
 
 ########################################################################
-# test ReadLine method
+note('ReadLine method');
 
 is($t->ReadLine, 'Term::ReadLine::Perl',
    "Package name should be 'Term::ReadLine::Perl'");
 
 ########################################################################
-# test Features method
 
 my %features = %{ $t->Features };
 my $res = %features;
 ok($res, 'Got Features method');
+
+
+note('MinLine()');
+my $old_value = $t->MinLine();
+is($t->MinLine(), $old_value,
+   "MinLine() with nothing should not change anything");
+is($t->MinLine(20), $old_value,
+   "MinLine(20) should return previous value $old_value");
+is($t->MinLine($old_value), 20,
+   "MinLine(20) should return value we just set: 20");
 
 done_testing();
