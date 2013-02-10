@@ -22,9 +22,9 @@ Term::ReadLine::Perl - A pure Perl implementation GNU Readline
 This is a implementation of the GNU Readline/History Library written
 entirely in Perl.
 
-GNU Readline reads lines from an interactive terminal with emacs or vi
-editing capabilities. It provides as mechanism for saving history of
-previous input.
+GNU Readline reads lines from an interactive terminal with I<emacs> or
+I<vi> editing capabilities. It provides as mechanism for saving
+history of previous input.
 
 This package typically used in command-line interfaces and REPLs (Read,
 Eval, Print Loops).

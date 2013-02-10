@@ -5,6 +5,7 @@ lib/Term/ReadLine/Perl.pm
 lib/Term/ReadLine/readline.pm
 lib/Term/ReadLine/readline.CHANGES
 README
+README.pod
 test.pl
 t/00test-pod.t
 t/10test-history.t

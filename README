@@ -68,7 +68,9 @@ such as accessing Readline variables and methods).
 
 AUTHOR BUGS
 ~~~~~~~~~~~
+
+Versions before to 1.04: 
+
 Ilya Zakharevich
 cpan@ilyaz.org
 
-Std dstribution site: http://www.ilyaz.org/software/perl/modules
