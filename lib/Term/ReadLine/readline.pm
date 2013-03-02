@@ -869,6 +869,14 @@ sub filler_Pending ($) {
   }
 }
 
+
+## _unescape is an internal function that will take a character 
+## sequence, possibly containing escape sequences, and converts to a series 
+## of octal keys.
+##
+## It has special rules for dealing with readline-specific escape sequence 
+## comnands.
+##
 ## New-style bindings are enclosed in double-quotes.
 ## Characters are taken verbatim except the special cases:
 ##    \C-x    Control x (for any x)
@@ -884,34 +892,37 @@ sub filler_Pending ($) {
 sub _unescape ($) {
   my($key, @keys) = shift;
 
-  while (length($key) > 0) {
+  my @commands = (
+    # ctrl_meta_x  
+    [ qr/^\\C-\\M-(.)/ => sub { ord("\e"), ctrl(ord(shift)) }, ],
+    # meta_e  
+    [ qr/^\\(M-|e)/ => sub { ord("\e") }, ],
+    # ctrl_x 
+    [ qr/^\\C-(.)/ => sub { ctrl(ord(shift)) }, ],
+    # hex  
+    [ qr/^\\x([0-9a-fA-F]{2})/ => sub { hex(shift) }, ],
+    # octal 
+    [ qr/^\\([0-7]{3})/ => sub { oct(shift) }, ],
+    # default  
+    [ qr/^\\\*$/ => sub { 'default'; }, ],
+    # EOT (Ctrl-D) 
+    [ qr/^\\d/ => sub { 4 }, ],
+    # backspace 
+    [ qr/\\b/ => sub { 0x7f }, ],
+    # escape_seq 
+    [ qr/\\(.)/ => sub { my $chr = shift; ord(($chr =~ /^[afnrtv]$/) ? eval(qq("\\$chr")) : $chr); } ],
+  );
 
-    # JP: fixed regex bugs below: changed all 's#' to 's#^'
-
-    if ($key =~ s#^\\C-\\M-(.)##) {
-      push(@keys, ord("\e"), &ctrl(ord($1)));
-    } elsif ($key =~ s#^\\(M-|e)##) {
-      push(@keys, ord("\e"));
-    } elsif ($key =~ s#^\\C-(.)##) {
-      push(@keys, &ctrl(ord($1)));
-    } elsif ($key =~ s#^\\x([0-9a-fA-F]{2})##) {
-      push(@keys, eval('0x'.$1));
-    } elsif ($key =~ s#^\\([0-7]{3})##) {
-      push(@keys, eval('0'.$1));
-    } elsif ($key =~ s#^\\\*$##) {     # JP: added
-      push(@keys, 'default');
-    } elsif ($key =~ s#^\\([afnrtv])##) {
-      push(@keys, ord(eval(qq("\\$1"))));
-    } elsif ($key =~ s#^\\d##) {
-      push(@keys, 4);		# C-d
-    } elsif ($key =~ s#^\\b##) {
-      push(@keys, 0x7f);	# Backspace
-    } elsif ($key =~ s#^\\(.)##) {
-      push(@keys, ord($1));
-    } else {
-      push(@keys, ord($key));
-      substr($key,0,1) = '';
+  CHAR: while (length($key) > 0) {
+    foreach my $command (@commands) {
+      my $regex = $command->[0];
+      if ($key =~ s/^$regex//) {
+        push @keys, $command->[1]->($1);
+        next CHAR;
+      }
     }
+    push @keys, ord($key);
+    substr($key,0,1) = '';
   }
   @keys
 }
