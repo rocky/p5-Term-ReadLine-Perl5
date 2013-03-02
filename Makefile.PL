@@ -3,11 +3,12 @@ use ExtUtils::MakeMaker;
 # the contents of the Makefile that is written.
 WriteMakefile(
     DISTNAME	 => 'Term-ReadLine-Perl5',
-    NAME	 => 'Term::ReadLine::Perl5',
+    NAME	     => 'Term::ReadLine::Perl5',
+    AUTHOR       => 'Jordan M. Adler <jmadler@cpan.org>',
     VERSION_FROM => 'lib/Term/ReadLine/readline.pm',
     linkext      => {LINKTYPE => '' },
     clean        => {
-	FILES => [".history_test", 'pod2htmd.tmp', 'pod2htmi.tmp']
+    	FILES => [".history_test", 'pod2htmd.tmp', 'pod2htmi.tmp']
     },
     BUILD_REQUIRES => {
         'rlib'       => '0.02',
