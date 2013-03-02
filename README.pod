@@ -1,8 +1,8 @@
 =for comment
+
 This file is shared by both README.pod and Perl.pm after its __END__
-It might also be in the github wiki:
-https://github.com/jmadler/Term-ReadLine-Perl5/wiki
-where we can immediately see the results and others can contribute.
+It might also be on github:
+https://github.com/jmadler/p5-Term-ReadLine-Perl5
 
 =for comment
 =head1 NAME

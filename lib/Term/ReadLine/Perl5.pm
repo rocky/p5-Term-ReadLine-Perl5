@@ -407,10 +407,12 @@ sub get_line {
 1;
 
 __END__
-
+
 =head1 AUTHORS
 
-Ilya Zakharevich
+Jordan M. Adler
+Rocky Bernstein
+Ilya Zakharevich (Term::ReadLine::Perl)
 Jeffrey Friedl (Original Perl4 code)
 
 =head1 SEE ALSO
@@ -425,7 +427,7 @@ Jeffrey Friedl (Original Perl4 code)
 
 =item L<Term::ReadLine::readline>
 
-=item L<Term::ReadLine::Perl5>
+=item L<Term::ReadLine::Perl>
 
 =item L<Term::ReadLine::Gnu>
 

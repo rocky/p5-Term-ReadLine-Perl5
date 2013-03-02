@@ -71,6 +71,6 @@ AUTHOR BUGS
 ~~~~~~~~~~~
 
 Bugs are accepted via CPAN email, CPAN RT, or Github:
-https://github.com/jmadler/Term-ReadLine-Perl5
+https://github.com/jmadler/p5-Term-ReadLine-Perl5
 
 Jordan M. Adler
