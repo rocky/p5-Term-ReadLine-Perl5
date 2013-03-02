@@ -16,16 +16,16 @@ BEGIN {
     my $last = 18; #82
     print "1..$last\n"; $n = 1;
     $ENV{LANG} = 'C';
-    # force Term::ReadLine to use Term::ReadLine::Perl
-    $ENV{PERL_RL} = 'Perl';	
+    # force Term::ReadLine to use Term::ReadLine::Perl5
+    $ENV{PERL_RL} = 'Perl5';
 }
 END {print "not ok $n\n" unless $loaded;}
 
 use strict; use warnings;
 
 use vars qw($loaded $n);
-use lib './blib/lib';
-use Term::ReadLine;
+use rlib '../lib';
+use Term::ReadLine::Perl5;
 sub show_indices;
 
 $loaded = 1;
@@ -51,7 +51,7 @@ sub ok {
 ########################################################################
 # test new method
 
-my $t = new Term::ReadLine 'ReadLineTest';
+my $t = new Term::ReadLine::Perl5 'ReadLineTest';
 print defined $t ? "ok $n\n" : "not ok $n\n"; $n++;
 
 my $OUT = $t->OUT || \*STDOUT;
@@ -59,11 +59,11 @@ my $OUT = $t->OUT || \*STDOUT;
 ########################################################################
 # test ReadLine method
 
-if ($t->ReadLine eq 'Term::ReadLine::Perl') {
+if ($t->ReadLine eq 'Term::ReadLine::Perl5') {
     print "ok $n\n";
 } else {
     print "not ok $n\n";
-    print $OUT ("Package name should be \`Term::ReadLine::Perl\', but it is \`",
+    print $OUT ("Package name should be \`Term::ReadLine::Perl5\', but it is \`",
 		$t->ReadLine, "\'\n");
 }
 $n++;

@@ -2,17 +2,15 @@
 use strict;
 use warnings;
 use lib '../lib';
-use blib;
 
 use Test::More;
 
 BEGIN {
-  use_ok( 'Term::ReadLine::Perl' );
+  use_ok( 'Term::ReadLine::Perl5' );
 }
 
+use rlib '../lib';
 require 'Term/ReadLine/readline.pm';
-ok(defined($Term::ReadLine::Perl::VERSION), 
-   "\$Term::ReadLine::Perl::Version number is set");
 
 # stop reading ~/.inputrc
 $ENV{'INPUTRC'} = '/dev/null';

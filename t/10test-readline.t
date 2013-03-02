@@ -8,15 +8,15 @@
 #	modify it under the same terms as Perl itself.
 
 use strict; use warnings;
-use lib './lib';
+use rlib '../lib';
 use Test::More;
 
 BEGIN {
-    $ENV{PERL_RL} = 'Perl';	# force to use Term::ReadLine::Perl
+    $ENV{PERL_RL} = 'Perl5';	# force to use Term::ReadLine::Perl5
     $ENV{LANG} = 'C';
 }
 
-use Term::ReadLine::Perl;
+use Term::ReadLine::Perl5;
 
 my $verbose = defined @ARGV && ($ARGV[0] eq 'verbose');
 ########################################################################
@@ -24,7 +24,7 @@ my $verbose = defined @ARGV && ($ARGV[0] eq 'verbose');
 
 $ENV{'INPUTRC'} = '/dev/null';	# stop reading ~/.inputrc
 
-my $t = new Term::ReadLine::Perl 'ReadLineTest';
+my $t = new Term::ReadLine::Perl5 'ReadLineTest';
 ok($t, "new method, new's");
 
 my $OUT;
@@ -39,8 +39,8 @@ if ($verbose) {
 ########################################################################
 note('ReadLine method');
 
-is($t->ReadLine, 'Term::ReadLine::Perl',
-   "Package name should be 'Term::ReadLine::Perl'");
+is($t->ReadLine, 'Term::ReadLine::Perl5',
+   "Package name should be 'Term::ReadLine::Perl5'");
 
 ########################################################################
 

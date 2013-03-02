@@ -1,16 +1,16 @@
 # -*- Perl -*-
-package Term::ReadLine::Perl;
+package Term::ReadLine::Perl5;
 
 use Term::ReadLine;  # Needed for Term::ReadLine::Stub
 
 =head1 NAME
 
-Term::ReadLine::Perl - A pure Perl implementation GNU Readline
+Term::ReadLine::Perl5 - A pure Perl implementation GNU Readline
 
 =head1 SYNOPSIS
 
-  use Term::ReadLine::Perl;
-  $term = new Term::ReadLine::Perl 'ProgramName';
+  use Term::ReadLine::Perl5;
+  $term = new Term::ReadLine::Perl5 'ProgramName';
   while ( defined ($_ = $term->readline('prompt>')) ) {
     ...
   }
@@ -33,7 +33,7 @@ Eval, Print Loops).
 
 
 use Carp;
-@ISA = qw(Term::ReadLine::Stub Term::ReadLine::Compa Term::ReadLine::Perl::AU);
+@ISA = qw(Term::ReadLine::Stub Term::ReadLine::Compa Term::ReadLine::Perl5::AU);
 #require 'readline.pl';
 
 $VERSION = 1.04;
@@ -146,7 +146,7 @@ sub newTTY {
   select($sel);
 }
 
-sub ReadLine {'Term::ReadLine::Perl'}
+sub ReadLine {'Term::ReadLine::Perl5'}
 
 =head2
 
@@ -360,13 +360,13 @@ sub WriteHistory {
 	     );
 sub Features { \%features; }
 # my %attribs;
-tie %attribs, 'Term::ReadLine::Perl::Tie' or die ;
+tie %attribs, 'Term::ReadLine::Perl5::Tie' or die ;
 sub Attribs {
   \%attribs;
 }
 sub DESTROY {}
 
-package Term::ReadLine::Perl::AU;
+package Term::ReadLine::Perl5::AU;
 
 sub AUTOLOAD {
   { $AUTOLOAD =~ s/.*:://; }		# preserve match data
@@ -377,7 +377,7 @@ sub AUTOLOAD {
   goto &$AUTOLOAD;
 }
 
-package Term::ReadLine::Perl::Tie;
+package Term::ReadLine::Perl5::Tie;
 
 sub TIEHASH { bless {} }
 sub DESTROY {}
