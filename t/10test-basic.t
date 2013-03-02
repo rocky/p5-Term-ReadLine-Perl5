@@ -11,7 +11,7 @@ BEGIN {
 
 require 'Term/ReadLine/readline.pm';
 ok(defined($Term::ReadLine::Perl5::VERSION), 
-   "\$Term::ReadLine::Perl::Version number is set");
+   "\$Term::ReadLine::Perl5::Version number is set");
 
 # stop reading ~/.inputrc
 $ENV{'INPUTRC'} = '/dev/null';

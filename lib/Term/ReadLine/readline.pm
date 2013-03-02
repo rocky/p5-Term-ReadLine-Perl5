@@ -1197,7 +1197,7 @@ sub F_ReReadInitFile
 sub get_ornaments_selected {
     return if @$rl_term_set >= 6;
     local $^W=0;
-    my $Orig = $Term::ReadLine::Perl::term->ornaments(); 
+    my $Orig = $Term::ReadLine::Perl5::term->ornaments(); 
     eval {
         # Term::ReadLine does not expose its $terminal, so make another
         require Term::Cap;
@@ -1208,10 +1208,10 @@ sub get_ornaments_selected {
     if (!$@ and $Orig ne ',,,'){
 	my @set = @$rl_term_set;
 
-        $Term::ReadLine::Perl::term->ornaments
+        $Term::ReadLine::Perl5::term->ornaments
             (join(',', (split(/,/, $Orig))[0,1]) . ',mr,me') ;
         @set[4,5] = @$rl_term_set[2,3];
-        $Term::ReadLine::Perl::term->ornaments($Orig);
+        $Term::ReadLine::Perl5::term->ornaments($Orig);
 	@$rl_term_set = @set;
     } else {
         @$rl_term_set[4,5] = @$rl_term_set[2,3];
@@ -1231,7 +1231,7 @@ sub readline_dumb
     print $term_OUT $prompt;
     local $/ = "\n";
     return undef
-	if !defined($line = $Term::ReadLine::Perl::term->get_line);
+	if !defined($line = $Term::ReadLine::Perl5::term->get_line);
     chomp($line);
     $| = $oldbar;
     select $old;
@@ -1251,7 +1251,7 @@ C<undef> on EOF.
 
 sub readline
 {
-    $Term::ReadLine::Perl::term->register_Tk 
+    $Term::ReadLine::Perl5::term->register_Tk 
       if not $Term::ReadLine::registered and $Term::ReadLine::toloop
 	and defined &Tk::DoOneEvent;
     if ($stdin_not_tty) {
@@ -1350,7 +1350,7 @@ sub readline
         &F_ViInput();
         if ($rl_vi_replace_default_on_insert){
             local $^W=0;
-           my $Orig = $Term::ReadLine::Perl::term->ornaments(); 
+           my $Orig = $Term::ReadLine::Perl5::term->ornaments(); 
            eval {
                # Term::ReadLine does not expose its $terminal, so make another
                require Term::Cap;
@@ -1359,12 +1359,12 @@ sub readline
                $terminal->Trequire('mr');
            };
            if (!$@ and $Orig ne ',,,'){
-               $Term::ReadLine::Perl::term->ornaments
+               $Term::ReadLine::Perl5::term->ornaments
                    (join(',', (split(/,/, $Orig))[0,1]) . ',mr,me') 
            }
             my $F_SelfInsert_Real = \&F_SelfInsert;
             *F_SelfInsert = sub {
-               $Term::ReadLine::Perl::term->ornaments($Orig); 
+               $Term::ReadLine::Perl5::term->ornaments($Orig); 
                 &F_ViChangeEntireLine;
                 local $^W=0;
                 *F_SelfInsert = $F_SelfInsert_Real;
@@ -1372,7 +1372,7 @@ sub readline
             };
             my $F_ViEndInsert_Real = \&F_ViEndInsert;
             *F_ViEndInsert = sub {
-               $Term::ReadLine::Perl::term->ornaments($Orig); 
+               $Term::ReadLine::Perl5::term->ornaments($Orig); 
                 local $^W=0;
                 *F_SelfInsert = $F_SelfInsert_Real;
                 *F_ViEndInsert = $F_ViEndInsert_Real;
@@ -1550,7 +1550,7 @@ sub substr_with_props {
   defined $from or $from = 0;
   defined $len or $len = length($p) + length($s) - $from;
   unless (defined $ket) {
-    warn 'bug in Term::ReadLine::Perl, please report to its author cpan@ilyaz.org';
+    warn 'bug in Term::ReadLine::Perl5, please report to its author';
     $ket = '';
   }
   # We may draw over to put cursor in a correct position:
@@ -1849,11 +1849,11 @@ sub getc_with_pending {
 sub rl_getc {
 	  my $key;                        # JP: Added missing declaration
 	  if (defined $term_readkey) { # XXXX ???
-	    $Term::ReadLine::Perl::term->Tk_loop 
+	    $Term::ReadLine::Perl5::term->Tk_loop 
 	      if $Term::ReadLine::toloop && defined &Tk::DoOneEvent;
 	    $key = Term::ReadKey::ReadKey(0, $term_IN);
 	  } else {
-	    $key = $Term::ReadLine::Perl::term->get_c;
+	    $key = $Term::ReadLine::Perl5::term->get_c;
 	  }
 }
 

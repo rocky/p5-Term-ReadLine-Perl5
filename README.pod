@@ -1,18 +1,18 @@
 =for comment
 This file is shared by both README.pod and Perl.pm after its __END__
 It might also be in the github wiki:
-https://github.com/rocky/Term-ReadLine-Per/wiki
+https://github.com/jmadler/Term-ReadLine-Perl5/wiki
 where we can immediately see the results and others can contribute.
 
 =for comment
 =head1 NAME
 
-Term::ReadLine::Perl - A pure Perl implementation GNU Readline
+Term::ReadLine::Perl5 - A pure Perl implementation GNU Readline
 
 =head1 SYNOPSIS
 
-  use Term::ReadLine::Perl;
-  $term = new Term::ReadLine::Perl 'ProgramName';
+  use Term::ReadLine::Perl5;
+  $term = new Term::ReadLine::Perl5 'ProgramName';
   while ( defined ($_ = $term->readline('prompt>')) ) {
     ...
   }
@@ -35,11 +35,13 @@ Eval, Print Loops).
 
 To install this module type:
 
-	perl Makefile.PL
-	make
-        make test # for interactive testing or
-	AUTOMATED_TESTING=1 make test
-	make install # might need sudo make install
+    perl Makefile.PL
+    make
+    # for interactive testing:
+    make test 
+    # for non-interactive testing
+    AUTOMATED_TESTING=1 make test
+    make install # might need sudo make install
 
 
 For interactive testing try redirect I<STDIN> and/or I<STDOUT>.

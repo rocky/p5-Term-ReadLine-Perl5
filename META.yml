@@ -1,6 +1,6 @@
 --- #YAML:1.0
-name:               Term-ReadLine-Perl
-version:            1.0303
+name:               Term-ReadLine-Perl5
+version:            1.04
 abstract:           ~
 author:  []
 license:            unknown

@@ -1,3 +1,10 @@
+1.04: 2013-03-02
+
+- First Term::ReadLine::Perl5 release.
+- Add history commit from Rocky Bernstein.
+- Fix some style changes related to use of eval() in readline::_unescape(). 
+- Fork from Term::ReadLine::Perl.  Original changes located below.
+
 1.0303: 2009-10-28
 
 - Would not allow macros with space in them.

@@ -371,7 +371,7 @@ package Term::ReadLine::Perl5::AU;
 sub AUTOLOAD {
   { $AUTOLOAD =~ s/.*:://; }		# preserve match data
   my $name = "readline::rl_$AUTOLOAD";
-  die "Unknown method `$AUTOLOAD' in Term::ReadLine::Perl" 
+  die "Unknown method `$AUTOLOAD' in Term::ReadLine::Perl5" 
     unless exists $readline::{"rl_$AUTOLOAD"};
   *$AUTOLOAD = sub { shift; &$name };
   goto &$AUTOLOAD;
@@ -425,7 +425,7 @@ Jeffrey Friedl (Original Perl4 code)
 
 =item L<Term::ReadLine::readline>
 
-=item L<Term::ReadLine::Perl>
+=item L<Term::ReadLine::Perl5>
 
 =item L<Term::ReadLine::Gnu>
 
