@@ -12,4 +12,6 @@ t/10test-basic.t
 t/10test-history.t
 t/10test-readline.t
 t/15test-unescape.t
+t/20test-read-input-file.t
+t/data/undo.inputrc
 test.pl
