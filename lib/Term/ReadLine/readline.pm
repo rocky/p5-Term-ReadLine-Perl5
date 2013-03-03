@@ -18,6 +18,8 @@ this (very fragile) code...
 
 package readline;
 
+use Term::ReadLine;  # For Term::ReadLine::TermCap::ornaments
+
 my $autoload_broken = 1;	# currently: defined does not work with a-l
 my $useioctl = 1;
 my $usestty = 1;
@@ -1196,7 +1198,7 @@ sub F_ReReadInitFile
 sub get_ornaments_selected {
     return if @$rl_term_set >= 6;
     local $^W=0;
-    my $Orig = $Term::ReadLine::Perl5::term->ornaments(); 
+    my $Orig = Term::ReadLine::TermCap::ornaments(__PACKAGE__);
     eval {
         # Term::ReadLine does not expose its $terminal, so make another
         require Term::Cap;
@@ -1207,10 +1209,12 @@ sub get_ornaments_selected {
     if (!$@ and $Orig ne ',,,'){
 	my @set = @$rl_term_set;
 
-        $Term::ReadLine::Perl5::term->ornaments
-            (join(',', (split(/,/, $Orig))[0,1]) . ',mr,me') ;
+        Term::ReadLine::TermCap::ornaments(__PACKAGE__,
+					join(',', 
+					     (split(/,/, $Orig))[0,1]) 
+					. ',mr,me') ;
         @set[4,5] = @$rl_term_set[2,3];
-        $Term::ReadLine::Perl5::term->ornaments($Orig);
+        Term::ReadLine::TermCap::ornaments(__PACKAGE__, $Orig);
 	@$rl_term_set = @set;
     } else {
         @$rl_term_set[4,5] = @$rl_term_set[2,3];
@@ -1353,7 +1357,7 @@ sub readline
         &F_ViInput();
         if ($rl_vi_replace_default_on_insert){
             local $^W=0;
-           my $Orig = $Term::ReadLine::Perl5::term->ornaments(); 
+	    my $Orig = Term::ReadLine::TermCap::ornaments(__PACKAGE__);
            eval {
                # Term::ReadLine does not expose its $terminal, so make another
                require Term::Cap;
@@ -1362,12 +1366,14 @@ sub readline
                $terminal->Trequire('mr');
            };
            if (!$@ and $Orig ne ',,,'){
-               $Term::ReadLine::Perl5::term->ornaments
-                   (join(',', (split(/,/, $Orig))[0,1]) . ',mr,me') 
-           }
+               Term::ReadLine::TermCap::ornaments(__PACKAGE__,
+					       join(',', 
+						    (split(/,/, $Orig))[0,1])
+					       . ',mr,me');
+	}
             my $F_SelfInsert_Real = \&F_SelfInsert;
             *F_SelfInsert = sub {
-               $Term::ReadLine::Perl5::term->ornaments($Orig); 
+		Term::ReadLine::TermCap::ornaments(__PACKAGE__); 
                 &F_ViChangeEntireLine;
                 local $^W=0;
                 *F_SelfInsert = $F_SelfInsert_Real;
@@ -1375,7 +1381,7 @@ sub readline
             };
             my $F_ViEndInsert_Real = \&F_ViEndInsert;
             *F_ViEndInsert = sub {
-               $Term::ReadLine::Perl5::term->ornaments($Orig); 
+               Term::ReadLine::TermCap::ornaments(__PACKAGE__, $Orig); 
                 local $^W=0;
                 *F_SelfInsert = $F_SelfInsert_Real;
                 *F_ViEndInsert = $F_ViEndInsert_Real;
