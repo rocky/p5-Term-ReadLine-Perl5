@@ -860,47 +860,56 @@ sub filler_Pending ($) {
 }
 
 
-## _unescape is an internal function that will take a character 
-## sequence, possibly containing escape sequences, and converts to a series 
-## of octal keys.
-##
-## It has special rules for dealing with readline-specific escape sequence 
-## comnands.
-##
-## New-style bindings are enclosed in double-quotes.
-## Characters are taken verbatim except the special cases:
-##    \C-x    Control x (for any x)
-##    \M-x    Meta x (for any x)
-##    \e	  Escape
-##    \*      Set the keymap default   (JP: added this)
-##               (must be the last character of the sequence)
-##
-##    \x      x  (unless it fits the above pattern)
-##
-## Look for special case of "\C-\M-x", which should be treated
-## like "\M-\C-x".
+=head2 _unescape
+
+C<_unescape($string)> -> List of keys
+
+This internal function that takes C<$string> possibly containing
+escape sequences, and converts to a series of octal keys.
+
+It has special rules for dealing with readline-specific escape-sequence 
+commands.
+
+New-style key bindings are enclosed in double-quotes.
+Characters are taken verbatim except the special cases:
+
+    \C-x    Control x (for any x)
+    \M-x    Meta x (for any x)
+    \e	    Escape
+    \*      Set the keymap default   (JP: added this)
+            (must be the last character of the sequence)
+    \x      x  (unless it fits the above pattern)
+
+Special case "\C-\M-x", should be treated like "\M-\C-x".
+
+=cut 
+
 sub _unescape ($) {
   my($key, @keys) = shift;
 
   my @commands = (
-    # ctrl_meta_x  
-    [ qr/^\\C-\\M-(.)/ => sub { ord("\e"), ctrl(ord(shift)) }, ],
-    # meta_e  
-    [ qr/^\\(M-|e)/ => sub { ord("\e") }, ],
-    # ctrl_x 
-    [ qr/^\\C-(.)/ => sub { ctrl(ord(shift)) }, ],
-    # hex  
-    [ qr/^\\x([0-9a-fA-F]{2})/ => sub { hex(shift) }, ],
-    # octal 
-    [ qr/^\\([0-7]{3})/ => sub { oct(shift) }, ],
+    # Ctrl-meta <x>
+    [ qr/^\\C-\\M-(.)/, sub { ord("\e"), ctrl(ord(shift)) } ],
+    # Meta <e>
+    [ qr/^\\(M-|e)/, sub { ord("\e") } ],
+    # Ctrl <x>
+    [ qr/^\\C-(.)/, sub { ctrl(ord(shift)) } ],
+    # hex value
+    [ qr/^\\x([0-9a-fA-F]{2})/, sub { hex(shift) } ],
+    # octal value
+    [ qr/^\\([0-7]{3})/, sub { oct(shift) } ],
     # default  
-    [ qr/^\\\*$/ => sub { 'default'; }, ],
+    [ qr/^\\\*$/, sub { 'default'; } ],
     # EOT (Ctrl-D) 
-    [ qr/^\\d/ => sub { 4 }, ],
-    # backspace 
-    [ qr/\\b/ => sub { 0x7f }, ],
-    # escape_seq 
-    [ qr/\\(.)/ => sub { my $chr = shift; ord(($chr =~ /^[afnrtv]$/) ? eval(qq("\\$chr")) : $chr); } ],
+    [ qr/^\\d/, sub { 4 } ],
+    # Backspace 
+    [ qr/\\b/, sub { 0x7f } ],
+    # Escape Sequence
+    [ qr/\\(.)/, 
+      sub { 
+	  my $chr = shift; 
+	  ord(($chr =~ /^[afnrtv]$/) ? eval(qq("\\$chr")) : $chr); 
+      } ],
   );
 
   CHAR: while (length($key) > 0) {
