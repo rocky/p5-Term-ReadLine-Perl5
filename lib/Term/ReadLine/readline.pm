@@ -7,7 +7,7 @@ Term::ReadLine::readline
 
 =head1 DESCRIPTION
 
-Wraps what was initially Perl4 and now partially Perl4) into a fake
+Wraps what was initially Perl4 (and now partially Perl4) into a fake
 Perl5 pseudo-module.
 
 The mismatch of the package name, C<readline> and file name
@@ -886,10 +886,7 @@ Special case "\C-\M-x", should be treated like "\M-\C-x".
 
 =cut 
 
-sub _unescape ($) {
-  my($key, @keys) = shift;
-
-  my @commands = (
+my @ESCAPE_REGEXPS = (
     # Ctrl-meta <x>
     [ qr/^\\C-\\M-(.)/, sub { ord("\e"), ctrl(ord(shift)) } ],
     # Meta <e>
@@ -912,10 +909,13 @@ sub _unescape ($) {
           my $chr = shift; 
           ord(($chr =~ /^[afnrtv]$/) ? eval(qq("\\$chr")) : $chr); 
       } ],
-  );
+    );
+
+sub _unescape ($) {
+  my($key, @keys) = shift;
 
   CHAR: while (length($key) > 0) {
-    foreach my $command (@commands) {
+    foreach my $command (@ESCAPE_REGEXPS) {
       my $regex = $command->[0];
       if ($key =~ s/^$regex//) {
         push @keys, $command->[1]->($1);
@@ -1247,7 +1247,7 @@ sub readline_dumb
 
 =head2 readline
 
-C<&readline'readline($prompt, $default)> 
+C<&readline::readline($prompt, $default)> 
 
 The main routine to call interactively read lines. 
 
@@ -4410,23 +4410,23 @@ as an early basis for this.
 
 Once this package is included (require'd), you can then call:
 
-    $text = &readline'readline($input);
+    $text = &readline::readline($input);
 
 to get lines of input from the user.
 
 Normally, it reads F<~/.inputrc> when loaded. To suppress this, set
 
-        $readline'rl_NoInitFromFile = 1;
+        $readline::rl_NoInitFromFile = 1;
 
 before requiring the package.
 
 Call I<rl_bind()> to add your own key bindings, as in:
 
-        &readline'rl_bind('C-L', 'possible-completions');
+        &readline::rl_bind('C-L', 'possible-completions');
 
 Call rl_set to set mode variables yourself, as in:
 
-        &readline'rl_set('TcshCompleteMode', 'On');
+        &readline::rl_set('TcshCompleteMode', 'On');
 
 To change the input mode (emacs or vi) use F<~/.inputrc> or call
 
@@ -4436,7 +4436,7 @@ or:
 
 Call rl_basic_commands to set your own command completion, as in:
 
-       &readline'rl_basic_commands('print', 'list', 'quit', 'run', 'status');
+       &readline::rl_basic_commands('print', 'list', 'quit', 'run', 'status');
 
 =head2 What's Cool
 
@@ -4473,7 +4473,7 @@ numeric prefixes
 supports multi-byte characters (at least for the Japanese I use).
 
 =item *
-Has a tcsh-like completion-function mode.call &readline'rl_set('tcsh-complete-mode', 'On') to turn on.
+Has a tcsh-like completion-function mode.call &readline::rl_set('tcsh-complete-mode', 'On') to turn on.
 
 =back
 
@@ -4763,7 +4763,7 @@ for two commands:
 
 It (untested) might look like:
 
-    $readline'rl_completion_function = "main'complete";
+    $readline::rl_completion_function = "main::complete";
     sub complete { 
         local($text, $_, $start) = @_;
         ## return commands which may match if at the beginning....
