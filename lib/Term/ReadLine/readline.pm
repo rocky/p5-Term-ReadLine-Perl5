@@ -16,16 +16,6 @@ this (very fragile) code...
 
 =cut
 
-### TO DO: 
-#
-# * Use of File::HomeDir instead of $ENV{HOME} #8119 
-#
-# * rl_scroll_nextline inserts line full of spaces into the output before 
-#   the prompt #75743 
-#
-# * replace eval() wiht hex() and oct() #59194
-###
-
 package readline;
 
 my $autoload_broken = 1;	# currently: defined does not work with a-l
@@ -1218,6 +1208,10 @@ sub get_ornaments_selected {
     }
 }
 
+sub get_line {
+  scalar <$term_IN>;
+}
+
 =head2 readline_dumb
 
 A version readline for a dumb terminal, that is one that doesn't have
@@ -1231,7 +1225,7 @@ sub readline_dumb
     print $term_OUT $prompt;
     local $/ = "\n";
     return undef
-	if !defined($line = $Term::ReadLine::Perl5::term->get_line);
+	if !defined($line = get_line);
     chomp($line);
     $| = $oldbar;
     select $old;
