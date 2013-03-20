@@ -393,11 +393,6 @@ sub FETCH {
 
 package Term::ReadLine::Compa;
 
-sub get_c {
-  my $self = shift;
-  getc($self->[0]);
-}
-
 sub get_line {
   my $self = shift;
   my $fh = $self->[0];
