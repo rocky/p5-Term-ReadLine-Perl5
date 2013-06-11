@@ -7,7 +7,7 @@ Term::ReadLine::readline
 
 =head1 DESCRIPTION
 
-Wraps what was initially Perl4 and now partially Perl4) into a fake
+Wraps what was initially Perl4 (and now partially Perl4) into a fake
 Perl5 pseudo-module.
 
 The mismatch of the package name, C<readline> and file name
@@ -862,51 +862,60 @@ sub filler_Pending ($) {
 }
 
 
-## _unescape is an internal function that will take a character 
-## sequence, possibly containing escape sequences, and converts to a series 
-## of octal keys.
-##
-## It has special rules for dealing with readline-specific escape sequence 
-## comnands.
-##
-## New-style bindings are enclosed in double-quotes.
-## Characters are taken verbatim except the special cases:
-##    \C-x    Control x (for any x)
-##    \M-x    Meta x (for any x)
-##    \e          Escape
-##    \*      Set the keymap default   (JP: added this)
-##               (must be the last character of the sequence)
-##
-##    \x      x  (unless it fits the above pattern)
-##
-## Look for special case of "\C-\M-x", which should be treated
-## like "\M-\C-x".
+=head2 _unescape
+
+C<_unescape($string)> -> List of keys
+
+This internal function that takes C<$string> possibly containing
+escape sequences, and converts to a series of octal keys.
+
+It has special rules for dealing with readline-specific escape-sequence 
+commands.
+
+New-style key bindings are enclosed in double-quotes.
+Characters are taken verbatim except the special cases:
+
+    \C-x    Control x (for any x)
+    \M-x    Meta x (for any x)
+    \e      Escape
+    \*      Set the keymap default   (JP: added this)
+            (must be the last character of the sequence)
+    \x      x  (unless it fits the above pattern)
+
+Special case "\C-\M-x", should be treated like "\M-\C-x".
+
+=cut 
+
+my @ESCAPE_REGEXPS = (
+    # Ctrl-meta <x>
+    [ qr/^\\C-\\M-(.)/, sub { ord("\e"), ctrl(ord(shift)) } ],
+    # Meta <e>
+    [ qr/^\\(M-|e)/, sub { ord("\e") } ],
+    # Ctrl <x>
+    [ qr/^\\C-(.)/, sub { ctrl(ord(shift)) } ],
+    # hex value
+    [ qr/^\\x([0-9a-fA-F]{2})/, sub { hex(shift) } ],
+    # octal value
+    [ qr/^\\([0-7]{3})/, sub { oct(shift) } ],
+    # default  
+    [ qr/^\\\*$/, sub { 'default'; } ],
+    # EOT (Ctrl-D) 
+    [ qr/^\\d/, sub { 4 } ],
+    # Backspace 
+    [ qr/\\b/, sub { 0x7f } ],
+    # Escape Sequence
+    [ qr/\\(.)/, 
+      sub { 
+          my $chr = shift; 
+          ord(($chr =~ /^[afnrtv]$/) ? eval(qq("\\$chr")) : $chr); 
+      } ],
+    );
+
 sub _unescape ($) {
   my($key, @keys) = shift;
 
-  my @commands = (
-    # ctrl_meta_x  
-    [ qr/^\\C-\\M-(.)/ => sub { ord("\e"), ctrl(ord(shift)) }, ],
-    # meta_e  
-    [ qr/^\\(M-|e)/ => sub { ord("\e") }, ],
-    # ctrl_x 
-    [ qr/^\\C-(.)/ => sub { ctrl(ord(shift)) }, ],
-    # hex  
-    [ qr/^\\x([0-9a-fA-F]{2})/ => sub { hex(shift) }, ],
-    # octal 
-    [ qr/^\\([0-7]{3})/ => sub { oct(shift) }, ],
-    # default  
-    [ qr/^\\\*$/ => sub { 'default'; }, ],
-    # EOT (Ctrl-D) 
-    [ qr/^\\d/ => sub { 4 }, ],
-    # backspace 
-    [ qr/\\b/ => sub { 0x7f }, ],
-    # escape_seq 
-    [ qr/\\(.)/ => sub { my $chr = shift; ord(($chr =~ /^[afnrtv]$/) ? eval(qq("\\$chr")) : $chr); } ],
-  );
-
   CHAR: while (length($key) > 0) {
-    foreach my $command (@commands) {
+    foreach my $command (@ESCAPE_REGEXPS) {
       my $regex = $command->[0];
       if ($key =~ s/^$regex//) {
         push @keys, $command->[1]->($1);
@@ -1102,12 +1111,23 @@ sub rl_bind
     &actually_do_binding(@arr);
 }
 
+=head2 read_an_init_file
+
+C<read_an_init_file(inputrc_file)>
+
+Reads and executes I<inputrc_file> which does things like Sets input
+key bindings in key maps.
+
+If there was a problem return 0.  Otherwise return 1;
+
+=cut
+
 sub read_an_init_file {
     my $file = shift;
     my $include_depth = shift;
     local *RC;
     $file =~ s/^~([\\\/])/$ENV{HOME}$1/ if not -f $file and exists $ENV{HOME};
-    return unless open RC, "< $file";
+    return 0 unless open RC, "< $file";
     my (@action) = ('exec'); ## exec, skip, ignore (until appropriate endif)
     my (@level) = ();        ## if, else
 
@@ -1158,12 +1178,12 @@ sub read_an_init_file {
             }
         } elsif ($action[$#action] ne 'exec') {
             ## skipping this one....
-        # readline permits trailing comments in inputrc
-        # this seems to solve the warnings caused by trailing comments in the
-        # default /etc/inputrc on Mandrake Linux boxes.
-        } elsif (m/\s*set\s+(\S+)\s+(\S*)/) {   # Allow trailing comment
+        # Readline permits trailing comments in inputrc
+        # For example, /etc/inputrc on Mandrake Linux boxes has trailing 
+	# comments
+        } elsif (m/\s*set\s+(\S+)\s+(\S*)/) { # Allow trailing comment
             &rl_set($1, $2, $file);
-        } elsif (m/^\s*(\S+):\s+("(?:\\.|[^\\\"])*"|'(\\.|[^\\\'])*')/) {       # Allow trailing comment
+        } elsif (m/^\s*(\S+):\s+("(?:\\.|[^\\\"])*"|'(\\.|[^\\\'])*')/) { # Allow trailing comment
             &rl_bind($1, $2);
         } elsif (m/^\s*(\S+|"[^\"]+"):\s+(\S+)/) { # Allow trailing comment
             &rl_bind($1, $2);
@@ -1173,6 +1193,7 @@ sub read_an_init_file {
         }
     }
     close(RC);
+    return 1;
 }
 
 sub F_ReReadInitFile
@@ -1238,7 +1259,7 @@ sub readline_dumb
 
 =head2 readline
 
-C<&readline'readline($prompt, $default)> 
+C<&readline::readline($prompt, $default)> 
 
 The main routine to call interactively read lines. 
 
@@ -4401,23 +4422,23 @@ as an early basis for this.
 
 Once this package is included (require'd), you can then call:
 
-    $text = &readline'readline($input);
+    $text = &readline::readline($input);
 
 to get lines of input from the user.
 
 Normally, it reads F<~/.inputrc> when loaded. To suppress this, set
 
-        $readline'rl_NoInitFromFile = 1;
+        $readline::rl_NoInitFromFile = 1;
 
 before requiring the package.
 
 Call I<rl_bind()> to add your own key bindings, as in:
 
-        &readline'rl_bind('C-L', 'possible-completions');
+        &readline::rl_bind('C-L', 'possible-completions');
 
 Call rl_set to set mode variables yourself, as in:
 
-        &readline'rl_set('TcshCompleteMode', 'On');
+        &readline::rl_set('TcshCompleteMode', 'On');
 
 To change the input mode (emacs or vi) use F<~/.inputrc> or call
 
@@ -4427,7 +4448,7 @@ or:
 
 Call rl_basic_commands to set your own command completion, as in:
 
-       &readline'rl_basic_commands('print', 'list', 'quit', 'run', 'status');
+       &readline::rl_basic_commands('print', 'list', 'quit', 'run', 'status');
 
 =head2 What's Cool
 
@@ -4464,7 +4485,7 @@ numeric prefixes
 supports multi-byte characters (at least for the Japanese I use).
 
 =item *
-Has a tcsh-like completion-function mode.call &readline'rl_set('tcsh-complete-mode', 'On') to turn on.
+Has a tcsh-like completion-function mode.call &readline::rl_set('tcsh-complete-mode', 'On') to turn on.
 
 =back
 
@@ -4754,7 +4775,7 @@ for two commands:
 
 It (untested) might look like:
 
-    $readline'rl_completion_function = "main'complete";
+    $readline::rl_completion_function = "main::complete";
     sub complete { 
         local($text, $_, $start) = @_;
         ## return commands which may match if at the beginning....
