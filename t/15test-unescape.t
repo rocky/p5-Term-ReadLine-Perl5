@@ -1,18 +1,6 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
-
-use Test::More;
-use rlib '../lib';
-
-BEGIN {
-  use_ok( 'Term::ReadLine::Perl5' );
-}
-
-require 'Term/ReadLine/readline.pm';
-
-# stop reading ~/.inputrc
-$ENV{'INPUTRC'} = '/dev/null';
+use strict; use warnings;
+use rlib '.'; use Helper;
 
 note('_unescape()');
 my @tests = (
@@ -33,16 +21,16 @@ my @tests = (
     ['f\\M-a', [qw(102 27 97)], 'Meta-a'],
     ['r\\xdd', [qw(114 221)], 'hex dd'],
     ['r\\xddd', [qw(114 221 100)], 'hex ddd'],
-    ['rd\\0330\\dfe3', [qw(114 100 27 48 4 102 101 51)], 
+    ['rd\\0330\\dfe3', [qw(114 100 27 48 4 102 101 51)],
      'octal + EOT'],
-    ['rd\\0330\\dfe3\\xfdd', [qw(114 100 27 48 4 102 101 51 253 100)], 
+    ['rd\\0330\\dfe3\\xfdd', [qw(114 100 27 48 4 102 101 51 253 100)],
      'octal + EOT + hex'],
     ['\\*', [qw(default)], 'default'],
     ['\\0333foo\\*', [qw(27 51 102 111 111 default)], 'octal + default'],
     ['\\d', [qw(4)], 'EOT (Ctrl-D)'],
     ['fo\\d', [qw(102 111 4)], 'EOT (Ctrl-D)'],
     ['fo\\d\\b', [qw(102 111 4 127)], 'escape_seq'],
-    ['\\adf\\n\\r\\w\\w\\f\\a\\effffff', 
+    ['\\adf\\n\\r\\w\\w\\f\\a\\effffff',
      [qw(7 100 102 10 13 119 119 12 7 27 102 102 102 102 102 102),
      ], ''],
 );
@@ -53,4 +41,3 @@ foreach my $tuple (@tests) {
 }
 
 done_testing();
-

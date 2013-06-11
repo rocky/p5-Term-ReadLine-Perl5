@@ -1,18 +1,6 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
-use rlib '../lib';
-
-use Test::More;
-
-BEGIN {
-  use_ok( 'Term::ReadLine::Perl5' );
-}
-
-require 'Term/ReadLine/readline.pm';
-
-# stop reading ~/.inputrc
-$ENV{'INPUTRC'} = '/dev/null';
+use strict; use warnings;
+use rlib '.'; use Helper;
 
 $readline::_rl_japanese_mb = 0;
 $readline::line = 'xyz123 XYZ 012z MiXedCase ABCt !@#$%{}';

@@ -8,12 +8,15 @@
 #	modify it under the same terms as Perl itself.
 
 use strict; use warnings;
+
+# Note: we don't use Helper here. Should we?
 use rlib '../lib';
 use Test::More;
 
 BEGIN {
     $ENV{PERL_RL} = 'Perl5';	# force to use Term::ReadLine::Perl5
     $ENV{LANG} = 'C';
+    $ENV{'COLUMNS'} = 80; $ENV{'ROWS'} = 25;
 }
 
 use Term::ReadLine::Perl5;

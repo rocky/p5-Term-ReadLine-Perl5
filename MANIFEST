@@ -1,7 +1,9 @@
+.history_test
 CHANGES
 lib/Term/ReadLine/Perl5.pm
 lib/Term/ReadLine/readline.CHANGES
 lib/Term/ReadLine/readline.pm
+lib/Term/ReadLine/p5Commentary.pod
 Makefile.PL
 MANIFEST
 META.yml
@@ -9,9 +11,12 @@ README
 README.pod
 t/00test-pod.t
 t/10test-basic.t
+t/10test-changecase.t
 t/10test-history.t
+t/10test-motion.t
 t/10test-readline.t
 t/15test-unescape.t
 t/20test-read-input-file.t
 t/data/undo.inputrc
+t/Helper.pm
 test.pl
