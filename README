@@ -1,5 +1,6 @@
 LEGALESE
 ~~~~~~~~
+    Copyright (c) 2013 Rocky Bernstein.  All rights reserved.
     Copyright (c) 2013 Jordan M. Adler.  All rights reserved.
     Copyright (c) 1995 Ilya Zakharevich. All rights reserved.
     This program is free software; you can redistribute it and/or
@@ -7,7 +8,7 @@ LEGALESE
 
     You should have received a copy of the Perl license along with
     Perl; see the file README in Perl distribution.
- 
+
 	You should have received a copy of the GNU General Public License
 	along with Perl; see the file Copying.  If not, write to
 	the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -29,7 +30,7 @@ This is a quick implementation of the minimal interface to Readline
 libraries. The implementation is made in Perl (mostly) by Jeffrey
 Friedl. The only thing this library does is to make it conformant (and
 add some minimal changes, like using Term::ReadKey if present, and
-correct work under xterm). 
+correct work under xterm).
 
 (In fact this is an understatement now, a lot of additions are made,
 see CHANGES...)
@@ -61,16 +62,15 @@ Note that as of 0.95 Term/ReadLine.pm is unbundled to make CPAN.pm happier.
 On the other hand, if you get newer Term/ReadLine.pm (say, by installing
 newer Perl) you may get more features enabled.
 
-For most features of T::R::P one needs to look in the CHANGES file, and the
-comments at the start of of readline/readline.pm.  Volunteers to make the
-corresponding OO interface into POD are welcome (wrappers are available in
-Term::ReadLine::Perl5; see perl5db.pl for a sample usage of hairier features,
-such as accessing Readline variables and methods).
+For most features of Term::ReadLine::Perl5 one needs to look in the
+CHANGES file, and the comments at the start of of
+readline/readline.pm.  Volunteers to make the corresponding OO
+interface into POD are welcome (wrappers are available in
+Term::ReadLine::Perl5; see perl5db.pl for a sample usage of hairier
+features, such as accessing Readline variables and methods).
 
 AUTHOR BUGS
 ~~~~~~~~~~~
 
-Bugs are accepted via CPAN email, CPAN RT, or Github:
-https://github.com/jmadler/p5-Term-ReadLine-Perl5
-
-Jordan M. Adler
+Bugs are accepted via Github:
+https://github.com/rocky/p5-Term-ReadLine-Perl5

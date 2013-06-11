@@ -4,7 +4,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     DISTNAME	 => 'Term-ReadLine-Perl5',
     NAME	     => 'Term::ReadLine::Perl5',
-    AUTHOR       => 'Jordan M. Adler <jmadler@cpan.org>',
+    AUTHOR       => 'Rocky Bernstein <rocky@cpan.org>',
     VERSION_FROM => 'lib/Term/ReadLine/readline.pm',
     linkext      => {LINKTYPE => '' },
     clean        => {
@@ -16,6 +16,6 @@ WriteMakefile(
     },
     LICENSE          => 'perl',
     MIN_PERL_VERSION => 5.008008,
-    # dist => {COMPRESS=>'gzip -9f', SUFFIX=>'gz', 
+    # dist => {COMPRESS=>'gzip -9f', SUFFIX=>'gz',
     #		     DIST_DEFAULT => 'all uutardist'},
     );

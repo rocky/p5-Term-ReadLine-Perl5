@@ -1,16 +1,16 @@
 --- #YAML:1.0
 name:               Term-ReadLine-Perl5
-version:            1.04
+version:            1.05
 abstract:           ~
-author:  
-    - Jordan M. Adler <jmadler@cpan.org>
+author:
+    - Rocky Bernstein <rocky@cpan.org>
 license:            perl
 distribution_type:  module
 configure_requires:
     ExtUtils::MakeMaker:  0
 build_requires:
     ExtUtils::MakeMaker:  0
-requires:  
+requires:
     Term::ReadLine: 0
 no_index:
     directory:
