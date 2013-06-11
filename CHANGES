@@ -1,8 +1,10 @@
+1.05: 2013-06-12
+
 1.04: 2013-03-02
 
 - First Term::ReadLine::Perl5 release.
 - Add history commit from Rocky Bernstein.
-- Fix some style changes related to use of eval() in readline::_unescape(). 
+- Fix some style changes related to use of eval() in readline::_unescape().
 - Fork from Term::ReadLine::Perl.  Original changes located below.
 
 1.0303: 2009-10-28
@@ -63,7 +65,7 @@
 
 -  New functions:
 
-     F_DoMetaVersion; F_DoControlVersion; 
+     F_DoMetaVersion; F_DoControlVersion;
      These are bound as in Emacs: C-x Esc m and C-x Esc c.
 
 1.03: 2006-04-9
@@ -148,7 +150,7 @@
     * If readkey() returns undef, behave as on EOF.
 	New option --no-print to test.pl.
 	Try to move prompt to the next line if something is already on the
- 		current line (controlled by $rl_scroll_nextline, 
+ 		current line (controlled by $rl_scroll_nextline,
 		$rl_last_pos_can_backspace);
 		Wrong setting of $rl_last_pos_can_backspace will result:
 			a) 1 and wrong: empty line before the prompt;
@@ -176,13 +178,13 @@
 - Warnings on highlight of the right scroll mark '<' fixed
   (thanks to Slaven Rezic).
 
-1.0201:	
+1.0201:
 
 - Warnings due to a misprint fixed (thanks to Tatsuhiko Miyagawa).
 
 1.02: 2002-03-31
 
--  Move reread-init to C-x C-r.  
+-  Move reread-init to C-x C-r.
 
 -  Make C-x u and C-x C-u do undo.
 
@@ -199,7 +201,7 @@
 -  Disable detection of Japanese multibyte characters - conflicts with
    single-byte scripts.  Reenable by $readline::_rl_japanese_mb = 1.
 
-1.01:	
+1.01:
 
 - Allow unset TERM.
 
@@ -211,7 +213,7 @@
 -  Draw h-scroll indicator "<" even if a part of the prompt is shown.
 -  Scroll right if more than $rl_margin empty space is on the right.
 
-1.00:	
+1.00:
 
 - Ignore $/, $\, $,.
 
@@ -348,12 +350,12 @@ After 0.9:
 -  eval "" => eval {}
 - local => my
 
-0.9: 
+0.9:
 
 tkRunning corrected. New attributes in Features: getHistory,
 setHistory, and new methods: GetHistory and SetHistory.
 
-0.8: 
+0.8:
 
 - Insert, Operate, HistorySearch added.
 
@@ -363,7 +365,7 @@ setHistory, and new methods: GetHistory and SetHistory.
 -  SelfLoader (and AutoLoader) supported (uncomment the lines
     with SelfLoader, ISA, and __DATA__).
 
-0.7: 
+0.7:
 
 - We made ReadMode on term_OUT ;-(
 
@@ -371,12 +373,12 @@ setHistory, and new methods: GetHistory and SetHistory.
 
 - Word break chars more suitable for Perl.
 
-0.6: 
+0.6:
 
 -  The bug in 0.5 was due to missing vi keymap. Dirty workaround
    added.
 
-0.5: 
+0.5:
 
 Code to support ReadLine'less debugger moved to debugger. One user
 reported that having .inputrc triggers the same bug that buggered
@@ -384,22 +386,22 @@ earlier versions of the package. Request for a second readline is
 tried to be executed first, dying only if should work on a different
 terminal.
 
-0.4: 
+0.4:
 
-- Some bugs with $|f corrected. 
+- Some bugs with $|f corrected.
 
-- Application name is set. 
+- Application name is set.
 
 - Works under OS/2 without ReadKey.
 
 - Should work under DOS with minimal changes (see $inDOS in
   ReadLine/readline.pl).
 
-0.3: 
+0.3:
 
 - Filehandles changed to \* from *, MinLine works, works with
 debugger.
 
-0.2: 
+0.2:
 
 - Test added.

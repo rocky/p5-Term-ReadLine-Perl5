@@ -1,6 +1,6 @@
-=for comment This file is shared by both README.pod and Perl.pm 
+=for comment This file is shared by both README.pod and Perl.pm
 after its __END__ It might also be on github:
-https://github.com/jmadler/p5-Term-ReadLine-Perl5
+https://github.com/rocky/p5-Term-ReadLine-Perl5
 
 =head1 NAME
 
@@ -35,7 +35,7 @@ To install this module type:
     perl Makefile.PL
     make
     # for interactive testing:
-    make test 
+    make test
     # for non-interactive testing
     AUTOMATED_TESTING=1 make test
     make install # might need sudo make install
