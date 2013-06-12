@@ -12,6 +12,14 @@ use File::Basename qw(dirname);
 use File::Spec;
 
 use rlib '../lib';
+
+$ENV{PERL_RL} = 'Perl5';	# force to use Term::ReadLine::Perl5
+$ENV{LANG} = 'C';
+$ENV{'COLUMNS'} = 80;
+$ENV{'LINES'} = 25;
+# stop reading ~/.inputrc
+$ENV{'INPUTRC'} = '/dev/null';
+
 my $dir = File::Spec->catfile(dirname(__FILE__));
 $dir = File::Spec->rel2abs( $dir ) unless
     File::Spec->file_name_is_absolute( $dir );

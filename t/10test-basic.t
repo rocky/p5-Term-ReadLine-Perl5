@@ -6,15 +6,16 @@ use rlib '../lib';
 use Test::More;
 
 BEGIN {
+  # stop reading ~/.inputrc
+  $ENV{'INPUTRC'} = '/dev/null';
+  $ENV{'COLUMNS'} = '80';
+  $ENV{'LINES'}    = '25';
   use_ok( 'Term::ReadLine::Perl5' );
 }
 
 require 'Term/ReadLine/readline.pm';
 ok(defined($Term::ReadLine::Perl5::VERSION),
    "\$Term::ReadLine::Perl5::Version number is set");
-
-# stop reading ~/.inputrc
-$ENV{'INPUTRC'} = '/dev/null';
 
 note('ctrl()');
 is(readline::ctrl(ord('A')), 1);

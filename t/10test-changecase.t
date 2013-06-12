@@ -9,10 +9,12 @@ BEGIN {
   use_ok( 'Term::ReadLine::Perl5' );
 }
 
-require 'Term/ReadLine/readline.pm';
-
+$ENV{'COLUMNS'} = '80';
+$ENV{'LINES'}    = '25';
 # stop reading ~/.inputrc
 $ENV{'INPUTRC'} = '/dev/null';
+
+require 'Term/ReadLine/readline.pm';
 
 $readline::_rl_japanese_mb = 0;
 $readline::line = 'xyz123 XYZ 012z MiXedCase ABCt !@#$%{}';

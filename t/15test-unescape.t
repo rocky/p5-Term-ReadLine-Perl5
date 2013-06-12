@@ -6,6 +6,12 @@ use Test::More;
 use rlib '../lib';
 
 BEGIN {
+  $ENV{PERL_RL} = 'Perl5';	# force to use Term::ReadLine::Perl5
+  $ENV{LANG} = 'C';
+  $ENV{'COLUMNS'} = 80;
+  $ENV{'LINES'} = 25;
+  # stop reading ~/.inputrc
+  $ENV{'INPUTRC'} = '/dev/null';
   use_ok( 'Term::ReadLine::Perl5' );
 }
 

@@ -6,13 +6,15 @@ use rlib '../lib';
 use Test::More;
 
 BEGIN {
+  # stop reading ~/.inputrc
+  $ENV{'INPUTRC'} = '/dev/null';
+  $ENV{'COLUMNS'} = '80';
+  $ENV{'LINES'}    = '25';
   use_ok( 'Term::ReadLine::Perl5' );
 }
 
 require 'Term/ReadLine/readline.pm';
 
-# stop reading ~/.inputrc
-$ENV{'INPUTRC'} = '/dev/null';
 
 note("CharSize()");
 $readline::_rl_japanese_mb = 1;
