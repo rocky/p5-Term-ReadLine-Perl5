@@ -1,5 +1,14 @@
 1.05: 2013-06-12
 
+- Avoid circularity of Term::ReadLine::readline requiring Term::ReadLine::Perl
+  which depends on Term:ReadLine::readline.
+- fix =for comments appearing on metacpan
+- pod readline subroutines
+- Remove SelfLoader, use perl builtins uc, lc instead of home-grown routines
+- use 'warnings' in readline.pm
+- More unit tests
+
+
 1.04: 2013-03-02
 
 - First Term::ReadLine::Perl5 release.

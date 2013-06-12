@@ -36,14 +36,14 @@ use Carp;
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Perl5::AU);
 #require 'readline.pl';
 
-$VERSION = 1.04;
+$VERSION = 1.05;
 
 =head2 SUBROUTINES
 
-=cut 
+=cut
 
 sub readline {
-  shift; 
+  shift;
   &readline::readline(@_);
 }
 
@@ -52,8 +52,8 @@ sub readline {
 *add_history = \&AddHistory;
 
 # Not sure if addhistory() is needed. It is possible it was misspelling
-# of add_history. 
-*addhistory = \&AddHistory; 
+# of add_history.
+*addhistory = \&AddHistory;
 
 # for backward compatibility: StifleHistory is the old name.
 *StifleHistory = \&stifle_history;
@@ -71,9 +71,9 @@ $readline::rl_max_input_history = 0;
 
 C<Term::ReadLine::Perl->new($name, [*IN, [*OUT])>
 
-Returns a handle for subsequent calls to readline functions. 
+Returns a handle for subsequent calls to readline functions.
 
-C<$name> is the name of the application. 
+C<$name> is the name of the application.
 
 Optionally you can add two arguments for input and output
 filehandles. These arguments should be globs.
@@ -84,7 +84,7 @@ like L<Term::ReadLine::Gnu> is not available or if you have
 C<$ENV{PERL_RL}> set to 'Perl';
 
 At present, because this code has lots of global state, we currently don't
-support more than one readline instance. 
+support more than one readline instance.
 
 Somebody please volunteer to rewrite this code!
 
@@ -371,7 +371,7 @@ package Term::ReadLine::Perl5::AU;
 sub AUTOLOAD {
   { $AUTOLOAD =~ s/.*:://; }		# preserve match data
   my $name = "readline::rl_$AUTOLOAD";
-  die "Unknown method `$AUTOLOAD' in Term::ReadLine::Perl5" 
+  die "Unknown method `$AUTOLOAD' in Term::ReadLine::Perl5"
     unless exists $readline::{"rl_$AUTOLOAD"};
   *$AUTOLOAD = sub { shift; &$name };
   goto &$AUTOLOAD;

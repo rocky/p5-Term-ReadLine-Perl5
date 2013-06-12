@@ -15,7 +15,6 @@ C<Term::ReadLine::readline> was intentional to make is harder to abuse
 this (very fragile) code...
 
 =cut
-
 use warnings;
 package readline;
 
@@ -30,7 +29,7 @@ BEGIN {                 # Some old systems have ioctl "unsupported"
   *ioctl = sub ($$$) { eval { ioctl $_[0], $_[1], $_[2] } };
 }
 
-$VERSION = '1.04';
+$VERSION = '1.05';
 
 
 $rl_getc = \&rl_getc;
