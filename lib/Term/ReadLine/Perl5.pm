@@ -36,7 +36,7 @@ use Carp;
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Perl5::AU);
 #require 'readline.pl';
 
-$VERSION = 1.05;
+$VERSION = 1.08;
 
 =head2 SUBROUTINES
 

@@ -29,7 +29,7 @@ BEGIN {                 # Some old systems have ioctl "unsupported"
   *ioctl = sub ($$$) { eval { ioctl $_[0], $_[1], $_[2] } };
 }
 
-$VERSION = '1.07';
+$VERSION = '1.08';
 
 
 $rl_getc = \&rl_getc;
