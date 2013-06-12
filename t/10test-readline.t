@@ -16,16 +16,17 @@ use Test::More;
 BEGIN {
     $ENV{PERL_RL} = 'Perl5';	# force to use Term::ReadLine::Perl5
     $ENV{LANG} = 'C';
-    $ENV{'COLUMNS'} = 80; $ENV{'ROWS'} = 25;
+    $ENV{'COLUMNS'} = 80;
+    $ENV{'LINES'} = 25;
+    # stop reading ~/.inputrc
+    $ENV{'INPUTRC'} = '/dev/null';
 }
 
 use Term::ReadLine::Perl5;
 
-my $verbose = defined @ARGV && ($ARGV[0] eq 'verbose');
+my $verbose = @ARGV && ($ARGV[0] eq 'verbose');
 ########################################################################
 # test new method
-
-$ENV{'INPUTRC'} = '/dev/null';	# stop reading ~/.inputrc
 
 my $t = new Term::ReadLine::Perl5 'ReadLineTest';
 ok($t, "new method, new's");

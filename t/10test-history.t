@@ -1,6 +1,6 @@
 # -*- perl -*-
 #	history.t --- Term::ReadLine:GNU History Library Test Script
-#  Adapted from: 
+#  Adapted from:
 #
 #	$Id: history.t,v 1.11 2009/02/27 12:15:01 hiroo Exp $
 #
@@ -18,6 +18,10 @@ BEGIN {
     $ENV{LANG} = 'C';
     # force Term::ReadLine to use Term::ReadLine::Perl5
     $ENV{PERL_RL} = 'Perl5';
+    $ENV{'COLUMNS'} = '80';
+    $ENV{'LINES'}    = '25';
+    # stop reading ~/.inputrc
+    $ENV{'INPUTRC'} = '/dev/null';
 }
 END {print "not ok $n\n" unless $loaded;}
 
@@ -195,7 +199,7 @@ show_indices;
 # print $t->next_history eq 'two'		? "ok $n\n" : "not ok $n\n"; $n++;
 # show_indices;
 # print $t->next_history eq 'three'	? "ok $n\n" : "not ok $n\n"; $n++;
-# show_indices; 
+# show_indices;
 # print $t->next_history eq 'four'	? "ok $n\n" : "not ok $n\n"; $n++;
 # show_indices;
 # $^W = 0;			# returns NULL
