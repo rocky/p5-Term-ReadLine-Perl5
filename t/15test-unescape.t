@@ -1,6 +1,18 @@
 #!/usr/bin/env perl
-use strict; use warnings;
-use rlib '.'; use Helper;
+use strict;
+use warnings;
+
+use Test::More;
+use rlib '../lib';
+
+BEGIN {
+  use_ok( 'Term::ReadLine::Perl5' );
+}
+
+require 'Term/ReadLine/readline.pm';
+
+# stop reading ~/.inputrc
+$ENV{'INPUTRC'} = '/dev/null';
 
 note('_unescape()');
 my @tests = (
