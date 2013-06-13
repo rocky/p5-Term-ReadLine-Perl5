@@ -2,6 +2,12 @@
 after its __END__ It might also be on github:
 https://github.com/rocky/p5-Term-ReadLine-Perl5
 
+=begin html
+
+<img src="https://travis-ci.org/rocky/p5-Term-ReadLine-Perl5.png">
+
+=end html
+
 =head1 NAME
 
 Term::ReadLine::Perl5 - A pure Perl implementation GNU Readline
