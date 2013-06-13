@@ -3,20 +3,26 @@
 # If argument starts with /dev, use it as console
 # If argument is '--no-print', do not print the result.
 
-BEGIN{ $ENV{PERL_RL} = 'Perl' };	# Do not test TR::Gnu !
+BEGIN{
+    # Do not test TR::Gnu !
+    $ENV{PERL_RL} = 'Perl5';
+    $ENV{'INPUTRC'} = '/dev/null';
+    $ENV{'COLUMNS'} = '80';
+    $ENV{'LINES'}   = '25';
+};
 use lib './lib';
-use Term::ReadLine;
+use Term::ReadLine::Perl5;
 
 use Carp;
 $SIG{__WARN__} = sub { warn Carp::longmess(@_) };
 
-my $non_interactive = 
+my $non_interactive =
     (defined($ENV{PERL_MM_NONINTERACTIVE}))
-    ? $ENV{PERL_MM_NONINTERACTIVE} : 
+    ? $ENV{PERL_MM_NONINTERACTIVE} :
      ($ENV{PERL_MM_USE_DEFAULT} || $ENV{AUTOMATED_TESTING});
 if ($non_interactive) {
     no strict; no warnings;
-    print "1..0 # skip: not interactive; " . 
+    print "1..0 # skip: not interactive; " .
     "\$ENV{PERL_MM_NONINTERACTIVE}='$ENV{PERL_MM_NONINTERCTIVE}' \$ENV{AUTOMATED_TESTING}='$ENV{AUTOMATED_TESTING}'\n";
   exit;
 }
