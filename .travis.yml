@@ -1,5 +1,10 @@
 language: perl
 
+env:
+  - AUTOMATED_TESTING=1
+  - AUTOMATED_TESTING=1
+  - AUTOMATED_TESTING=1
+
 install:
   # Prerequisites
   - "cpanm install rlib"
