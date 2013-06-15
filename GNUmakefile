@@ -101,7 +101,7 @@ testcover:
 	perl Build --makefile_env_macros 1 testcover
 
 rmChangeLog:
-	rm ChangeLog || true
+	rm ChangeLog 2>/dev/null || true
 
 #: Create a ChangeLog from git via git log and git2cl
 ChangeLog: rmChangeLog

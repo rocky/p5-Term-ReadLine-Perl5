@@ -5,11 +5,10 @@ GNUmakefile
 LICENSE
 MANIFEST
 META.yml
-README
 README.pod
 lib/Term/ReadLine/Perl5.pm
-lib/Term/ReadLine/p5Commentary.pod
-lib/Term/ReadLine/readline.CHANGES
+lib/Term/ReadLine/Perl5/readline.pod
+lib/Term/ReadLine/Perl5/CHANGES
 lib/Term/ReadLine/readline.pm
 t/00test-pod.t
 t/10test-basic.t

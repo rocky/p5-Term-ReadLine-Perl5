@@ -1,7 +1,3 @@
-=for comment This file is shared by both README.pod and Perl.pm
-after its __END__ It might also be on github:
-https://github.com/rocky/p5-Term-ReadLine-Perl5
-
 =begin html
 
 <img src="https://travis-ci.org/rocky/p5-Term-ReadLine-Perl5.png">
@@ -49,8 +45,29 @@ To install this module type:
 
 For interactive testing try redirect I<STDIN> and/or I<STDOUT>.
 
+If you see something like:
+
+    Can't ioctl TIOCGETP: Invalid argument at ...
+
+install L<Term::ReadKey>
+
+=head1 HISTORY
+
+Thi first implementation was in Perl4 (mostly) by Jeffrey
+Friedl. He referenced FSF the code Roland Schemers line_edit.pl.
+
+Ilya Zakharevich turned this into a Perl5 module called
+Term::ReadLine::Perl. Some of the changes he made include using
+Term::ReadKey if present, and made this work under xterm. The file
+Term/ReadLine/Perl5/CHANGES contains a list of his changes.
+
+=head1 BUGS
+
+Bugs are accepted via Github:
+https://github.com/rocky/p5-Term-ReadLine-Perl5/issues
+
 =head1 LICENSE
 
-See the contents of LICENSE
+See the contents of the file LICENSE
 
 =cut

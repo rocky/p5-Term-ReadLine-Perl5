@@ -1,4 +1,5 @@
 # -*- Perl -*-
+# FIXME: should be moved into Perl5 directory.
 =pod
 
 =head1 NAME
@@ -32,7 +33,7 @@ BEGIN {                 # Some old systems have ioctl "unsupported"
   *ioctl = sub ($$$) { eval { ioctl $_[0], $_[1], $_[2] } };
 }
 
-$VERSION = '1.08_1';
+$VERSION = '1.09';
 
 
 $rl_getc = \&rl_getc;

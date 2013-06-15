@@ -17,8 +17,8 @@ my $builder = Module::Build->new(
     dist_version_from   => 'lib/Term/ReadLine/Perl5.pm',
     license             => 'perl',
     needs_compiler      => 0,
-    # release_status      => 'stable', # or 'testing'
-    release_status      => 'testing', # or 'stable'
+    release_status      => 'stable', # or 'testing'
+    # release_status      => 'testing', # or 'stable'
 
     meta_merge => {
 	resources => {
