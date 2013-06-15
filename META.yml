@@ -1,23 +1,39 @@
---- #YAML:1.0
-name:               Term-ReadLine-Perl5
-version:            1.05
-abstract:           ~
+---
+abstract: 'Pure Perl version of GNU ReadLine.'
 author:
-    - Rocky Bernstein <rocky@cpan.org>
-license:            perl
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
+  - 'Rocky Bernstein <rocky@cpan.org>'
 build_requires:
-    ExtUtils::MakeMaker:  0
-requires:
-    Term::ReadLine: 0
-resources
-   bugtracker: https://github.com/rocky/p5-Term-ReadLine-Perl5/issues
-no_index:
-    directory:
-        - t
-        - inc
+  Test::More: 0.81
+  rlib: 0.02
+configure_requires:
+  Module::Build: 0
+  perl: 5.008008
+dynamic_config: 1
+generated_by: 'Module::Build version 0.4, CPAN::Meta::Converter version 2.120921'
+license: perl
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Term-ReadLine-Perl5
+provides:
+  Term::ReadLine::Perl5:
+    file: lib/Term/ReadLine/Perl5.pm
+    version: 1.09
+  Term::ReadLine::Perl5::AU:
+    file: lib/Term/ReadLine/Perl5.pm
+    version: 0
+  Term::ReadLine::Perl5::Tie:
+    file: lib/Term/ReadLine/Perl5.pm
+    version: 0
+  readline:
+    file: lib/Term/ReadLine/readline.pm
+    version: 1.09
+requires:
+  File::HomeDir: 0.54
+  File::Spec: 0
+  version: 0
+resources:
+  bugtracker: https://github.com/rocky/p5-Term-ReadLine/issues
+  license: http://dev.perl.org/licenses/
+  repository: http://github.com/rocky/p5-Term-ReadLine
+version: 1.09

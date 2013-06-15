@@ -21,3 +21,5 @@ t/20test-read-input-file.t
 t/Helper.pm
 t/data/undo.inputrc
 test.pl
+Makefile.PL
+META.json
