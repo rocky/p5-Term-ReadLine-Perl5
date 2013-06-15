@@ -3,6 +3,8 @@ package Term::ReadLine::Perl5;
 
 use Term::ReadLine;  # Needed for Term::ReadLine::Stub
 
+$VERSION = 1.09_01;
+
 =head1 NAME
 
 Term::ReadLine::Perl5 - A pure Perl implementation GNU Readline
@@ -35,8 +37,6 @@ Eval, Print Loops).
 use Carp;
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Perl5::AU);
 #require 'readline.pl';
-
-$VERSION = 1.09;
 
 =head2 SUBROUTINES
 

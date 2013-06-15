@@ -19,6 +19,8 @@ this (very fragile) code...
 use warnings;
 package readline;
 
+$VERSION = '1.09_01';
+
 use Term::ReadLine;  # For Term::ReadLine::TermCap::ornaments
 use File::HomeDir;
 use File::Spec;
@@ -32,9 +34,6 @@ my $HOME = File::HomeDir->my_home;
 BEGIN {                 # Some old systems have ioctl "unsupported"
   *ioctl = sub ($$$) { eval { ioctl $_[0], $_[1], $_[2] } };
 }
-
-$VERSION = '1.09';
-
 
 $rl_getc = \&rl_getc;
 
