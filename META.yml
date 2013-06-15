@@ -12,6 +12,8 @@ build_requires:
     ExtUtils::MakeMaker:  0
 requires:
     Term::ReadLine: 0
+resources
+   bugtracker: https://github.com/rocky/p5-Term-ReadLine-Perl5/issues
 no_index:
     directory:
         - t

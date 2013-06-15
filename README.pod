@@ -49,8 +49,8 @@ To install this module type:
 
 For interactive testing try redirect I<STDIN> and/or I<STDOUT>.
 
-=head1 LEGALESE
+=head1 LICENSE
 
-See the contents of README
+See the contents of LICENSE
 
 =cut

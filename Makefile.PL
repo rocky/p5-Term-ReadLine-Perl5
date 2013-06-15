@@ -18,4 +18,10 @@ WriteMakefile(
     MIN_PERL_VERSION => 5.008008,
     # dist => {COMPRESS=>'gzip -9f', SUFFIX=>'gz',
     #		     DIST_DEFAULT => 'all uutardist'},
+    META_ADD => {
+	bugtracker => {
+	    web => 'https://github.com/rocky/p5-Term-ReadLine-Perl5/issues'
+	},
+    }
+
     );
