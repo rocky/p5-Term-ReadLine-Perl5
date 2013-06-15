@@ -63,6 +63,8 @@ print $OUT <<EOP;
 	this word should be already entered.)
 
 EOP
+print "1..1\n";
+print "ok 1\n";
 while ( defined ($_ = $term->readline($prompt, "exit")) ) {
   $res = eval($_);
   warn $@ if $@;

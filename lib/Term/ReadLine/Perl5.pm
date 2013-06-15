@@ -398,10 +398,13 @@ __END__
 
 =head1 AUTHORS
 
-Jordan M. Adler
-Rocky Bernstein
+Rocky Bernstein (current maintainer)
 Ilya Zakharevich (Term::ReadLine::Perl)
 Jeffrey Friedl (Original Perl4 code)
+
+Contributors:
+Jordan M. Adler
+Clive Holloway
 
 =head1 SEE ALSO
 

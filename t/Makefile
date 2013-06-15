@@ -4,8 +4,8 @@ PHONY=check all
 
 #: Default target - the parent's testing or "check" target
 all:
-	$(MAKE) -C .. -f Makefile test
+	$(MAKE) -C .. -f GNUmakefile test
 
 #: Whatever it is you want to do, it should be handled by the parent
 %:
-	$(MAKE) -C .. -f Makefile $@
+	$(MAKE) -C .. -f GNUmakefile $@

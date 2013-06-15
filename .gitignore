@@ -1,12 +1,15 @@
+*.tar
+*.tar.gz
 *~
 /.history_test
+/Build
+/ChangeLog
 /MYMETA.json
 /MYMETA.yml
 /Makefile
 /Makefile.old
+/_build
 /blib
 /pm_to_blib
 pod2htmd.tmp
 pod2htmi.tmp
-*.tar.gz
-*.tar
