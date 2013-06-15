@@ -8,7 +8,7 @@ env:
 
 install:
   # Prerequisites
-  - "cpanm install rlib"
+  - "cpanm install rlib File::HomeDir File::Spec"
 
 perl:
   - "5.16"
