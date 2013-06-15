@@ -19,11 +19,14 @@ use warnings;
 package readline;
 
 use Term::ReadLine;  # For Term::ReadLine::TermCap::ornaments
+use File::HomeDir;
+use File::Spec;
 
 my $autoload_broken = 1;        # currently: defined does not work with a-l
 my $useioctl = 1;
 my $usestty = 1;
 my $max_include_depth = 10;     # follow $include's in init files this deep
+my $HOME = File::HomeDir->my_home;
 
 BEGIN {                 # Some old systems have ioctl "unsupported"
   *ioctl = sub ($$$) { eval { ioctl $_[0], $_[1], $_[2] } };
@@ -1126,7 +1129,8 @@ sub read_an_init_file {
     my $file = shift;
     my $include_depth = shift;
     local *RC;
-    $file =~ s/^~([\\\/])/$ENV{HOME}$1/ if not -f $file and exists $ENV{HOME};
+
+    $file = File::Spec->catfile($HOME, $file) unless -f $file;
     return 0 unless open RC, "< $file";
     my (@action) = ('exec'); ## exec, skip, ignore (until appropriate endif)
     my (@level) = ();        ## if, else
@@ -1201,8 +1205,8 @@ sub F_ReReadInitFile
     my ($file) = $ENV{'TRP_INPUTRC'};
     $file = $ENV{'INPUTRC'} unless defined $file;
     unless (defined $file) {
-        return unless defined $ENV{'HOME'};
-        $file = "$ENV{'HOME'}/.inputrc";
+        return unless defined $HOME;
+        $file = File::Spec->catfile($HOME, '.inputrc');
     }
     read_an_init_file($file, 0);
 }
@@ -4268,9 +4272,10 @@ sub clipboard_set {
     if ($ENV{RL_CLCOPY_CMD}) {
       $mess = "Writing to pipe `$ENV{RL_CLCOPY_CMD}'";
       open COPY, "| $ENV{RL_CLCOPY_CMD}" or warn("$mess: $!"), return;
-    } elsif (defined $ENV{HOME}) {
-      $mess = "Writing to file `$ENV{HOME}/.rl_cutandpaste'";
-      open COPY, "> $ENV{HOME}/.rl_cutandpaste" or warn("$mess: $!"), return;
+    } elsif (defined $HOME) {
+	my $cutpastefile = File::Spec($HOME, '.rl_cutandpaste');
+      $mess = "Writing to file `$cutpastefile'";
+      open COPY, "> $cutpastefile" or warn("$mess: $!"), return;
     } else {
       return;
     }
@@ -4310,9 +4315,10 @@ sub F_YankClipboard
       if ($ENV{RL_PASTE_CMD}) {
         $mess = "Reading from pipe `$ENV{RL_PASTE_CMD}'";
         open PASTE, "$ENV{RL_PASTE_CMD} |" or warn("$mess: $!"), return;
-      } elsif (defined $ENV{HOME}) {
-        $mess = "Reading from file `$ENV{HOME}/.rl_cutandpaste'";
-        open PASTE, "< $ENV{HOME}/.rl_cutandpaste" or warn("$mess: $!"), return;
+      } elsif (defined $HOME) {
+	my $cutpastefile = File::Spec($HOME, '.rl_cutandpaste');
+        $mess = "Reading from file `$cutpastefile'";
+        open PASTE, "< $cutpastefile" or warn("$mess: $!"), return;
       }
       if ($mess) {
         local $/;

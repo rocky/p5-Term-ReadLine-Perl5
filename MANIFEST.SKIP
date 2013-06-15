@@ -4,6 +4,9 @@
 \B\.git\b
 \B\.gitignore\b
 
+# Continues integration file via travis
+\B\.travis\.yml$
+
 # Avoid Makemaker generated and utility files.
 \bMANIFEST\.bak
 \bMakefile$

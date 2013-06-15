@@ -39,6 +39,7 @@ my $builder = Module::Build->new(
     requires => {
         'version'                 => 0,
 	'File::HomeDir'           => 0.54,
+	'File::Spec'              => 0,
     },
     sign                => ($ENV{PERL_MB_NOSIGN} ? 0 : 1),
     );

@@ -1,6 +1,7 @@
 Build.PL
 CHANGES
 ChangeLog
+GNUmakefile
 LICENSE
 MANIFEST
 META.yml
