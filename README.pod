@@ -54,12 +54,12 @@ install L<Term::ReadKey>
 =head1 HISTORY
 
 Thi first implementation was in Perl4 (mostly) by Jeffrey
-Friedl. He referenced FSF the code Roland Schemers line_edit.pl.
+Friedl. He referenced FSF the code Roland Schemers F<line_edit.pl>.
 
 Ilya Zakharevich turned this into a Perl5 module called
-Term::ReadLine::Perl. Some of the changes he made include using
-Term::ReadKey if present, and made this work under xterm. The file
-Term/ReadLine/Perl5/CHANGES contains a list of his changes.
+L<Term::ReadLine::Perl>. Some of the changes he made include using
+L<Term::ReadKey> if present, and made this work under I<xterm>. The
+file F<Term/ReadLine/Perl5/CHANGES> contains a list of his changes.
 
 =head1 BUGS
 
