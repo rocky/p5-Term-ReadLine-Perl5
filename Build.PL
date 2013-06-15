@@ -22,8 +22,8 @@ my $builder = Module::Build->new(
 
     meta_merge => {
 	resources => {
-	    bugtracker  => 'https://github.com/rocky/p5-Term-ReadLine/issues',
-	    repository  => 'http://github.com/rocky/p5-Term-ReadLine'
+	    bugtracker  => 'https://github.com/rocky/p5-Term-ReadLine-Perl5/issues',
+	    repository  => 'http://github.com/rocky/p5-Term-ReadLine-Perl5'
 	}
     },
 
