@@ -1,3 +1,9 @@
+1.09: 2013-06-15
+- reduce duplicate README documentation and segregate old docs.
+- test.pl uses warnings and strict now.
+- Use File::HomeDir instead of $ENV{'HOME'}
+- Use Module::Build and better CPAN meta information
+
 1.08: 2013-06-12
 - Botched release number for 1.07
 

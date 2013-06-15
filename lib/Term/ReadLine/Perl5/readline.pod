@@ -1,6 +1,6 @@
 =pod
 
-=head1 Term::ReadLine::readline
+=head1 Term::ReadLine::Perl5::readline
 
 A pretty full-function package similar to GNU's readline.
 Includes support for EUC-encoded Japanese text.

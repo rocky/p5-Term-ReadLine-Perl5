@@ -3,6 +3,8 @@
 # If argument starts with /dev, use it as console
 # If argument is '--no-print', do not print the result.
 
+use warnings; use strict;
+
 BEGIN{
     # Do not test TR::Gnu !
     $ENV{PERL_RL} = 'Perl5';
@@ -11,6 +13,11 @@ BEGIN{
     $ENV{'LINES'}   = '25';
 };
 use lib './lib';
+
+# FIXME:
+# Until Term::ReadLine has Perl5 defined use
+#       Term::ReadLine::Perl5 ?
+
 use Term::ReadLine::Perl5;
 
 use Carp;
@@ -27,28 +34,32 @@ if ($non_interactive) {
   exit;
 }
 
+my ($term, $no_print);
 if (!@ARGV) {
-  $term = new Term::ReadLine 'Simple Perl calc';
+  $term = new Term::ReadLine::Perl5 'Simple Perl calc';
 } elsif (@ARGV == 2) {
   open(IN,"<$ARGV[0]");
   open(OUT,">$ARGV[1]");
-  $term = new Term::ReadLine 'Simple Perl calc', \*IN, \*OUT;
+  $term = new Term::ReadLine::Perl5 'Simple Perl calc', \*IN, \*OUT;
 } elsif ($ARGV[0] =~ m|^/dev|) {
   open(IN,"<$ARGV[0]");
   open(OUT,">$ARGV[0]");
-  $term = new Term::ReadLine 'Simple Perl calc', \*IN, \*OUT;
+  $term = new Term::ReadLine::Perl5 'Simple Perl calc', \*IN, \*OUT;
 } else {
-  $term = new Term::ReadLine 'Simple Perl calc', \*STDIN, \*STDOUT;
+  $term = new Term::ReadLine::Perl5 'Simple Perl calc', \*STDIN, \*STDOUT;
   $no_print = $ARGV[0] eq '--no-print';
 }
-$prompt = "Enter arithmetic or Perl expression: ";
+my $prompt = "Enter arithmetic or Perl expression: ";
 if ((my $l = $ENV{PERL_RL_TEST_PROMPT_MINLEN} || 0) > length $prompt) {
   $prompt =~ s/(?=:)/ ' ' x ($l - length $prompt)/e;
 }
-$OUT = $term->OUT || STDOUT;
-%features = %{ $term->Features };
+print "1..1\n";
+no strict;
+my $OUT = $term->OUT || STDOUT;
+use strict;
+my %features = %{ $term->Features };
 if (%features) {
-  @f = %features;
+  my @f = %features;
   print $OUT "Features present: @f\n";
   #$term->ornaments(1) if $features{ornaments};
 } else {
@@ -63,12 +74,17 @@ print $OUT <<EOP;
 	this word should be already entered.)
 
 EOP
-print "1..1\n";
-print "ok 1\n";
-while ( defined ($_ = $term->readline($prompt, "exit")) ) {
-  $res = eval($_);
-  warn $@ if $@;
-  print $OUT $res, "\n" unless $@ or $no_print;
-  $term->addhistory($_) if /\S/ and !$features{autohistory};
-  $readline::rl_default_selected = !$readline::rl_default_selected;
+while ( defined (my $line = $term->readline($prompt, 'exit')) )
+{
+    last if $line eq 'exit';
+    my $res = eval($line);
+    warn $@ if $@;
+    if (!defined $res) {
+	print $OUT "undef\n";
+	next;
+    }
+    print $OUT $res, "\n" unless $@ or $no_print;
+    $term->addhistory($line) if $line =~ /\S/ and !$features{autohistory};
+    $readline::rl_default_selected = !$readline::rl_default_selected;
 }
+print "ok 1\n";

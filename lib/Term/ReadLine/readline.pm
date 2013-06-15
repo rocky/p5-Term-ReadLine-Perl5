@@ -1,4 +1,5 @@
 # -*- Perl -*-
+# FIXME: should be moved into Perl5 directory.
 =pod
 
 =head1 NAME
