@@ -6,6 +6,15 @@ use strict;
 use warnings;
 use Module::Build;
 use Config;
+use File::Basename;
+use File::Spec;
+
+my $lib = File::Spec->catfile(dirname(__FILE__), 'lib');
+unshift @INC, $lib;
+require Term::ReadLine::Perl5;
+
+my $release_status = ($Term::ReadLine::Perl5::VERSION =~ /_/) ?
+    'testing' : 'stable';
 
 my $builder = Module::Build->new(
     module_name         => 'Term::ReadLine::Perl5',
@@ -17,8 +26,7 @@ my $builder = Module::Build->new(
     dist_version_from   => 'lib/Term/ReadLine/Perl5.pm',
     license             => 'perl',
     needs_compiler      => 0,
-    # release_status      => 'stable', # or 'testing'
-    release_status      => 'testing', # or 'stable'
+    release_status      => $release_status,
 
     meta_merge => {
 	resources => {
@@ -34,7 +42,6 @@ my $builder = Module::Build->new(
     },
     build_requires => {
         'Test::More'              => 0.81,
-        'rlib'                    => '0.02',
     },
     requires => {
         'version'                 => 0,
