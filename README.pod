@@ -1,6 +1,6 @@
 =begin html
 
-<img src="https://travis-ci.org/rocky/p5-Term-ReadLine-Perl5.png">
+<a href="https://travis-ci.org/rocky/p5-Term-ReadLine-Perl5"><img src="https://travis-ci.org/rocky/p5-Term-ReadLine-Perl5.png"></a>
 
 =end html
 
