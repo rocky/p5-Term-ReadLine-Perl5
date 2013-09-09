@@ -1,8 +1,6 @@
 # -*- Perl -*-
 package Term::ReadLine::Perl5;
 
-use Term::ReadLine;  # Needed for Term::ReadLine::Stub
-
 $VERSION = 1.09_01;
 
 =head1 NAME
@@ -35,6 +33,7 @@ Eval, Print Loops).
 
 
 use Carp;
+require Term::ReadLine;  # Needed for Term::ReadLine::Stub
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Perl5::AU);
 #require 'readline.pl';
 
