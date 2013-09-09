@@ -1,6 +1,6 @@
 # -*- Perl -*-
 package Term::ReadLine::Perl5;
-use warnings;
+use warnings; use strict;
 
 our $VERSION = 1.09_01;
 
@@ -35,9 +35,8 @@ Eval, Print Loops).
 
 use Carp;
 
-@ISA = qw(Term::ReadLine::Stub Term::ReadLine::Perl5::AU);
-
-#require 'readline.pl';
+our @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Perl5::AU);
+my (%features, %attribs, @history, $term);
 
 =head2 SUBROUTINES
 
@@ -116,7 +115,7 @@ sub new {
   }
   if (!@_) {
     if (!defined $term) {
-      ($IN,$OUT) = Term::ReadLine->findConsole();
+      my ($IN,$OUT) = Term::ReadLine->findConsole();
       # Old Term::ReadLine did not have a workaround for a bug in Win devdriver
       $IN = 'CONIN$' if $^O eq 'MSWin32' and "\U$IN" eq 'CON';
       open IN,
@@ -362,8 +361,8 @@ sub WriteHistory {
 }
 
 sub Features { \%features; }
-# my %attribs;
 tie %attribs, 'Term::ReadLine::Perl5::Tie' or die ;
+
 sub Attribs {
   \%attribs;
 }
@@ -372,7 +371,7 @@ sub DESTROY {}
 package Term::ReadLine::Perl5::AU;
 
 sub AUTOLOAD {
-  { $AUTOLOAD =~ s/.*:://; }		# preserve match data
+  my $AUTOLOAD =~ s/.*:://; 		# preserve match data
   my $name = "readline::rl_$AUTOLOAD";
   die "Unknown method `$AUTOLOAD' in Term::ReadLine::Perl5"
     unless exists $readline::{"rl_$AUTOLOAD"};
@@ -387,11 +386,13 @@ sub DESTROY {}
 
 sub STORE {
   my ($self, $name) = (shift, shift);
+  no strict;
   $ {'readline::rl_' . $name} = shift;
 }
 
 sub FETCH {
   my ($self, $name) = (shift, shift);
+  no strict;
   $ {'readline::rl_' . $name};
 }
 
