@@ -11,7 +11,7 @@ Term::ReadLine::Perl5 - A pure Perl implementation GNU Readline
 =head1 SYNOPSIS
 
   use Term::ReadLine::Perl5;
-  $term = new Term::ReadLine::Perl5 'ProgramName';
+  $term = Term::ReadLine::Perl5->new 'ProgramName';
   while ( defined ($_ = $term->readline('prompt>')) ) {
     ...
   }
