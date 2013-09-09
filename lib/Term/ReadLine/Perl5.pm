@@ -33,8 +33,9 @@ Eval, Print Loops).
 
 
 use Carp;
-require Term::ReadLine;  # Needed for Term::ReadLine::Stub
+
 @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Perl5::AU);
+
 #require 'readline.pl';
 
 =head2 SUBROUTINES
@@ -90,6 +91,15 @@ Somebody please volunteer to rewrite this code!
 =cut
 
 sub new {
+  require Term::ReadLine;
+  %features =  (appname => 1, minline => 1, autohistory => 1,
+		getHistory => 1, setHistory => 1, addHistory => 1,
+		readHistory => 1, writeHistory => 1,
+		preput => 1, attribs => 1, newTTY => 1,
+		tkRunning => Term::ReadLine::Stub->Features->{'tkRunning'},
+		ornaments => Term::ReadLine::Stub->Features->{'ornaments'},
+		stiflehistory => 1,
+      ) unless %features;
   if (defined $term) {
     warn "Cannot create second readline interface, falling back to dumb.\n";
     return Term::ReadLine::Stub::new(@_);
@@ -349,14 +359,7 @@ sub ReadHistory {
 sub WriteHistory {
     ! write_history(@_);
 }
-%features =  (appname => 1, minline => 1, autohistory => 1,
-	      getHistory => 1, setHistory => 1, addHistory => 1,
-	      readHistory => 1, writeHistory => 1,
-	      preput => 1, attribs => 1, newTTY => 1,
-	      tkRunning => Term::ReadLine::Stub->Features->{'tkRunning'},
-	      ornaments => Term::ReadLine::Stub->Features->{'ornaments'},
-	      stiflehistory => 1,
-	     );
+
 sub Features { \%features; }
 # my %attribs;
 tie %attribs, 'Term::ReadLine::Perl5::Tie' or die ;
