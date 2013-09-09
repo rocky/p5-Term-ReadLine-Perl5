@@ -1,7 +1,8 @@
 # -*- Perl -*-
 package Term::ReadLine::Perl5;
+use warnings;
 
-$VERSION = 1.09_01;
+our $VERSION = 1.09_01;
 
 =head1 NAME
 
