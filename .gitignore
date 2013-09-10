@@ -4,9 +4,11 @@
 /.history_test
 /Build
 /ChangeLog
+/META.json
 /MYMETA.json
 /MYMETA.yml
 /Makefile
+/Makefile.PL
 /Makefile.old
 /_build
 /blib

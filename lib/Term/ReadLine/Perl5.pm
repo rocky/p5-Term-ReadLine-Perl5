@@ -1,6 +1,7 @@
 # -*- Perl -*-
 package Term::ReadLine::Perl5;
 use warnings; use strict;
+no warnings 'once';
 
 our $VERSION = 1.09_01;
 
@@ -32,11 +33,29 @@ Eval, Print Loops).
 
 =cut
 
-
 use Carp;
 
 our @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Perl5::AU);
-my (%features, %attribs, @history, $term);
+my (%attribs, @history, $term);
+
+my %features = (
+		 appname => 1,       # "new" is recognized
+		 minline => 1,       # we have a working MinLine()
+		 autohistory => 1,   # lines are put into history automatically,
+		                     # subject to MinLine()
+		 getHistory => 1,    # we have a working getHistory()
+		 setHistory => 1,    # we have a working setHistory()
+		 addHistory => 1,    # we have a working add_history(), addhistory(),
+                                     # or addHistory()
+		 readHistory => 1,   # we have read_history() or readHistory()
+		 writeHistory => 1,  # we have writeHistory()
+		 preput => 1,        # the second argument to readline is processed
+		 attribs => 1,
+		 newTTY => 1,        # we have newTTY()
+		 stiflehistory => 1, # we have stifle_history()
+      );
+
+# Note: Some additional feature via Term::ReadLine::Stub are added when a "new" is done
 
 =head2 SUBROUTINES
 
@@ -92,14 +111,8 @@ Somebody please volunteer to rewrite this code!
 
 sub new {
   require Term::ReadLine;
-  %features =  (appname => 1, minline => 1, autohistory => 1,
-		getHistory => 1, setHistory => 1, addHistory => 1,
-		readHistory => 1, writeHistory => 1,
-		preput => 1, attribs => 1, newTTY => 1,
-		tkRunning => Term::ReadLine::Stub->Features->{'tkRunning'},
-		ornaments => Term::ReadLine::Stub->Features->{'ornaments'},
-		stiflehistory => 1,
-      ) unless %features;
+  $features{tkRunning} = Term::ReadLine::Stub->Features->{'tkRunning'};
+  $features{ornaments} = Term::ReadLine::Stub->Features->{'ornaments'};
   if (defined $term) {
     warn "Cannot create second readline interface, falling back to dumb.\n";
     return Term::ReadLine::Stub::new(@_);
@@ -361,8 +374,8 @@ sub WriteHistory {
 }
 
 sub Features { \%features; }
-tie %attribs, 'Term::ReadLine::Perl5::Tie' or die ;
 
+tie %attribs, 'Term::ReadLine::Perl5::Tie' or die ;
 sub Attribs {
   \%attribs;
 }
