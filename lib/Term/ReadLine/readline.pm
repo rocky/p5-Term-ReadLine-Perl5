@@ -1485,33 +1485,33 @@ sub SetTTY {
     return if $dumb_term || $stdin_not_tty;
     #return system 'stty raw -echo' if defined &DB::DB;
     if (defined $term_readkey) {
-      Term::ReadKey::ReadMode(4, $term_IN);
-      if ($^O eq 'MSWin32') {
-        # If we reached this, Perl isn't cygwin; Enter sends \r; thus we need binmode
-        # XXXX Do we need to undo???  $term_IN is most probably private now...
-        binmode $term_IN;
-      }
-      return 1;
+	Term::ReadKey::ReadMode(4, $term_IN);
+	if ($^O eq 'MSWin32') {
+	    # If we reached this, Perl isn't cygwin; Enter sends \r; thus we need binmode
+	    # XXXX Do we need to undo???  $term_IN is most probably private now...
+	    binmode $term_IN;
+	}
+	return 1;
     }
-#   system 'stty raw -echo';
+    # system 'stty raw -echo';
 
     $sgttyb = ''; ## just to quiet "perl -w";
-  if ($useioctl && $^O ne 'solaris' && defined $TIOCGETP
-      && &ioctl($term_IN,$TIOCGETP,$sgttyb)) {
-    @tty_buf = unpack($sgttyb_t,$sgttyb);
-    if (defined $ENV{OS2_SHELL}) {
-      $tty_buf[3] &= ~$mode;
-      $tty_buf[3] &= ~$ECHO;
-    } else {
-      $tty_buf[4] |= $mode;
+    if ($useioctl && $^O ne 'solaris' && defined $TIOCGETP
+	&& &ioctl($term_IN,$TIOCGETP,$sgttyb)) {
+	@tty_buf = unpack($sgttyb_t,$sgttyb);
+	if (defined $ENV{OS2_SHELL}) {
+	    $tty_buf[3] &= ~$mode;
+	    $tty_buf[3] &= ~$ECHO;
+	} else {
+	    $tty_buf[4] |= $mode;
       $tty_buf[4] &= ~$ECHO;
-    }
-    $sgttyb = pack($sgttyb_t,@tty_buf);
-    &ioctl($term_IN,$TIOCSETP,$sgttyb) || die "Can't ioctl TIOCSETP: $!";
-  } elsif (!$usestty) {
-    return 0;
-  } else {
-     warn <<EOW if $useioctl and not defined $ENV{PERL_READLINE_NOWARN};
+	}
+	$sgttyb = pack($sgttyb_t,@tty_buf);
+	&ioctl($term_IN,$TIOCSETP,$sgttyb) || die "Can't ioctl TIOCSETP: $!";
+    } elsif (!$usestty) {
+	return 0;
+    } else {
+	warn <<EOW if $useioctl and not defined $ENV{PERL_READLINE_NOWARN};
 Can't ioctl TIOCGETP: $!
 Consider installing Term::ReadKey from CPAN site nearby
         at http://www.perl.com/CPAN
@@ -1525,13 +1525,13 @@ EOW
      $useioctl = 0;
      system 'stty raw -echo' and ($usestty = 0, die "Cannot call `stty': $!");
      if ($^O eq 'MSWin32') {
-        # If we reached this, Perl isn't cygwin, but STTY is present ==> cygwin
-        # The symptoms: now Enter sends \r; thus we need binmode
-        # XXXX Do we need to undo???  $term_IN is most probably private now...
-        binmode $term_IN;
+	 # If we reached this, Perl isn't cygwin, but STTY is present ==> cygwin
+	 # The symptoms: now Enter sends \r; thus we need binmode
+	 # XXXX Do we need to undo???  $term_IN is most probably private now...
+	 binmode $term_IN;
      }
-  }
-  return 1;
+    }
+    return 1;
 }
 
 sub ResetTTY {
@@ -1873,14 +1873,14 @@ sub getc_with_pending {
 }
 
 sub rl_getc {
-          my $key;                        # JP: Added missing declaration
-          if (defined $term_readkey) { # XXXX ???
-            $Term::ReadLine::Perl5::term->Tk_loop
-              if $Term::ReadLine::toloop && defined &Tk::DoOneEvent;
-            $key = Term::ReadKey::ReadKey(0, $term_IN);
-          } else {
-            $key = $Term::ReadLine::Perl5::term->get_c;
-          }
+    my $key;                        # JP: Added missing declaration
+    if (defined $term_readkey) { # XXXX ???
+	$Term::ReadLine::Perl5::term->Tk_loop
+	    if $Term::ReadLine::toloop && defined &Tk::DoOneEvent;
+	$key = Term::ReadKey::ReadKey(0, $term_IN);
+    } else {
+	$key = $Term::ReadLine::Perl5::term->get_c;
+    }
 }
 
 =head2 get_command
