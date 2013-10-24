@@ -40,8 +40,9 @@ my $builder = Module::Build->new(
 	'Module::Build'           => 0,
 	'perl'                    => '5.008008',
     },
-    build_requires => {
+    test_requires => {
         'Test::More'              => 0.81,
+        'rlib'                    => '0.02',
     },
     requires => {
         'version'                 => 0,
