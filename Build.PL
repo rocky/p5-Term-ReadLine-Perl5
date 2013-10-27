@@ -36,6 +36,10 @@ my $builder = Module::Build->new(
     },
 
 
+    recommends => {
+        'Term::ReadKey'           => 0,
+    },
+
     configure_requires => {
 	'Module::Build'           => 0,
 	'perl'                    => '5.008008',
