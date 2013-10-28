@@ -24,6 +24,7 @@ $VERSION = '1.09_01';
 use Term::ReadLine;  # For Term::ReadLine::TermCap::ornaments
 use File::HomeDir;
 use File::Spec;
+use Term::ReadKey;
 
 my $autoload_broken = 1;        # currently: defined does not work with a-l
 my $useioctl = 1;
@@ -50,6 +51,7 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $rl_readline_name @rl_History $rl_MaxHistorySize
           $rl_max_numeric_arg $rl_OperateCount
           $KillBuffer $dumb_term $stdin_not_tty $InsertMode
+          $mode $winsz
           $rl_NoInitFromFile);
 #
 # my ($InputLocMsg, $term_OUT, $term_IN);
@@ -57,7 +59,7 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
 # my ($hook, %var_HorizontalScrollMode, %var_EditingMode, %var_OutputMeta);
 # my ($var_HorizontalScrollMode, $var_EditingMode, $var_OutputMeta);
 # my (%var_ConvertMeta, $var_ConvertMeta, %var_MarkModifiedLines, $var_MarkModifiedLines);
-my ($term_readkey, $inDOS);
+my $inDOS;
 # my (%var_PreferVisibleBell, $var_PreferVisibleBell);
 # my (%var_TcshCompleteMode, $var_TcshCompleteMode);
 # my (%var_CompleteAddsuffix, $var_CompleteAddsuffix);
@@ -110,15 +112,9 @@ sub get_window_size
     local($., $@, $!, $^E, $?);         # Preserve $! etc; the rest for hooks
     my ($num_cols,$num_rows);
 
-    if (defined $term_readkey) {
-         ($num_cols,$num_rows) =  Term::ReadKey::GetTerminalSize($term_OUT);
-         $rl_screen_width = $num_cols - $rl_correct_sw
-           if defined($num_cols) && $num_cols;
-    } elsif (defined $TIOCGWINSZ and &ioctl($term_IN,$TIOCGWINSZ,$winsz)) {
-         ($num_rows,$num_cols) = unpack($winsz_t,$winsz);
-         $rl_screen_width = $num_cols - $rl_correct_sw
-           if defined($num_cols) && $num_cols;
-    }
+    ($num_cols,$num_rows) =  Term::ReadKey::GetTerminalSize($term_OUT);
+    $rl_screen_width = $num_cols - $rl_correct_sw
+	if defined($num_cols) && $num_cols;
     $rl_margin = int($rl_screen_width/3);
     if (defined $sig) {
         $force_redraw = 1;
@@ -191,88 +187,76 @@ sub preinit
     @winchhooks = ();
 
     $inDOS = $^O eq 'os2' || defined $ENV{OS2_SHELL} unless defined $inDOS;
-    eval {
-      require Term::ReadKey; $term_readkey++;
-    } unless defined $ENV{PERL_RL_USE_TRK}
-             and not $ENV{PERL_RL_USE_TRK};
-    unless ($term_readkey) {
-      eval {require "ioctl.pl"}; ## try to get, don't die if not found.
-      eval {require "sys/ioctl.ph"}; ## try to get, don't die if not found.
-      eval {require "sgtty.ph"}; ## try to get, don't die if not found.
-      if ($inDOS and !defined $TIOCGWINSZ) {
-          $TIOCGWINSZ=0;
-          $TIOCGETP=1;
-          $TIOCSETP=2;
-          $sgttyb_t="I5 C8";
-          $winsz_t="";
-          $RAW=0xf002;
-          $ECHO=0x0008;
-      }
-      $TIOCGETP = &TIOCGETP if defined(&TIOCGETP);
-      $TIOCSETP = &TIOCSETP if defined(&TIOCSETP);
-      $TIOCGWINSZ = &TIOCGWINSZ if defined(&TIOCGWINSZ);
-      $FIONREAD = &FIONREAD if defined(&FIONREAD);
-      $TCGETS = &TCGETS if defined(&TCGETS);
-      $TCSETS = &TCSETS if defined(&TCSETS);
-      $TCXONC = &TCXONC if defined(&TCXONC);
-      $TIOCGETP   = 0x40067408 if !defined($TIOCGETP);
-      $TIOCSETP   = 0x80067409 if !defined($TIOCSETP);
-      $TIOCGWINSZ = 0x40087468 if !defined($TIOCGWINSZ);
-      $FIONREAD   = 0x4004667f if !defined($FIONREAD);
-      $TCGETS     = 0x40245408 if !defined($TCGETS);
-      $TCSETS     = 0x80245409 if !defined($TCSETS);
-      $TCXONC     = 0x20005406 if !defined($TCXONC);
-
-      ## TTY modes
-      $ECHO = &ECHO if defined(&ECHO);
-      $RAW = &RAW if defined(&RAW);
-      $RAW      = 040 if !defined($RAW);
-      $ECHO     = 010 if !defined($ECHO);
-      #$CBREAK    = 002 if !defined($CBREAK);
-      $mode = $RAW; ## could choose CBREAK for testing....
-
-      $IGNBRK     = 1 if !defined($IGNBRK);
-      $BRKINT     = 2 if !defined($BRKINT);
-      $ISTRIP     = 040 if !defined($ISTRIP);
-      $INLCR      = 0100 if !defined($INLCR);
-      $IGNCR      = 0200 if !defined($IGNCR);
-      $ICRNL      = 0400 if !defined($ICRNL);
-      $OPOST      = 1 if !defined($OPOST);
-      $ISIG       = 1 if !defined($ISIG);
-      $ICANON     = 2 if !defined($ICANON);
-      $TCOON      = 1 if !defined($TCOON);
-      $TERMIOS_READLINE_ION = $BRKINT;
-      $TERMIOS_READLINE_IOFF = $IGNBRK | $ISTRIP | $INLCR | $IGNCR | $ICRNL;
-      $TERMIOS_READLINE_OON = 0;
-      $TERMIOS_READLINE_OOFF = $OPOST;
-      $TERMIOS_READLINE_LON = 0;
-      $TERMIOS_READLINE_LOFF = $ISIG | $ICANON | $ECHO;
-      $TERMIOS_NORMAL_ION = $BRKINT;
-      $TERMIOS_NORMAL_IOFF = $IGNBRK;
-      $TERMIOS_NORMAL_OON = $OPOST;
-      $TERMIOS_NORMAL_OOFF = 0;
-      $TERMIOS_NORMAL_LON = $ISIG | $ICANON | $ECHO;
-      $TERMIOS_NORMAL_LOFF = 0;
-
-      #$sgttyb_t   = 'C4 S';
-      #$winsz_t = "S S S S";  # rows,cols, xpixel, ypixel
-      $sgttyb_t   = 'C4 S' if !defined($sgttyb_t);
-      $winsz_t = "S S S S" if !defined($winsz_t);
-      # rows,cols, xpixel, ypixel
-      $winsz = pack($winsz_t,0,0,0,0);
-      ## $fionread_t = "L";
-      ## $fion = pack($fionread_t, 0);
-      $NCCS = 17;
-      $termios_t = "LLLLc" . ("c" x $NCCS);  # true for SunOS 4.1.3, at least...
-      $termios = ''; ## just to shut up "perl -w".
-      $termios = pack($termios, 0);  # who cares, just make it long enough
-      $TERMIOS_IFLAG = 0;
-      $TERMIOS_OFLAG = 1;
-      ## $TERMIOS_CFLAG = 2;
-      $TERMIOS_LFLAG = 3;
-      $TERMIOS_VMIN = 5 + 4;
-      $TERMIOS_VTIME = 5 + 5;
+    eval {require "ioctl.pl"}; ## try to get, don't die if not found.
+    eval {require "sgtty.ph"}; ## try to get, don't die if not found.
+    if ($inDOS and !defined $TIOCGWINSZ) {
+	$TIOCGWINSZ=0;
+	$TIOCGETP=1;
+	$TIOCSETP=2;
+	$sgttyb_t="I5 C8";
+	$winsz_t="";
+	$RAW=0xf002;
+	$ECHO=0x0008;
     }
+    $TIOCGETP = &TIOCGETP if defined(&TIOCGETP);
+    $TIOCSETP = &TIOCSETP if defined(&TIOCSETP);
+    $TIOCGWINSZ = &TIOCGWINSZ if defined(&TIOCGWINSZ);
+    $FIONREAD = &FIONREAD if defined(&FIONREAD);
+    $TCGETS = &TCGETS if defined(&TCGETS);
+    $TCSETS = &TCSETS if defined(&TCSETS);
+    $TCXONC = &TCXONC if defined(&TCXONC);
+    $TIOCGETP   = 0x40067408 if !defined($TIOCGETP);
+    $TIOCSETP   = 0x80067409 if !defined($TIOCSETP);
+    $TIOCGWINSZ = 0x40087468 if !defined($TIOCGWINSZ);
+    $FIONREAD   = 0x4004667f if !defined($FIONREAD);
+    $TCGETS     = 0x40245408 if !defined($TCGETS);
+    $TCSETS     = 0x80245409 if !defined($TCSETS);
+    $TCXONC     = 0x20005406 if !defined($TCXONC);
+
+    ## TTY modes
+    $ECHO = &ECHO if defined(&ECHO);
+    $RAW = &RAW if defined(&RAW);
+    $RAW      = 040 if !defined($RAW);
+    $ECHO     = 010 if !defined($ECHO);
+    $mode = $RAW; ## could choose CBREAK for testing....
+
+    $IGNBRK     = 1 if !defined($IGNBRK);
+    $BRKINT     = 2 if !defined($BRKINT);
+    $ISTRIP     = 040 if !defined($ISTRIP);
+    $INLCR      = 0100 if !defined($INLCR);
+    $IGNCR      = 0200 if !defined($IGNCR);
+    $ICRNL      = 0400 if !defined($ICRNL);
+    $OPOST      = 1 if !defined($OPOST);
+    $ISIG       = 1 if !defined($ISIG);
+    $ICANON     = 2 if !defined($ICANON);
+    $TCOON      = 1 if !defined($TCOON);
+    $TERMIOS_READLINE_ION = $BRKINT;
+    $TERMIOS_READLINE_IOFF = $IGNBRK | $ISTRIP | $INLCR | $IGNCR | $ICRNL;
+    $TERMIOS_READLINE_OON = 0;
+    $TERMIOS_READLINE_OOFF = $OPOST;
+    $TERMIOS_READLINE_LON = 0;
+    $TERMIOS_READLINE_LOFF = $ISIG | $ICANON | $ECHO;
+    $TERMIOS_NORMAL_ION = $BRKINT;
+    $TERMIOS_NORMAL_IOFF = $IGNBRK;
+    $TERMIOS_NORMAL_OON = $OPOST;
+    $TERMIOS_NORMAL_OOFF = 0;
+    $TERMIOS_NORMAL_LON = $ISIG | $ICANON | $ECHO;
+    $TERMIOS_NORMAL_LOFF = 0;
+
+    $sgttyb_t   = 'C4 S' if !defined($sgttyb_t);
+    $winsz_t = "S S S S" if !defined($winsz_t);
+    # rows,cols, xpixel, ypixel
+    $winsz = pack($winsz_t,0,0,0,0);
+    $NCCS = 17;
+    $termios_t = "LLLLc" . ("c" x $NCCS);  # true for SunOS 4.1.3, at least...
+    $termios = ''; ## just to shut up "perl -w".
+    $termios = pack($termios, 0);  # who cares, just make it long enough
+    $TERMIOS_IFLAG = 0;
+    $TERMIOS_OFLAG = 1;
+    ## $TERMIOS_CFLAG = 2;
+    $TERMIOS_LFLAG = 3;
+    $TERMIOS_VMIN = 5 + 4;
+    $TERMIOS_VTIME = 5 + 5;
     $rl_delete_selection = 1;
     $rl_correct_sw = ($inDOS ? 1 : 0);
     $rl_scroll_nextline = 1 unless defined $rl_scroll_nextline;
@@ -487,19 +471,6 @@ sub preinit
                   qq/"\0\4"/,  'YankClipboard',    # 4: <Shift>+<Insert>
                   qq/"\0\5"/,  'KillRegionClipboard',    # 5: <Shift>+<Delete>
                   qq/"\0\16"/, 'Undo', # 14: <Alt>+<Backspace>
-#                 qq/"\0\23"/, 'RevertLine', # 19: <Alt>+<R>
-#                 qq/"\0\24"/, 'TransposeWords', # 20: <Alt>+<T>
-#                 qq/"\0\25"/, 'YankPop', # 21: <Alt>+<Y>
-#                 qq/"\0\26"/, 'UpcaseWord', # 22: <Alt>+<U>
-#                 qq/"\0\31"/, 'ReverseSearchHistory', # 25: <Alt>+<P>
-#                 qq/"\0\40"/, 'KillWord', # 32: <Alt>+<D>
-#                 qq/"\0\41"/, 'ForwardWord', # 33: <Alt>+<F>
-#                 qq/"\0\46"/, 'DownCaseWord', # 38: <Alt>+<L>
-                  #qq/"\0\51"/, 'TildeExpand', # 41: <Alt>+<\'>
-#                 qq/"\0\56"/, 'CapitalizeWord', # 46: <Alt>+<C>
-#                 qq/"\0\60"/, 'BackwardWord', # 48: <Alt>+<B>
-#                 qq/"\0\61"/, 'ForwardSearchHistory', # 49: <Alt>+<N>
-                  #qq/"\0\64"/, 'YankLastArg', # 52: <Alt>+<.>
                   qq/"\0\65"/,  'PossibleCompletions', # 53: <Alt>+</>
                   qq/"\0\107"/, 'BeginningOfLine', # 71: <Home>
                   qq/"\0\110"/, 'previous-history', # 72: <Up arrow>
@@ -1476,7 +1447,7 @@ or 1. I<ctrl(ord('A'))> does the same thing.
 =cut
 
 sub ctrl {
-  $_[0] ^ (($_[0]>=ord('a') && $_[0]<=ord('z')) ? 0x60 : 0x40);
+    $_[0] ^ (($_[0]>=ord('a') && $_[0]<=ord('z')) ? 0x60 : 0x40);
 }
 
 
@@ -1484,79 +1455,18 @@ sub ctrl {
 sub SetTTY {
     return if $dumb_term || $stdin_not_tty;
     #return system 'stty raw -echo' if defined &DB::DB;
-    if (defined $term_readkey) {
-	Term::ReadKey::ReadMode(4, $term_IN);
-	if ($^O eq 'MSWin32') {
-	    # If we reached this, Perl isn't cygwin; Enter sends \r; thus we need binmode
-	    # XXXX Do we need to undo???  $term_IN is most probably private now...
-	    binmode $term_IN;
-	}
-	return 1;
-    }
-    # system 'stty raw -echo';
-
-    $sgttyb = ''; ## just to quiet "perl -w";
-    if ($useioctl && $^O ne 'solaris' && defined $TIOCGETP
-	&& &ioctl($term_IN,$TIOCGETP,$sgttyb)) {
-	@tty_buf = unpack($sgttyb_t,$sgttyb);
-	if (defined $ENV{OS2_SHELL}) {
-	    $tty_buf[3] &= ~$mode;
-	    $tty_buf[3] &= ~$ECHO;
-	} else {
-	    $tty_buf[4] |= $mode;
-      $tty_buf[4] &= ~$ECHO;
-	}
-	$sgttyb = pack($sgttyb_t,@tty_buf);
-	&ioctl($term_IN,$TIOCSETP,$sgttyb) || die "Can't ioctl TIOCSETP: $!";
-    } elsif (!$usestty) {
-	return 0;
-    } else {
-	warn <<EOW if $useioctl and not defined $ENV{PERL_READLINE_NOWARN};
-Can't ioctl TIOCGETP: $!
-Consider installing Term::ReadKey from CPAN site nearby
-        at http://www.perl.com/CPAN
-Or use
-        perl -MCPAN -e shell
-to reach CPAN. Falling back to 'stty'.
-        If you do not want to see this warning, set PERL_READLINE_NOWARN
-in your environment.
-EOW
-                                        # '; # For Emacs.
-     $useioctl = 0;
-     system 'stty raw -echo' and ($usestty = 0, die "Cannot call `stty': $!");
-     if ($^O eq 'MSWin32') {
-	 # If we reached this, Perl isn't cygwin, but STTY is present ==> cygwin
-	 # The symptoms: now Enter sends \r; thus we need binmode
-	 # XXXX Do we need to undo???  $term_IN is most probably private now...
-	 binmode $term_IN;
-     }
+    Term::ReadKey::ReadMode(4, $term_IN);
+    if ($^O eq 'MSWin32') {
+	# If we reached this, Perl isn't cygwin; Enter sends \r; thus we need binmode
+	# XXXX Do we need to undo???  $term_IN is most probably private now...
+	binmode $term_IN;
     }
     return 1;
 }
 
 sub ResetTTY {
     return if $dumb_term || $stdin_not_tty;
-    #return system 'stty -raw echo' if defined &DB::DB;
-    if (defined $term_readkey) {
-      return Term::ReadKey::ReadMode(0, $term_IN);
-    }
-
-#   system 'stty -raw echo';
-  if ($useioctl) {
-    &ioctl($term_IN,$TIOCGETP,$sgttyb) || die "Can't ioctl TIOCGETP: $!";
-    @tty_buf = unpack($sgttyb_t,$sgttyb);
-    if (defined $ENV{OS2_SHELL}) {
-      $tty_buf[3] |= $mode;
-      $tty_buf[3] |= $ECHO;
-    } else {
-      $tty_buf[4] &= ~$mode;
-      $tty_buf[4] |= $ECHO;
-    }
-    $sgttyb = pack($sgttyb_t,@tty_buf);
-    &ioctl($term_IN,$TIOCSETP,$sgttyb) || die "Can't ioctl TIOCSETP: $!";
-  } elsif ($usestty) {
-    system 'stty -raw echo' and die "Cannot call `stty': $!";
-  }
+    return Term::ReadKey::ReadMode(0, $term_IN);
 }
 
 =head2 substr_with_props
@@ -1873,14 +1783,9 @@ sub getc_with_pending {
 }
 
 sub rl_getc {
-    my $key;                        # JP: Added missing declaration
-    if (defined $term_readkey) { # XXXX ???
-	$Term::ReadLine::Perl5::term->Tk_loop
-	    if $Term::ReadLine::toloop && defined &Tk::DoOneEvent;
-	$key = Term::ReadKey::ReadKey(0, $term_IN);
-    } else {
-	$key = $Term::ReadLine::Perl5::term->get_c;
-    }
+    $Term::ReadLine::Perl5::term->Tk_loop
+	if $Term::ReadLine::toloop && defined &Tk::DoOneEvent;
+    return Term::ReadKey::ReadKey(0, $term_IN);
 }
 
 =head2 get_command
@@ -3311,6 +3216,7 @@ sub completion_matches
 
     #print qq/\r\neval("\@matches = &$func(\$text, \$line, \$start)\n\r/;#DEBUG
     #eval("\@matches = &$func(\$text, \$line, \$start);1") || warn "$@ ";
+
     @matches = &$func($text, $line, $start);
 
     ## if anything returned , find the common prefix among them

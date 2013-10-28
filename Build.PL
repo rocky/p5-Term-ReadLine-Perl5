@@ -35,11 +35,6 @@ my $builder = Module::Build->new(
 	}
     },
 
-
-    recommends => {
-        'Term::ReadKey'           => 0,
-    },
-
     configure_requires => {
 	'Module::Build'           => 0,
 	'perl'                    => '5.008008',
@@ -52,6 +47,7 @@ my $builder = Module::Build->new(
         'version'                 => 0,
 	'File::HomeDir'           => 0.54,
 	'File::Spec'              => 0,
+        'Term::ReadKey'           => 0,
     },
     sign                => ($ENV{PERL_MB_NOSIGN} ? 0 : 1),
     );
