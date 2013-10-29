@@ -1,3 +1,8 @@
+1.10: 2013-10-29
+- Make Term::ReadKey a requirement and simplify surrounding code.
+  For those that can't use Term::ReadKey, there is always
+  Term::ReadLine::Perl or something else
+
 1.09: 2013-06-15
 - reduce duplicate README documentation and segregate old docs.
 - test.pl uses warnings and strict now.
