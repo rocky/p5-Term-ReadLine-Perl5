@@ -3,7 +3,7 @@ package Term::ReadLine::Perl5;
 use warnings; use strict;
 no warnings 'once';
 
-our $VERSION = '1.10';
+our $VERSION = '1.10_01';
 
 =head1 NAME
 

@@ -13,6 +13,19 @@ meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
 name: Term-ReadLine-Perl5
+provides:
+  Term::ReadLine::Perl5:
+    file: lib/Term/ReadLine/Perl5.pm
+    version: 1.10
+  Term::ReadLine::Perl5::AU:
+    file: lib/Term/ReadLine/Perl5.pm
+    version: 0
+  Term::ReadLine::Perl5::Tie:
+    file: lib/Term/ReadLine/Perl5.pm
+    version: 0
+  readline:
+    file: lib/Term/ReadLine/readline.pm
+    version: 1.10
 requires:
   File::HomeDir: 0.54
   File::Spec: 0

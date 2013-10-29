@@ -5,9 +5,10 @@ env:
 
 install:
   # Prerequisites
-  - "cpanm rlib File::HomeDir File::Spec"
+  - "cpanm rlib File::HomeDir File::Spec Term::ReadKey"
 
 perl:
+  - "5.18"
   - "5.16"
   - "5.14"
   - "5.12"
