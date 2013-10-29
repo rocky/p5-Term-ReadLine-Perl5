@@ -21,7 +21,7 @@ my $builder = Module::Build->new(
     add_to_cleanup      => ['Term-ReadLine-Perl5*', 'tmp*', '.history.text',
 			    'pod2htm*.tmp'],
     create_makefile_pl  => 'passthrough',
-    dist_abstract       => 'Pure Perl version of GNU ReadLine.',
+    dist_abstract       => 'Perl5 version of GNU ReadLine.',
     dist_author         => 'Rocky Bernstein <rocky@cpan.org>',
     dist_version_from   => 'lib/Term/ReadLine/Perl5.pm',
     license             => 'perl',
