@@ -19,7 +19,7 @@ this (very fragile) code...
 use warnings;
 package readline;
 
-$VERSION = '1.09_01';
+$VERSION = '1.10'';
 
 use Term::ReadLine;  # For Term::ReadLine::TermCap::ornaments
 use File::HomeDir;
