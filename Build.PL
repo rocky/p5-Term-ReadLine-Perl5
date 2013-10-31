@@ -36,7 +36,7 @@ my $builder = Module::Build->new(
     },
 
     configure_requires => {
-	'Module::Build'           => 0,
+	'Module::Build'           => '0.4.004',  # Min "test_requires"
 	'perl'                    => '5.008008',
     },
     test_requires => {

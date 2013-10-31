@@ -12,9 +12,8 @@
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl t/history.t'
 
+my $n=1;
 BEGIN {
-    my $last = 18; #82
-    print "1..$last\n"; $n = 1;
     $ENV{LANG} = 'C';
     # force Term::ReadLine to use Term::ReadLine::Perl5
     $ENV{PERL_RL} = 'Perl5';
@@ -23,7 +22,7 @@ BEGIN {
     # stop reading ~/.inputrc
     $ENV{'INPUTRC'} = '/dev/null';
 }
-END {print "not ok $n\n" unless $loaded;}
+END {print "not ok $n # loaded\n" unless $loaded;}
 
 use strict; use warnings;
 
@@ -33,7 +32,6 @@ use Term::ReadLine::Perl5;
 sub show_indices;
 
 $loaded = 1;
-print "ok $n\n"; $n++;
 
 # Perl-5.005 and later has Test.pm, but I define this here to support
 # older version.
@@ -53,23 +51,25 @@ sub ok {
 }
 
 ########################################################################
-# test new method
+# Use "new" method to get $t used below
 
 my $t;
 eval { $t  = new Term::ReadLine::Perl5 'ReadLineTest'; };
 unless ($t) {
-    print "Need access to tty" ;
+    print "1..0 # Skipped - need access to tty\n";
+    exit 0;
 }
 
-print defined $t ? "ok $n\n" : "not ok $n\n"; $n++;
-
+my $last = 17; #82 # in Term::ReadLine::GNU History test
+print "1..$last\n";
+$res = 1; ok('new done');
 my $OUT = $t->OUT || \*STDOUT;
 
 ########################################################################
 # test ReadLine method
 
 if ($t->ReadLine eq 'Term::ReadLine::Perl5') {
-    print "ok $n\n";
+    print "ok $n # got Term::ReadLine::Perl5\n";
 } else {
     print "not ok $n\n";
     print $OUT ("Package name should be \`Term::ReadLine::Perl5\', but it is \`",
@@ -79,6 +79,7 @@ $n++;
 ########################################################################
 # test Attribs method
 
+print "# Attribs\n";
 my $attribs = $t->Attribs;
 print defined $attribs ? "ok $n\n" : "not ok $n\n"; $n++;
 
@@ -91,31 +92,38 @@ my @list_set;
 show_indices;
 
 # test SetHistory(), GetHistory()
+print "# SetHistory(), GetHistory()\n";
+
 $t->SetHistory(@list_set);
 print cmp_list(\@list_set, [$t->GetHistory]) ? "ok $n\n" : "not ok $n\n"; $n++;
 show_indices;
 
 # test add_history()
+print "# add_history()\n";
 $t->add_history('four');
 push(@list_set, 'four');
 print cmp_list(\@list_set, [$t->GetHistory]) ? "ok $n\n" : "not ok $n\n"; $n++;
 show_indices;
 
 # test remove_history()
+print "# remove_history()\n";
 $t->remove_history(2);
 splice(@list_set, 2, 1);
 print cmp_list(\@list_set, [$t->GetHistory]) ? "ok $n\n" : "not ok $n\n"; $n++;
 show_indices;
 
 # test replace_history_entry()
+print "# replace_history_entry()\n";
 $t->replace_history_entry(3, 'daarn');
 splice(@list_set, 3, 1, 'daarn');
 print cmp_list(\@list_set, [$t->GetHistory]) ? "ok $n\n" : "not ok $n\n"; $n++;
 show_indices;
 
 # stifle_history
+print "# history_is_stifled\n";
 print $t->history_is_stifled == 0 ? "ok $n\n" : "not ok $n\n"; $n++;
 
+print "# stifle_history\n";
 $t->stifle_history(3);
 print($t->history_is_stifled == 1
       && $attribs->{history_length} == 3 && $attribs->{max_input_history} == 3
@@ -130,6 +138,7 @@ print($t->history_is_stifled == 1 && $attribs->{history_length} == 3
 show_indices;
 
 # unstifle_history()
+print "# unstifle_history\n";
 $t->unstifle_history;
 print($t->history_is_stifled == 0 && $attribs->{history_length} == 3
       ? "ok $n\n" : "not ok $n\n"); $n++;
@@ -143,6 +152,7 @@ print($t->history_is_stifled == 0 && $attribs->{history_length} == 4
 show_indices;
 
 # clear_history()
+print "# clear_history\n";
 $t->clear_history;
 print ($attribs->{history_length} == 0 ? "ok $n\n" : "not ok $n\n"); $n++;
 show_indices;

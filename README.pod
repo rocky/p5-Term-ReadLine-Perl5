@@ -6,7 +6,7 @@
 
 =head1 NAME
 
-Term::ReadLine::Perl5 - A pure Perl implementation GNU Readline
+Term::ReadLine::Perl5 - A Perl5 implementation GNU Readline
 
 =head1 SYNOPSIS
 
@@ -21,20 +21,20 @@ Term::ReadLine::Perl5 - A pure Perl implementation GNU Readline
 =head2 Overview
 
 This is a implementation of the GNU Readline/History Library written
-entirely in Perl.
+in Perl5.
 
 GNU Readline reads lines from an interactive terminal with I<emacs> or
 I<vi> editing capabilities. It provides as mechanism for saving
 history of previous input.
 
 This package typically used in command-line interfaces and REPLs (Read,
-Eval, Print Loops).
+Eval, Print, Loop).
 
 =head1 INSTALL
 
 To install this module type:
 
-    perl Makefile.PL
+    perl Build.PL
     make
     # for interactive testing:
     make test
@@ -53,7 +53,7 @@ install L<Term::ReadKey>
 
 =head1 HISTORY
 
-Thi first implementation was in Perl4 (mostly) by Jeffrey
+The first implementation was in Perl4 (mostly) by Jeffrey
 Friedl. He referenced FSF the code Roland Schemers F<line_edit.pl>.
 
 Ilya Zakharevich turned this into a Perl5 module called
