@@ -55,7 +55,12 @@ sub ok {
 ########################################################################
 # test new method
 
-my $t = new Term::ReadLine::Perl5 'ReadLineTest';
+my $t;
+eval { $t  = new Term::ReadLine::Perl5 'ReadLineTest'; };
+unless ($t) {
+    print "Need access to tty" ;
+}
+
 print defined $t ? "ok $n\n" : "not ok $n\n"; $n++;
 
 my $OUT = $t->OUT || \*STDOUT;
