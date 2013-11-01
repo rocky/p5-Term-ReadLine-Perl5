@@ -1,3 +1,7 @@
+1.13: 2013-11-01
+
+- Correct minimum Module::Build version number
+
 1.12: 2013-10-31 -the Jed Woodward
 
 - Specify min Module::Build version that uses "test_requires"

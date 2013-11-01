@@ -4,7 +4,7 @@ author:
   - 'Rocky Bernstein <rocky@cpan.org>'
 build_requires: {}
 configure_requires:
-  Module::Build: 0
+  Module::Build: v0.4.4
   perl: 5.008008
 dynamic_config: 1
 generated_by: 'Module::Build version 0.4007, CPAN::Meta::Converter version 2.120921'
@@ -16,7 +16,7 @@ name: Term-ReadLine-Perl5
 provides:
   Term::ReadLine::Perl5:
     file: lib/Term/ReadLine/Perl5.pm
-    version: 1.11
+    version: 1.12
   Term::ReadLine::Perl5::AU:
     file: lib/Term/ReadLine/Perl5.pm
     version: 0
@@ -25,7 +25,7 @@ provides:
     version: 0
   readline:
     file: lib/Term/ReadLine/readline.pm
-    version: 1.11
+    version: 1.12
 requires:
   File::HomeDir: 0.54
   File::Spec: 0
@@ -35,7 +35,7 @@ resources:
   bugtracker: https://github.com/rocky/p5-Term-ReadLine-Perl5/issues
   license: http://dev.perl.org/licenses/
   repository: http://github.com/rocky/p5-Term-ReadLine-Perl5
-version: 1.11
+version: 1.12
 x_test_requires:
   Test::More: 0.81
   rlib: 0.02
