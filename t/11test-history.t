@@ -11,8 +11,12 @@
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl t/history.t'
+use strict;
+use warnings;
+use rlib '../lib';
 
-my $n=1;
+use Test::More;
+
 BEGIN {
     $ENV{LANG} = 'C';
     # force Term::ReadLine to use Term::ReadLine::Perl5
@@ -22,66 +26,52 @@ BEGIN {
     # stop reading ~/.inputrc
     $ENV{'INPUTRC'} = '/dev/null';
 }
-END {print "not ok $n # loaded\n" unless $loaded;}
 
-use strict; use warnings;
-
-use vars qw($loaded $n);
-use rlib '../lib';
 use Term::ReadLine::Perl5;
-sub show_indices;
 
-$loaded = 1;
+my $t;  # Term::ReadLine::Perl5 object
+my $attribs = {};
+my $verbose = @ARGV && ($ARGV[0] eq 'verbose');
 
-# Perl-5.005 and later has Test.pm, but I define this here to support
-# older version.
-my $res;
-my $ok = 1;
-sub ok {
-    my $what = shift || '';
-
-    if ($res) {
-	print "ok $n\t$what\n";
-    } else {
-	print "not ok $n\t$what";
-	print @_ ? "\t@_\n" : "\n";
-	$ok = 0;
-    }
-    $n++;
+# debugging support
+sub show_indices {
+    return;
+    printf("where_history: %d ",	$t->where_history);
+#    printf("current_history(): %s ",	$t->current_history);
+    printf("history_base: %d, ",	$attribs->{history_base});
+    printf("history_length: %d, ",	$attribs->{history_length});
+#    printf("max_input_history: %d ",	$attribs->{max_input_history});
+#    printf("history_total_bytes: %d ",	$t->history_total_bytes);
+    print "\n";
 }
 
 ########################################################################
 # Use "new" method to get $t used below
 
-my $t;
 eval { $t  = new Term::ReadLine::Perl5 'ReadLineTest'; };
-unless ($t) {
-    print "1..0 # Skipped - need access to tty\n";
-    exit 0;
-}
+plan skip_all => "Need access to tty" unless $t;
+ok($t, "new method, new's");
 
-my $last = 17; #82 # in Term::ReadLine::GNU History test
-print "1..$last\n";
-$res = 1; ok('new done');
-my $OUT = $t->OUT || \*STDOUT;
+my $OUT;
+if ($verbose) {
+    $OUT = $t->OUT;
+} else {
+    open(NULL, '>/dev/null') or die "cannot open \`/dev/null\': $!\n";
+    $OUT = \*NULL;
+    $t->Attribs->{outstream} = \*NULL;
+}
 
 ########################################################################
 # test ReadLine method
 
-if ($t->ReadLine eq 'Term::ReadLine::Perl5') {
-    print "ok $n # got Term::ReadLine::Perl5\n";
-} else {
-    print "not ok $n\n";
-    print $OUT ("Package name should be \`Term::ReadLine::Perl5\', but it is \`",
-		$t->ReadLine, "\'\n");
-}
-$n++;
+is($t->ReadLine, 'Term::ReadLine::Perl5',
+   "t->ReaLine should be \`Term::ReadLine::Perl5\'");
+
 ########################################################################
 # test Attribs method
 
-print "# Attribs\n";
-my $attribs = $t->Attribs;
-print defined $attribs ? "ok $n\n" : "not ok $n\n"; $n++;
+$attribs = $t->Attribs;
+ok($attribs, "Should have \$t->Attribs");
 
 ########################################################################
 # 2.3.2 History List Management
@@ -91,70 +81,66 @@ my @list_set;
 @list_set = qw(one two two three);
 show_indices;
 
-# test SetHistory(), GetHistory()
-print "# SetHistory(), GetHistory()\n";
-
 $t->SetHistory(@list_set);
-print cmp_list(\@list_set, [$t->GetHistory]) ? "ok $n\n" : "not ok $n\n"; $n++;
+is_deeply(\@list_set, [$t->GetHistory],
+	  "GetHistory gives what SetHistory initially[ set");
 show_indices;
 
-# test add_history()
-print "# add_history()\n";
 $t->add_history('four');
 push(@list_set, 'four');
-print cmp_list(\@list_set, [$t->GetHistory]) ? "ok $n\n" : "not ok $n\n"; $n++;
+is_deeply(\@list_set, [$t->GetHistory],
+	  "add_history() can push an item");
 show_indices;
 
-# test remove_history()
-print "# remove_history()\n";
 $t->remove_history(2);
 splice(@list_set, 2, 1);
-print cmp_list(\@list_set, [$t->GetHistory]) ? "ok $n\n" : "not ok $n\n"; $n++;
+is_deeply(\@list_set, [$t->GetHistory],
+	  "remove_history() can remove an item");
 show_indices;
 
-# test replace_history_entry()
-print "# replace_history_entry()\n";
 $t->replace_history_entry(3, 'daarn');
 splice(@list_set, 3, 1, 'daarn');
-print cmp_list(\@list_set, [$t->GetHistory]) ? "ok $n\n" : "not ok $n\n"; $n++;
+is_deeply(\@list_set, [$t->GetHistory],
+	  'replace_history can replace an item');
 show_indices;
 
 # stifle_history
-print "# history_is_stifled\n";
-print $t->history_is_stifled == 0 ? "ok $n\n" : "not ok $n\n"; $n++;
+is($t->history_is_stifled, 0,
+   "History should not start out stifled");
 
-print "# stifle_history\n";
 $t->stifle_history(3);
-print($t->history_is_stifled == 1
-      && $attribs->{history_length} == 3 && $attribs->{max_input_history} == 3
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-#print "@{[$t->GetHistory]}\n";
+is($t->history_is_stifled, 1,
+   "stifle_history() stifles history");
+is($attribs->{history_length}, 3,
+   "history should be stifled at 3 items");
+is($attribs->{max_input_history}, 3,
+   "max_input_history value should be 3");
 show_indices;
 
-# history_is_stifled()
 $t->add_history('five');
-print($t->history_is_stifled == 1 && $attribs->{history_length} == 3
-      ? "ok $n\n" : "not ok $n\n"); $n++;
+is($t->history_is_stifled, 1,
+   "history is still stifled");
+is($attribs->{history_length}, 3,
+   "history length hasn't changed");
+
 show_indices;
 
 # unstifle_history()
-print "# unstifle_history\n";
 $t->unstifle_history;
-print($t->history_is_stifled == 0 && $attribs->{history_length} == 3
-      ? "ok $n\n" : "not ok $n\n"); $n++;
-#print "@{[$t->GetHistory]}\n";
+is($t->history_is_stifled, 0);
+is($attribs->{history_length}, 3);
 show_indices;
 
 # history_is_stifled()
 $t->add_history('six');
-print($t->history_is_stifled == 0 && $attribs->{history_length} == 4
-      ? "ok $n\n" : "not ok $n\n"); $n++;
+is($t->history_is_stifled, 0);
+is($attribs->{history_length}, 4,
+   "unstifling history add adding increases history length");
 show_indices;
 
-# clear_history()
-print "# clear_history\n";
 $t->clear_history;
-print ($attribs->{history_length} == 0 ? "ok $n\n" : "not ok $n\n"); $n++;
+is($attribs->{history_length}, 0,
+    "clear_history() clears history");
 show_indices;
 
 ########################################################################
@@ -172,19 +158,22 @@ show_indices;
 #	history_list() routine emulates history_list() function in
 #	GNU Readline Library.
 splice(@list_set, 0, 1);
-print cmp_list(\@list_set, [$t->history_list])
-    ? "ok $n\n" : "not ok $n\n"; $n++;
+# is_deeply(\@list_set, [$t->history_list()],
+# 	  "history_list() emulation");
 show_indices;
 
 # # at first where_history() returns 0
-# print $t->where_history == 0		? "ok $n\n" : "not ok $n\n"; $n++;
+# is($t->where_history, 0,
+#    "where_history() should start out at 0");
 
 # # current_history()
 # #   history_base + 0 = 1
-# print $t->current_history eq 'one'	? "ok $n\n" : "not ok $n\n"; $n++;
+# is($t->current_history, 'one',
+#    "current_history() for first item");
 
 # # history_total_bytes()
-# print $t->history_total_bytes == 15	? "ok $n\n" : "not ok $n\n"; $n++;
+# is($t->history_total_bytes, 15,
+#    "history_total_bytes()");
 
 # ########################################################################
 # # 2.3.4 Moving Around the History List
@@ -289,11 +278,10 @@ my @list_write = $t->GetHistory();
 $t->WriteHistory($hfile) || warn "error at write_history: $!\n";
 
 $t->SetHistory();		# clear history list
-print ! $t->GetHistory ? "ok $n\n" : "not ok $n\n"; $n++;
+ok(!$t->GetHistory );
 
 $t->ReadHistory($hfile) || warn "error at read_history: $!\n";
-print cmp_list(\@list_write, [$t->GetHistory]) ? "ok $n\n" : "not ok $n\n";
-$n++;
+is_deeply(\@list_write, [$t->GetHistory]);
 
 @list_write = qw(0 1 2 3 4);
 $t->SetHistory(@list_write);
@@ -302,11 +290,12 @@ $t->SetHistory(@list_write);
 $t->SetHistory();		# clear history list
 # read_history()
 ! $t->read_history($hfile) || warn "error at read_history: $!\n";
-print cmp_list(\@list_write, [$t->GetHistory]) ? "ok $n\n" : "not ok $n\n";
-$n++;
+is_deeply(\@list_write, [$t->GetHistory]);
+
+done_testing();
 
 # This is as far as I've gotten.
-exit 0;
+__END__
 
 # read_history() with range
 ! $t->read_history($hfile, 1, 3) || warn "error at read_history: $!\n";
@@ -432,32 +421,3 @@ print $t->history_expand(' !r') eq ' red yellow'
 print $t->history_expand('!! !y') eq '!! yellow blue'
     ? "ok $n\n" : "not ok $n\n"; $n++;
 end_of_test:
-
-exit 0;
-
-########################################################################
-# subroutines
-
-# compare lists
-sub cmp_list {
-    ($a, $b) = @_;
-    my @a = @$a;
-    my @b = @$b;
-    return undef if $#a ne $#b;
-    for (0..$#a) {
-	return undef if $a[$_] ne $b[$_];
-    }
-    return 1;
-}
-
-# debugging support
-sub show_indices {
-    return;
-    printf("where_history: %d ",	$t->where_history);
-#    printf("current_history(): %s ",	$t->current_history);
-    printf("history_base: %d, ",	$attribs->{history_base});
-    printf("history_length: %d, ",	$attribs->{history_length});
-#    printf("max_input_history: %d ",	$attribs->{max_input_history});
-#    printf("history_total_bytes: %d ",	$t->history_total_bytes);
-    print "\n";
-}

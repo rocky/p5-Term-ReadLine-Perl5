@@ -7,10 +7,11 @@ use Test::More;
 
 BEGIN {
   # stop reading ~/.inputrc
-  $ENV{'INPUTRC'} = '/dev/null';
-  $ENV{'COLUMNS'} = '80';
-  $ENV{'LINES'}    = '25';
-  use_ok( 'Term::ReadLine::Perl5' );
+    $ENV{LANG} = 'C';
+    $ENV{'INPUTRC'} = '/dev/null';
+    $ENV{'COLUMNS'} = '80';
+    $ENV{'LINES'}    = '25';
+    use_ok( 'Term::ReadLine::Perl5' );
 }
 
 require 'Term/ReadLine/readline.pm';
