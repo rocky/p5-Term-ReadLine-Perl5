@@ -42,15 +42,6 @@ To install this module type:
     AUTOMATED_TESTING=1 make test
     make install # might need sudo make install
 
-
-For interactive testing try redirect I<STDIN> and/or I<STDOUT>.
-
-If you see something like:
-
-    Can't ioctl TIOCGETP: Invalid argument at ...
-
-install L<Term::ReadKey>
-
 =head1 HISTORY
 
 The first implementation was in Perl4 (mostly) by Jeffrey
@@ -59,7 +50,14 @@ Friedl. He referenced FSF the code Roland Schemers F<line_edit.pl>.
 Ilya Zakharevich turned this into a Perl5 module called
 L<Term::ReadLine::Perl>. Some of the changes he made include using
 L<Term::ReadKey> if present, and made this work under I<xterm>. The
-file F<Term/ReadLine/Perl5/CHANGES> contains a list of his changes.
+file F<Term/ReadLine/Perl5/CHANGES> up to but not including version
+1.04 contains a list of his changes.
+
+Starting with version 1.04 Rocky Bernstein forked the code, adding GNU
+readline history. He put it into a public git repository (git) and
+also started modernizing it by doing the things CPAN prefers,
+including adding POD documentation, non-interactive tests, and
+respecting CPAN module namespaces.
 
 =head1 BUGS
 
