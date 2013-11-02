@@ -13,12 +13,12 @@ BEGIN {
   use_ok( 'Term::ReadLine::Perl5' );
 }
 
-require 'Term/ReadLine/readline.pm';
+require 'Term/ReadLine/Perl5/readline.pm';
 ok(defined($Term::ReadLine::Perl5::VERSION),
    "\$Term::ReadLine::Perl5::Version number is set");
 
 note('ctrl()');
-is(readline::ctrl(ord('A')), 1);
-is(readline::ctrl(ord('a')), 1);
+is(Term::ReadLine::Perl5::readline::ctrl(ord('A')), 1);
+is(Term::ReadLine::Perl5::readline::ctrl(ord('a')), 1);
 
 done_testing();
