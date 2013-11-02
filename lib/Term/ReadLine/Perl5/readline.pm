@@ -7,7 +7,8 @@ Term::ReadLine::Perl5::readline
 
 =head1 DESCRIPTION
 
-Wraps what was initially Perl4 into a fake Perl5 pseudo-module.
+Wraps what was initially Perl4 into a Perl5 module. It is ugly, but at
+least its a start.
 
 =cut
 use warnings;
