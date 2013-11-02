@@ -1,3 +1,8 @@
+1.14:
+
+- Move readline.pm proper place for its namespace.
+- Revise history test to use Test::More which simplifies and DRYs code.
+
 1.13: 2013-11-01
 
 - Correct minimum Module::Build version number

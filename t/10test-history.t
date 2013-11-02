@@ -65,7 +65,7 @@ if ($verbose) {
 # test ReadLine method
 
 is($t->ReadLine, 'Term::ReadLine::Perl5',
-   "t->ReaLine should be \`Term::ReadLine::Perl5\'");
+   "t->ReadLine should be \`Term::ReadLine::Perl5\'");
 
 ########################################################################
 # test Attribs method

@@ -1,25 +1,19 @@
 # -*- Perl -*-
-# FIXME: should be moved into Perl5 directory.
 =pod
 
 =head1 NAME
 
-Term::ReadLine::readline
+Term::ReadLine::Perl5::readline
 
 =head1 DESCRIPTION
 
-Wraps what was initially Perl4 (and now partially Perl4) into a fake
-Perl5 pseudo-module.
-
-The mismatch of the package name, C<readline> and file name
-C<Term::ReadLine::readline> was intentional to make is harder to abuse
-this (very fragile) code...
+Wraps what was initially Perl4 into a fake Perl5 pseudo-module.
 
 =cut
 use warnings;
-package readline;
+package Term::ReadLine::Perl5::readline;
 
-$VERSION = '1.13';
+$VERSION = '1.13_01';
 
 use Term::ReadLine;  # For Term::ReadLine::TermCap::ornaments
 use File::HomeDir;
@@ -33,7 +27,7 @@ my $max_include_depth = 10;     # follow $include's in init files this deep
 my $HOME = File::HomeDir->my_home;
 
 BEGIN {                 # Some old systems have ioctl "unsupported"
-  *ioctl = sub ($$$) { eval { ioctl $_[0], $_[1], $_[2] } };
+  *ioctl = sub ($$$) { eval { CORE::ioctl $_[0], $_[1], $_[2] } };
 }
 
 $rl_getc = \&rl_getc;

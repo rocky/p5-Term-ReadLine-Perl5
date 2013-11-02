@@ -20,19 +20,14 @@ $ENV{'LINES'} = 25;
 # stop reading ~/.inputrc
 $ENV{'INPUTRC'} = '/dev/null';
 
-my $dir = File::Spec->catfile(dirname(__FILE__));
-$dir = File::Spec->rel2abs( $dir ) unless
-    File::Spec->file_name_is_absolute( $dir );
-
-my $readline_file = File::Spec->catfile($dir,
-					qw(.. lib Term ReadLine readline.pm));
-require $readline_file;
+use Term::ReadLine::Perl5::readline;
 
 # Okay we've read in readline.pm. Now get to work testing
 # read_an_init_file
 
+my $dir = File::Spec->catfile(dirname(__FILE__));
 my $input_file = File::Spec->catfile($dir, qw(data undo.inputrc));
-readline::read_an_init_file($input_file);
+Term::ReadLine::Perl5::readline::read_an_init_file($input_file);
 
 # use Data::Printer;
 # p @{readline::emacs_keymap};
@@ -40,7 +35,8 @@ readline::read_an_init_file($input_file);
 # Some tests! (Just when you thought we'd never get around to it.)
 for my $i (1..8) {
     no warnings 'once';
-    is($readline::emacs_keymap[$i], 'F_Undo', "emacs_keymap[$i] reassigned")
+    is($Term::ReadLine::Perl5::readline::emacs_keymap[$i], 'F_Undo',
+       "emacs_keymap[$i] reassigned")
 }
 
 done_testing();
