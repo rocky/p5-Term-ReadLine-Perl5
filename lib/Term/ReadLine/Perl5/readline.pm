@@ -45,11 +45,11 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $rl_readline_name @rl_History $rl_MaxHistorySize
           $rl_max_numeric_arg $rl_OperateCount
           $KillBuffer $dumb_term $stdin_not_tty $InsertMode
-          $mode $winsz
+          $mode $winsz $force_redraw
           $rl_NoInitFromFile);
 #
 # my ($InputLocMsg, $term_OUT, $term_IN);
-# my ($winsz_t, $TIOCGWINSZ, $winsz, $rl_margin, $hooj, $force_redraw);
+# my ($winsz_t, $TIOCGWINSZ, $winsz, $rl_margin);
 # my ($hook, %var_HorizontalScrollMode, %var_EditingMode, %var_OutputMeta);
 # my ($var_HorizontalScrollMode, $var_EditingMode, $var_OutputMeta);
 # my (%var_ConvertMeta, $var_ConvertMeta, %var_MarkModifiedLines, $var_MarkModifiedLines);
@@ -115,7 +115,7 @@ sub get_window_size
         &redisplay();
     }
 
-    for $hook (@winchhooks) {
+    for my $hook (@winchhooks) {
       eval {&$hook()}; warn $@ if $@ and $^W;
     }
     local $^W = 0;              # WINCH may be illegal...
@@ -1581,7 +1581,7 @@ sub redisplay
         local($new, $Dinc, $c) = ('', 0);
 
         ## Look at each character of $dline in turn.....
-        for ($i = 0; $i < length($dline); $i++) {
+        for (my $i = 0; $i < length($dline); $i++) {
             $c = substr($dline, $i, 1);
 
             ## A tab to expand...
@@ -2039,8 +2039,7 @@ sub OnSecondByte
     ## have one- and two-byte characters interspersed, so can't tell
     ## without starting from some know location.....
     ##
-    local($i);
-    for ($i = 0; $i < $_[0]; $i++) {
+    for (my $i = 0; $i < $_[0]; $i++) {
         next if ord(substr($line, $i, 1)) < 0x80;
         ## We have the first byte... must bump up $i to skip past the 2nd.
         ## If that one we're skipping past is the index, it should be changed
@@ -2611,6 +2610,7 @@ sub DoSearch
     local $reverse = shift;     # Used in search()
     my $oldline = $line;
     my $oldD = $D;
+    my $tmp;
 
     my $searchstr = '';  ## string we're searching for
     my $I = -1;              ## which history line
@@ -3217,7 +3217,7 @@ sub completion_matches
     if (@matches) {
         my $prefix = $matches[0];
         my $len = length($prefix);
-        for ($i = 1; $i < @matches; $i++) {
+        for (my $i = 1; $i < @matches; $i++) {
             next if substr($matches[$i], 0, $len) eq $prefix;
             $prefix = substr($prefix, 0, --$len);
             last if $len == 0;
