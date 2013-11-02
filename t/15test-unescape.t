@@ -15,7 +15,7 @@ BEGIN {
   use_ok( 'Term::ReadLine::Perl5' );
 }
 
-require 'Term/ReadLine/readline.pm';
+require 'Term/ReadLine/Perl5/readline.pm';
 
 # stop reading ~/.inputrc
 $ENV{'INPUTRC'} = '/dev/null';
@@ -54,7 +54,7 @@ my @tests = (
 );
 
 foreach my $tuple (@tests) {
-    is_deeply([readline::_unescape($tuple->[0])],  $tuple->[1],
+    is_deeply([Term::ReadLine::Perl5::readline::_unescape($tuple->[0])],  $tuple->[1],
 	"_unescape($tuple->[0]) -- $tuple->[2]");
 }
 

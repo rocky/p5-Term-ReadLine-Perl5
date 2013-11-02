@@ -2155,7 +2155,8 @@ break character, false otherwise.
 
 sub WordBreak
 {
-    index($rl_basic_word_break_characters, substr($line,$_[0],1)) != -1;
+    index($rl_basic_word_break_characters,
+	  substr($line,$_[0],1)) != -1;
 }
 
 sub getstate

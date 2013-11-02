@@ -7,6 +7,7 @@ use Test::More;
 
 BEGIN {
   use_ok( 'Term::ReadLine::Perl5' );
+  use_ok( 'Term::ReadLine::Perl5::readline' );
 }
 
 $ENV{'COLUMNS'} = '80';
@@ -14,29 +15,29 @@ $ENV{'LINES'}    = '25';
 # stop reading ~/.inputrc
 $ENV{'INPUTRC'} = '/dev/null';
 
-require 'Term/ReadLine/readline.pm';
+Term::ReadLine::Perl5::readline::preinit();
 
-$readline::_rl_japanese_mb = 0;
-$readline::line = 'xyz123 XYZ 012z MiXedCase ABCt !@#$%{}';
-$readline::D    = 0;
+$Term::ReadLine::Perl5::readline::_rl_japanese_mb = 0;
+$Term::ReadLine::Perl5::readline::line = 'xyz123 XYZ 012z MiXedCase ABCt !@#$%{}';
+$Term::ReadLine::Perl5::readline::D    = 0;
 note("F_Upcase");
-readline::F_UpcaseWord(1);
-is($readline::line, 'XYZ123 XYZ 012z MiXedCase ABCt !@#$%{}');
-readline::F_UpcaseWord(2);
-is($readline::line, 'XYZ123 XYZ 012Z MiXedCase ABCt !@#$%{}');
+Term::ReadLine::Perl5::readline::F_UpcaseWord(1);
+is($Term::ReadLine::Perl5::readline::line, 'XYZ123 XYZ 012z MiXedCase ABCt !@#$%{}');
+Term::ReadLine::Perl5::readline::F_UpcaseWord(2);
+is($Term::ReadLine::Perl5::readline::line, 'XYZ123 XYZ 012Z MiXedCase ABCt !@#$%{}');
 
 note("F_Downcase");
-$readline::D    = 0;
-readline::F_DownCaseWord(1);
-is($readline::line, 'xyz123 XYZ 012Z MiXedCase ABCt !@#$%{}');
-readline::F_DownCaseWord(2);
-is($readline::line, 'xyz123 xyz 012z MiXedCase ABCt !@#$%{}');
+$Term::ReadLine::Perl5::readline::D    = 0;
+Term::ReadLine::Perl5::readline::F_DownCaseWord(1);
+is($Term::ReadLine::Perl5::readline::line, 'xyz123 XYZ 012Z MiXedCase ABCt !@#$%{}');
+Term::ReadLine::Perl5::readline::F_DownCaseWord(2);
+is($Term::ReadLine::Perl5::readline::line, 'xyz123 xyz 012z MiXedCase ABCt !@#$%{}');
 
 note("F_CapitalizeWord");
-$readline::D    = 0;
-readline::F_CapitalizeWord(1);
-is($readline::line, 'Xyz123 xyz 012z MiXedCase ABCt !@#$%{}');
-readline::F_CapitalizeWord(2);
-is($readline::line, 'Xyz123 Xyz 012Z MiXedCase ABCt !@#$%{}');
+$Term::ReadLine::Perl5::readline::D    = 0;
+Term::ReadLine::Perl5::readline::F_CapitalizeWord(1);
+is($Term::ReadLine::Perl5::readline::line, 'Xyz123 xyz 012z MiXedCase ABCt !@#$%{}');
+Term::ReadLine::Perl5::readline::F_CapitalizeWord(2);
+is($Term::ReadLine::Perl5::readline::line, 'Xyz123 Xyz 012Z MiXedCase ABCt !@#$%{}');
 
 done_testing();
