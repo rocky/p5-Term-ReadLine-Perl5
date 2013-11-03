@@ -15,8 +15,6 @@ BEGIN {
     use_ok( 'Term::ReadLine::Perl5::readline' );
 }
 
-Term::ReadLine::Perl5::readline::preinit();
-
 note("CharSize()");
 $Term::ReadLine::Perl5::readline::_rl_japanese_mb = 1;
 $Term::ReadLine::Perl5::readline::line = '"ABCt !@#$%{}';

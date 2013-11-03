@@ -15,8 +15,6 @@ $ENV{'LINES'}    = '25';
 # stop reading ~/.inputrc
 $ENV{'INPUTRC'} = '/dev/null';
 
-Term::ReadLine::Perl5::readline::preinit();
-
 $Term::ReadLine::Perl5::readline::_rl_japanese_mb = 0;
 $Term::ReadLine::Perl5::readline::line = 'xyz123 XYZ 012z MiXedCase ABCt !@#$%{}';
 $Term::ReadLine::Perl5::readline::D    = 0;

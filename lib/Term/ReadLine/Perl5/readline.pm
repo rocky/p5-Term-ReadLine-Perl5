@@ -27,6 +27,8 @@ my $autoload_broken = 1;        # currently: defined does not work with a-l
 my $useioctl = 1;
 my $usestty = 1;
 my $max_include_depth = 10;     # follow $include's in init files this deep
+
+
 my $HOME = File::HomeDir->my_home;
 
 BEGIN {                 # Some old systems have ioctl "unsupported"
@@ -34,6 +36,7 @@ BEGIN {                 # Some old systems have ioctl "unsupported"
 }
 
 $rl_getc = \&rl_getc;
+$minlength = 1;
 
 &preinit;
 &init;
@@ -45,10 +48,10 @@ $rl_getc = \&rl_getc;
 use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $rl_completion_function $rl_basic_word_break_characters
           $rl_completer_word_break_characters $rl_special_prefixes
-          $rl_readline_name
           $rl_max_numeric_arg $rl_OperateCount
           $KillBuffer $dumb_term $stdin_not_tty $InsertMode
           $mode $winsz $force_redraw
+          $minlength $rl_readline_name
           $rl_NoInitFromFile);
 #
 # my ($InputLocMsg, $term_OUT, $term_IN);
@@ -60,7 +63,7 @@ my $inDOS;
 # my (%var_PreferVisibleBell, $var_PreferVisibleBell);
 # my (%var_TcshCompleteMode, $var_TcshCompleteMode);
 # my (%var_CompleteAddsuffix, $var_CompleteAddsuffix);
-# my ($minlength, @winchhooks);
+# my (@winchhooks);
 # my ($BRKINT, $ECHO, $FIONREAD, $ICANON, $ICRNL, $IGNBRK, $IGNCR, $INLCR,
 #     $ISIG, $ISTRIP, $NCCS, $OPOST, $RAW, $TCGETS, $TCOON, $TCSETS, $TCXONC,
 #     $TERMIOS_CFLAG, $TERMIOS_IFLAG, $TERMIOS_LFLAG, $TERMIOS_NORMAL_IOFF,
@@ -176,9 +179,6 @@ sub preinit
         ${"var_$_"}{'Off'} = 0;
         ${"var_$_"}{'On'} = 1;
     }
-
-    # To conform to interface
-    $minlength = 1 unless defined $minlength;
 
     # WINCH hooks
     @winchhooks = ();

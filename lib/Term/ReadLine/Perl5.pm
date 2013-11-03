@@ -69,13 +69,6 @@ sub readline {
   &Term::ReadLine::Perl5::readline::readline(@_);
 }
 
-# Initializations of variables to pacify -w
-$Term::ReadLine::Perl5::readline::minlength = 1;
-$Term::ReadLine::Perl5::readline::rl_readline_name = undef;
-$Term::ReadLine::Perl5::readline::rl_basic_word_break_characters = undef;
-$history_stifled = 0;
-
-
 =head2
 
 C<Term::ReadLine::Perl->new($name, [*IN, [*OUT])>
