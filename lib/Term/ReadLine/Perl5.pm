@@ -35,6 +35,7 @@ Eval, Print Loops).
 
 use Carp;
 use Term::ReadLine::Perl5::readline;
+use Term::ReadLine::Perl5::History;
 
 our @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Perl5::AU);
 my (%attribs, @history, $term);
@@ -82,9 +83,7 @@ sub readline {
 $Term::ReadLine::Perl5::readline::minlength = 1;
 $Term::ReadLine::Perl5::readline::rl_readline_name = undef;
 $Term::ReadLine::Perl5::readline::rl_basic_word_break_characters = undef;
-$Term::ReadLine::Perl5::readline::history_stifled = 0;
-$Term::ReadLine::Perl5::readline::rl_history_length = 0;
-$Term::ReadLine::Perl5::readline::rl_max_input_history = 0;
+$history_stifled = 0;
 
 
 =head2
@@ -156,8 +155,7 @@ sub new {
     local $SIG{__WARN__} = sub {}; # With older Perls
     $term->ornaments(1);
   }
-  $Term::ReadLine::Perl5::readline::rl_history_length =
-      $Term::ReadLine::Perl5::readline::rl_max_input_history = 0;
+  $rl_history_length = $rl_max_input_history = 0;
   return $term;
 }
 
@@ -191,15 +189,13 @@ sub MinLine {
 
 sub SetHistory {
     shift;
-    @Term::ReadLine::Perl5::readline::rl_History = @_;
-    $Term::ReadLine::Perl5::readline::rl_HistoryIndex = @Term::ReadLine::Perl5::readline::rl_History;
-    $Term::ReadLine::readline::rl_history_length =
-	$Term::ReadLine::Perl5::readline::rl_max_input_history =
-	@Term::ReadLine::Perl5::readline::rl_History;
+    @rl_History = @_;
+    $rl_HistoryIndex = @rl_History;
+    $rl_history_length = $rl_max_input_history = scalar(@rl_History);
 }
 
 sub GetHistory {
-    @Term::ReadLine::Perl5::readline::rl_History;
+    @rl_History;
 }
 
 =head2 AddHistory
@@ -213,20 +209,20 @@ or there are already too many items.
 
 sub AddHistory {
     shift;
-    if ($Term::ReadLine::Perl5::readline::history_stifled &&
-	($Term::ReadLine::Perl5::readline::rl_history_length ==
-	 $Term::ReadLine::Perl5::readline::rl_max_input_history)) {
+    if ($history_stifled &&
+	($rl_history_length ==
+	 $rl_max_input_history)) {
 	# If the history is stifled, and history_length is zero,
 	# and it equals max_input_history, we don't save items.
-	return if $Term::ReadLine::Perl5::readline::rl_max_input_history == 0;
-	shift @Term::ReadLine::Perl5::readline::rl_History;
+	return if $rl_max_input_history == 0;
+	shift @rl_History;
     }
 
-    push @Term::ReadLine::Perl5::readline::rl_History, @_;
-    $Term::ReadLine::Perl5::readline::rl_HistoryIndex =
-	@Term::ReadLine::Perl5::readline::rl_History + @_;
-    $Term::ReadLine::Perl5::readline::rl_history_length =
-	scalar @Term::ReadLine::Perl5::readline::rl_History;
+    push @rl_History, @_;
+    $rl_HistoryIndex =
+	@rl_History + @_;
+    $rl_history_length =
+	scalar @rl_History;
 }
 
 =head2 clear_history
@@ -239,14 +235,14 @@ Clear or reset readline history.
 
 sub clear_history {
   shift;
-  @Term::ReadLine::Perl5::readline::rl_History = ();
-  $Term::ReadLine::Perl5::readline::rl_HistoryIndex =
-      $Term::ReadLine::Perl5::readline::rl_history_length = 0;
+  @rl_History = ();
+  $rl_HistoryIndex =
+      $rl_history_length = 0;
 }
 
 sub history_list
 {
-    @Term::ReadLine::Perl5::readline::rl_History[1..$#readline::rl_History]
+    @rl_History[1..$#readline::rl_History]
 }
 
 =head2 remove_history
@@ -262,14 +258,14 @@ sub remove_history {
   shift;
   my $which = $_[0];
   return undef if
-    $which < 0 || $which >= $Term::ReadLine::Perl5::readline::rl_history_length ||
+    $which < 0 || $which >= $rl_history_length ||
       $attribs{history_length} ==  0;
-  my $removed = splice @Term::ReadLine::Perl5::readline::rl_History, $which, 1;
-  $Term::ReadLine::Perl5::readline::rl_history_length--;
-  $Term::ReadLine::Perl5::readline::rl_HistoryIndex =
-      $Term::ReadLine::Perl5::readline::rl_history_length if
-    $Term::ReadLine::Perl5::readline::rl_history_length <
-    $Term::ReadLine::Perl5::readline::rl_HistoryIndex;
+  my $removed = splice @rl_History, $which, 1;
+  $rl_history_length--;
+  $rl_HistoryIndex =
+      $rl_history_length if
+    $rl_history_length <
+    $rl_HistoryIndex;
   return $removed;
 }
 
@@ -285,8 +281,8 @@ entry. In the case of an invalid C<$which>, $<undef> is returned.
 sub replace_history_entry {
   shift;
   my ($which, $data) = @_;
-  return undef if $which < 0 || $which >= $Term::ReadLine::Perl5::readline::rl_history_length;
-  my $replaced = splice @Term::ReadLine::Perl5::readline::rl_History, $which, 1, $data;
+  return undef if $which < 0 || $which >= $rl_history_length;
+  my $replaced = splice @rl_History, $which, 1, $data;
   return $replaced;
 }
 
@@ -304,13 +300,13 @@ sub stifle_history {
   my $max = shift;
   $max = 0 if !defined($max) || $max < 0;
 
-  if (scalar @Term::ReadLine::Perl5::readline::rl_History > $max) {
-      splice @Term::ReadLine::Perl5::readline::rl_History, $max;
-      $attribs{history_length} = scalar @Term::ReadLine::Perl5::readline::rl_History;
+  if (scalar @rl_History > $max) {
+      splice @rl_History, $max;
+      $attribs{history_length} = scalar @rl_History;
   }
 
-  $Term::ReadLine::Perl5::readline::history_stifled = 1;
-  $Term::ReadLine::Perl5::readline::rl_max_input_history = $max;
+  $history_stifled = 1;
+  $rl_max_input_history = $max;
 }
 
 =head2 unstifle_history
@@ -325,11 +321,11 @@ is positive if the history was stifled and negative if it wasn't.
 =cut
 
 sub unstifle_history {
-  if ($Term::ReadLine::Perl5::readline::history_stifled) {
-    $Term::ReadLine::Perl5::readline::history_stifled = 0;
-    return (scalar @Term::ReadLine::Perl5::readline::rl_History);
+  if ($history_stifled) {
+    $history_stifled = 0;
+    return (scalar @rl_History);
   } else {
-    return - scalar @Term::ReadLine::Perl5::readline::rl_History;
+    return - scalar @rl_History;
   }
 }
 
@@ -344,7 +340,7 @@ if there is no limit (unstifled).
 
 sub history_is_stifled {
   shift;
-  $Term::ReadLine::Perl5::readline::history_stifled ? 1 : 0;
+  $history_stifled ? 1 : 0;
 }
 
 # read_history() and write_history() follow GNU Readline's
@@ -369,7 +365,7 @@ sub write_history {
   shift;
   my $filename = shift;
   open(HISTORY, '>', $filename ) or return 1;
-  for (@Term::ReadLine::Perl5::readline::rl_History) { print HISTORY $_, "\n"; }
+  for (@rl_History) { print HISTORY $_, "\n"; }
   close HISTORY;
   return 0;
 }

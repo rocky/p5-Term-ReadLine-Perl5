@@ -21,6 +21,8 @@ use File::HomeDir;
 use File::Spec;
 use Term::ReadKey;
 
+use Term::ReadLine::Perl5::History;
+
 my $autoload_broken = 1;        # currently: defined does not work with a-l
 my $useioctl = 1;
 my $usestty = 1;
@@ -43,7 +45,7 @@ $rl_getc = \&rl_getc;
 use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $rl_completion_function $rl_basic_word_break_characters
           $rl_completer_word_break_characters $rl_special_prefixes
-          $rl_readline_name @rl_History $rl_MaxHistorySize
+          $rl_readline_name
           $rl_max_numeric_arg $rl_OperateCount
           $KillBuffer $dumb_term $stdin_not_tty $InsertMode
           $mode $winsz $force_redraw
@@ -269,8 +271,6 @@ sub preinit
     $rl_special_prefixes = '';
     ($rl_readline_name = $0) =~ s#.*[/\\]## if !defined($rl_readline_name);
 
-    @rl_History=() if !(@rl_History);
-    $rl_MaxHistorySize = 100 if !defined($rl_MaxHistorySize);
     $rl_max_numeric_arg = 200 if !defined($rl_max_numeric_arg);
     $rl_OperateCount = 0 if !defined($rl_OperateCount);
 
@@ -1891,47 +1891,13 @@ Return the line as-is to the user.
 
 sub F_AcceptLine
 {
-    &add_line_to_history;
+    &add_line_to_history($line, $minlength);
     $AcceptLine = $line;
     local $\ = '';
     print $term_OUT "\r\n";
     $force_redraw = 0;
     (pos $line) = undef;        # Another way to force redraw...
 }
-
-=head2 add_line_to_history
-
-Insert into history list if:
-
-=over
-
-=item *
-
-bigger than the minimal length
-
-=item *
-
-not same as last entry
-
-=back
-
-=cut
-
-sub add_line_to_history
-{
-    if (length($line) >= $minlength
-        && (!@rl_History || $rl_History[$#rl_History] ne $line)
-       ) {
-        ## if the history list is full, shift out an old one first....
-        while (@rl_History >= $rl_MaxHistorySize) {
-            shift(@rl_History);
-            $rl_HistoryIndex--;
-        }
-
-        push(@rl_History, $line); ## tack new one on the end
-    }
-}
-
 
 sub remove_selection {
     if ( $rl_first_char && length $line && $rl_default_selected ) {
@@ -3578,7 +3544,7 @@ sub F_SaveLine
     $line = '#'.$line;
     &redisplay();
     print $term_OUT "\r\n";
-    &add_line_to_history;
+    &add_line_to_history($line, $minlength);
     $line_for_revert = '';
     &get_line_from_history(scalar @rl_History);
     &F_ViInput() if $Vi_mode;
