@@ -1,6 +1,9 @@
-1.14:
+1.20:
 
-- Move readline.pm proper place for its namespace.
+- Move readline.pm and proper place for its namespace.
+- Create Term::ReadLine::Perl5::Tie as its own file
+- Create Term::ReadLine::Perl5::History and move history code
+  from Perl5.pm and readline.pm to this
 - Revise history test to use Test::More which simplifies and DRYs code.
 
 1.13: 2013-11-01

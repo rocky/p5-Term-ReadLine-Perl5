@@ -14,7 +14,7 @@ least its a start.
 use warnings;
 package Term::ReadLine::Perl5::readline;
 
-$VERSION = '1.13_01';
+$VERSION = '1.20';
 
 use Term::ReadLine;  # For Term::ReadLine::TermCap::ornaments
 use File::HomeDir;

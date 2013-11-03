@@ -3,7 +3,7 @@ package Term::ReadLine::Perl5;
 use warnings; use strict;
 no warnings 'once';
 
-our $VERSION = '1.13_01';
+our $VERSION = '1.20';
 
 =head1 NAME
 
@@ -34,11 +34,12 @@ Eval, Print Loops).
 =cut
 
 use Carp;
-use Term::ReadLine::Perl5::readline;
 use Term::ReadLine::Perl5::History;
+use Term::ReadLine::Perl5::Tie;
+use Term::ReadLine::Perl5::readline;
 
-our @ISA = qw(Term::ReadLine::Stub Term::ReadLine::Perl5::AU);
-my (%attribs, @history, $term);
+our @ISA = qw(Term::ReadLine::Stub);
+my (%attribs, $term);
 
 my %features = (
 		 appname => 1,       # "new" is recognized
@@ -67,17 +68,6 @@ sub readline {
   shift;
   &Term::ReadLine::Perl5::readline::readline(@_);
 }
-
-# add_history is what GNU ReadLine defines. AddHistory is what we have
-# below.
-*add_history = \&AddHistory;
-
-# Not sure if addhistory() is needed. It is possible it was misspelling
-# of add_history.
-*addhistory = \&AddHistory;
-
-# for backward compatibility: StifleHistory is the old name.
-*StifleHistory = \&stifle_history;
 
 # Initializations of variables to pacify -w
 $Term::ReadLine::Perl5::readline::minlength = 1;
@@ -170,6 +160,32 @@ sub newTTY {
 
 sub ReadLine {'Term::ReadLine::Perl5'}
 
+=head2 stifle_history
+
+C<stifle_history($max)>
+
+Stifle or put a cap on thethe history list, remembering only C<$max>
+number of lines.
+
+=cut
+
+### FIXME: stifle_history is still here because it updates $attribs.
+## Pass a reference?
+sub stifle_history {
+  shift;
+  my $max = shift;
+  $max = 0 if !defined($max) || $max < 0;
+
+  if (scalar @rl_History > $max) {
+      splice @rl_History, $max;
+      $attribs{history_length} = scalar @rl_History;
+  }
+
+  $history_stifled = 1;
+  $rl_max_input_history = $max;
+}
+
+
 =head2
 
 C<MinLine([$minlength])>
@@ -187,63 +203,35 @@ sub MinLine {
     return $old;
 }
 
-sub SetHistory {
-    shift;
-    @rl_History = @_;
-    $rl_HistoryIndex = @rl_History;
-    $rl_history_length = $rl_max_input_history = scalar(@rl_History);
+sub Features { \%features; }
+
+tie %attribs, 'Term::ReadLine::Perl5::Tie' or die ;
+sub Attribs {
+  \%attribs;
 }
+#################### History ##########################################
 
-sub GetHistory {
-    @rl_History;
-}
+# GNU ReadLine names
+*add_history            = \&Term::ReadLine::Perl5::History::add_history;
+*clear_history          = \&Term::ReadLine::Perl5::History::clear_history;
+*history_list           = \&Term::ReadLine::Perl5::History::history_list;
+*history_is_stifled     = \&Term::ReadLine::Perl5::History::history_is_stifled;
+*read_history           = \&Term::ReadLine::Perl5::History::read_history;
+*replace_history_entry  = \&Term::ReadLine::Perl5::History::replace_history_entry;
+*unstifle_history       = \&Term::ReadLine::Perl5::History::unstifle_history;
+*write_history          = \&Term::ReadLine::Perl5::History::write_history;
 
-=head2 AddHistory
+# Some Term::ReadLine::Gnu names
+*AddHistory             = \&Term::ReadLine::Perl5::History::AddHistory;
+*GetHistory             = \&Term::ReadLine::Perl5::History::GetHistory;
+*ReadHistory            = \&Term::ReadLine::Perl5::History::ReadHistory;
+*SetHistory             = \&Term::ReadLine::Perl5::History::SetHistory;
+*WriteHistory           = \&Term::ReadLine::Perl5::History::WriteHistory;
 
-C<AddHistory($line1, ...)>
+# Backward compatibility:
+*addhistory = \&Term::ReadLine::Perl5::add_History;
+*StifleHistory = \&stifle_history;
 
-Place @_ at the end of the history list unless the history is stifled,
-or there are already too many items.
-
-=cut
-
-sub AddHistory {
-    shift;
-    if ($history_stifled &&
-	($rl_history_length ==
-	 $rl_max_input_history)) {
-	# If the history is stifled, and history_length is zero,
-	# and it equals max_input_history, we don't save items.
-	return if $rl_max_input_history == 0;
-	shift @rl_History;
-    }
-
-    push @rl_History, @_;
-    $rl_HistoryIndex =
-	@rl_History + @_;
-    $rl_history_length =
-	scalar @rl_History;
-}
-
-=head2 clear_history
-
-C<clear_history()>
-
-Clear or reset readline history.
-
-=cut
-
-sub clear_history {
-  shift;
-  @rl_History = ();
-  $rl_HistoryIndex =
-      $rl_history_length = 0;
-}
-
-sub history_list
-{
-    @rl_History[1..$#readline::rl_History]
-}
 
 =head2 remove_history
 
@@ -267,151 +255,6 @@ sub remove_history {
     $rl_history_length <
     $rl_HistoryIndex;
   return $removed;
-}
-
-=head2 replace_history_entry
-
-C<replace_history_entry($which, $data)>
-
-Make the history entry at C<$which> have C<$data>.  This returns the old
-entry. In the case of an invalid C<$which>, $<undef> is returned.
-
-=cut
-
-sub replace_history_entry {
-  shift;
-  my ($which, $data) = @_;
-  return undef if $which < 0 || $which >= $rl_history_length;
-  my $replaced = splice @rl_History, $which, 1, $data;
-  return $replaced;
-}
-
-=head2 stifle_history
-
-C<stifle_history($max)>
-
-Stifle or put a cap on thethe history list, remembering only C<$max>
-number of lines.
-
-=cut
-
-sub stifle_history {
-  shift;
-  my $max = shift;
-  $max = 0 if !defined($max) || $max < 0;
-
-  if (scalar @rl_History > $max) {
-      splice @rl_History, $max;
-      $attribs{history_length} = scalar @rl_History;
-  }
-
-  $history_stifled = 1;
-  $rl_max_input_history = $max;
-}
-
-=head2 unstifle_history
-
-C<unstifle_history>
-
-Unstifle or remove limit the history list.
-
-Theprevious maximum number of history entries is returned.  The value
-is positive if the history was stifled and negative if it wasn't.
-
-=cut
-
-sub unstifle_history {
-  if ($history_stifled) {
-    $history_stifled = 0;
-    return (scalar @rl_History);
-  } else {
-    return - scalar @rl_History;
-  }
-}
-
-=head2 history_is_stifled
-
-C<history_is_stifled>
-
-Returns I<true> if saved history has a limited (stifled) or I<false>
-if there is no limit (unstifled).
-
-=cut
-
-sub history_is_stifled {
-  shift;
-  $history_stifled ? 1 : 0;
-}
-
-# read_history() and write_history() follow GNU Readline's
-# C convention of returning 0 for success and 1 for failure.
-#
-# ReadHistory and WriteHstory follow Perl's convention of returning 1
-# for success and 0 for failure.
-# It is a little bit whacky, but this is in fact how Term::ReadLine::Gnu
-# works.
-
-sub read_history {
-  my $self = shift;
-  my $filename = shift;
-  open(HISTORY, '<', $filename ) or return 1;
-  while (<HISTORY>) { chomp; push @history, $_} ;
-  SetHistory($self, @history);
-  close HISTORY;
-  return 0;
-}
-
-sub write_history {
-  shift;
-  my $filename = shift;
-  open(HISTORY, '>', $filename ) or return 1;
-  for (@rl_History) { print HISTORY $_, "\n"; }
-  close HISTORY;
-  return 0;
-}
-
-sub ReadHistory {
-    ! read_history(@_);
-}
-
-sub WriteHistory {
-    ! write_history(@_);
-}
-
-sub Features { \%features; }
-
-tie %attribs, 'Term::ReadLine::Perl5::Tie' or die ;
-sub Attribs {
-  \%attribs;
-}
-sub DESTROY {}
-
-package Term::ReadLine::Perl5::AU;
-
-sub AUTOLOAD {
-  my $AUTOLOAD =~ s/.*:://; 		# preserve match data
-  my $name = "Term::ReadLine::Perl5::readline::rl_$AUTOLOAD";
-  die "Unknown method `$AUTOLOAD' in Term::ReadLine::Perl5"
-    unless exists $readline::{"rl_$AUTOLOAD"};
-  *$AUTOLOAD = sub { shift; &$name };
-  goto &$AUTOLOAD;
-}
-
-package Term::ReadLine::Perl5::Tie;
-
-sub TIEHASH { bless {} }
-sub DESTROY {}
-
-sub STORE {
-  my ($self, $name) = (shift, shift);
-  no strict;
-  $ {'Term::ReadLine::Perl5::readline::rl_' . $name} = shift;
-}
-
-sub FETCH {
-  my ($self, $name) = (shift, shift);
-  no strict;
-  $ {'Term::ReadLine::Perl5::readline::rl_' . $name};
 }
 
 1;
