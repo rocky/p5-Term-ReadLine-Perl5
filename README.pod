@@ -61,8 +61,8 @@ respecting CPAN module namespaces.
 
 =head1 BUGS
 
-Bugs are accepted via Github:
-https://github.com/rocky/p5-Term-ReadLine-Perl5/issues
+Bugs are accepted via the L<github issues
+tracker|https://github.com/rocky/p5-Term-ReadLine-Perl5/issues>
 
 =head1 LICENSE
 
