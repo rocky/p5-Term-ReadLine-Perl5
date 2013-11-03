@@ -1,4 +1,17 @@
 package Term::ReadLine::Perl5::History;
+=pod
+
+=head1 NAME
+
+Term::ReadLine::Perl5::History
+
+=head1 DESCRIPTION
+
+Variables and functions supporting Term::ReadLine::Perl5's command
+history.
+
+=cut
+
 use warnings;
 use strict;
 
@@ -17,13 +30,13 @@ $history_stifled = 0;
 
 =head2 add_line_to_history
 
-Insert into history list if:
+Insert C<$line> into history list if C<$line> is:
 
 =over
 
 =item *
 
-bigger than the minimal length
+bigger than the minimal length C<$minlength>
 
 =item *
 
