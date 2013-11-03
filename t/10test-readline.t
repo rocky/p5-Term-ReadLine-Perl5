@@ -54,7 +54,6 @@ my %features = %{ $t->Features };
 my $res = %features;
 ok($res, 'Got Features method');
 
-
 note('MinLine()');
 my $old_value = $t->MinLine();
 is($t->MinLine(), $old_value,

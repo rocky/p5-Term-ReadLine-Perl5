@@ -129,7 +129,7 @@ sub new {
     $Term::ReadLine::Perl5::readline::term_IN = shift;
     $Term::ReadLine::readline::term_OUT = shift
   }
-  eval {require Term::ReadLine::readline}; die $@ if $@;
+  eval {require Term::ReadLine::Perl5::readline}; die $@ if $@;
   # The following is here since it is mostly used for perl input:
   # $readline::rl_basic_word_break_characters .= '-:+/*,[])}';
   $term = bless [$readline::term_IN,$readline::term_OUT];
@@ -191,8 +191,8 @@ The previous value is returned.
 =cut
 
 sub MinLine {
-    my $old = $readline::minlength;
-    $readline::minlength = $_[1] if @_ == 2;
+    my $old = $minlength;
+    $minlength = $_[1] if @_ == 2;
     return $old;
 }
 

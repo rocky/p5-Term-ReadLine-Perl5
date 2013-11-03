@@ -16,6 +16,23 @@ package Term::ReadLine::Perl5::readline;
 
 $VERSION = '1.20';
 
+#
+# Separation into my and vars needs more work.
+# use strict 'vars';
+#
+use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
+          $rl_completion_function $rl_basic_word_break_characters
+          $rl_completer_word_break_characters $rl_special_prefixes
+          $rl_max_numeric_arg $rl_OperateCount
+          $KillBuffer $dumb_term $stdin_not_tty $InsertMode
+          $mode $winsz $force_redraw
+          $minlength $rl_readline_name
+          $rl_NoInitFromFile);
+
+@ISA = qw(Exporter);
+@EXPORT  = qw($minlength);
+
+
 use Term::ReadLine;  # For Term::ReadLine::TermCap::ornaments
 use File::HomeDir;
 use File::Spec;
@@ -41,18 +58,6 @@ $minlength = 1;
 &preinit;
 &init;
 
-# use strict 'vars';
-#
-# # Separation into my and vars needs some thought...
-#
-use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
-          $rl_completion_function $rl_basic_word_break_characters
-          $rl_completer_word_break_characters $rl_special_prefixes
-          $rl_max_numeric_arg $rl_OperateCount
-          $KillBuffer $dumb_term $stdin_not_tty $InsertMode
-          $mode $winsz $force_redraw
-          $minlength $rl_readline_name
-          $rl_NoInitFromFile);
 #
 # my ($InputLocMsg, $term_OUT, $term_IN);
 # my ($winsz_t, $TIOCGWINSZ, $winsz, $rl_margin);

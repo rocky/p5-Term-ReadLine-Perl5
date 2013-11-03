@@ -4,6 +4,7 @@
 # If argument is '--no-print', do not print the result.
 
 use warnings; use strict;
+use rlib './lib';
 
 BEGIN{
     # Do not test TR::Gnu !
@@ -55,7 +56,7 @@ if ((my $l = $ENV{PERL_RL_TEST_PROMPT_MINLEN} || 0) > length $prompt) {
 }
 print "1..1\n";
 no strict;
-my $OUT = $term->OUT || STDOUT;
+my $OUT = $term->OUT || \*STDOUT;
 use strict;
 my %features = %{ $term->Features };
 if (%features) {
