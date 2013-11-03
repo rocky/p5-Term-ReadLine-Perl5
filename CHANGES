@@ -1,4 +1,4 @@
-1.20:
+1.20:  2013-11-03
 
 - Move readline.pm and proper place for its namespace.
 - Create Term::ReadLine::Perl5::Tie as its own file
