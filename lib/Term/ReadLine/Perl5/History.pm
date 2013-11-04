@@ -20,6 +20,7 @@ use vars qw(@EXPORT @ISA @rl_History $rl_HistoryIndex $rl_history_length
 
 @ISA = qw(Exporter);
 @EXPORT  = qw(@rl_History $rl_HistoryIndex $rl_history_length
+              &add_line_to_history
               $rl_MaxHistorySize $rl_max_input_history $history_stifled);
 
 @rl_History = ();
