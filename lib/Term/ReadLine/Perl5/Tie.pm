@@ -1,5 +1,5 @@
 use strict; use warnings;
-use version; $VERSION = '1.21';
+use version; our $VERSION = '1.21';
 package Term::ReadLine::Perl5::Tie;
 
 sub TIEHASH { bless {} }
