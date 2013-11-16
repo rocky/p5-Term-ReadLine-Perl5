@@ -1,4 +1,4 @@
-1.21:  2013-11-17 Sister release
+1.22:  2013-11-17 Sister release
 
 - no warnings 'once' for Term::ReadLine::Perl5:Tie;
 
