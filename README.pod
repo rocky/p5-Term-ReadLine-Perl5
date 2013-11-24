@@ -30,6 +30,52 @@ history of previous input.
 This package typically used in command-line interfaces and REPLs (Read,
 Eval, Print, Loop).
 
+=head2 SUBROUTINES
+
+=head3
+
+C<Term::ReadLine::Perl->new($name, [*IN, [*OUT])>
+
+Returns a handle for subsequent calls to readline functions.
+
+C<$name> is the name of the application.
+
+Optionally you can add two arguments for input and output
+filehandles. These arguments should be globs.
+
+This routine might also be called via
+C<Term::ReadLine->new($term_name)> if other Term::ReadLine packages
+like L<Term::ReadLine::Gnu> is not available or if you have
+C<$ENV{PERL_RL}> set to 'Perl5';
+
+At present, because this code has lots of global state, we currently don't
+support more than one readline instance.
+
+Somebody please volunteer to rewrite this code!
+
+=head3 stifle_history
+
+C<stifle_history($max)>
+
+Stifle or put a cap on the history list, remembering only C<$max>
+number of lines.
+
+=head3 Minline
+
+C<MinLine([$minlength])>
+
+If C<$minlength> is given, set C<$readline::minlength> the minimum
+length a $line for it to go into the readline history.
+
+The previous value is returned.
+
+=head3 remove_history
+
+C<remove_history($which)>
+
+Remove history element C<$which> from the history. The removed
+element is returned.
+
 =head1 INSTALL
 
 To install this module type:
@@ -42,7 +88,7 @@ To install this module type:
     AUTOMATED_TESTING=1 make test
     make install # might need sudo make install
 
-=head1 HISTORY
+=head1 DEVELOPMENT HISTORY
 
 The first implementation was in Perl4 (mostly) by Jeffrey
 Friedl. He referenced FSF the code Roland Schemers F<line_edit.pl>.
