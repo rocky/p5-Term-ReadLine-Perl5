@@ -3,7 +3,9 @@ CHANGES
 ChangeLog
 GNUmakefile
 MANIFEST
+META.json
 META.yml
+Makefile.PL
 README.pod
 lib/Term/ReadLine/Perl5.pm
 lib/Term/ReadLine/Perl5/CHANGES
@@ -19,8 +21,6 @@ t/10test-motion.t
 t/10test-readline.t
 t/15test-unescape.t
 t/20test-read-input-file.t
-t/30test-interactive.t
 t/Helper.pm
 t/data/undo.inputrc
-Makefile.PL
-META.json
+test.pl
