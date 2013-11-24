@@ -225,7 +225,6 @@ sub Attribs {
 *addhistory = \&Term::ReadLine::Perl5::add_history;
 *StifleHistory = \&stifle_history;
 
-
 =head2 remove_history
 
 C<remove_history($which)>

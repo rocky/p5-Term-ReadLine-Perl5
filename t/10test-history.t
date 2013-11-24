@@ -132,7 +132,7 @@ is($attribs->{history_length}, 3);
 show_indices;
 
 # history_is_stifled()
-$t->add_history('six');
+$t->addhistory('six');  # Use older compatible form of addhistory
 is($t->history_is_stifled, 0);
 is($attribs->{history_length}, 4,
    "unstifling history add adding increases history length");
