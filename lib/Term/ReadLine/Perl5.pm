@@ -233,7 +233,7 @@ Eval, Print, Loop).
 
 =head3
 
-C<Term::ReadLine::Perl->new($name, [*IN, [*OUT])>
+C<Term::ReadLine::Perl-E<gt>new($name, [*IN, [*OUT])>
 
 Returns a handle for subsequent calls to readline functions.
 
@@ -243,7 +243,7 @@ Optionally you can add two arguments for input and output
 filehandles. These arguments should be globs.
 
 This routine might also be called via
-C<Term::ReadLine->new($term_name)> if other Term::ReadLine packages
+C<Term::ReadLine-E<gt>new($term_name)> if other Term::ReadLine packages
 like L<Term::ReadLine::Gnu> is not available or if you have
 C<$ENV{PERL_RL}> set to 'Perl5';
 
