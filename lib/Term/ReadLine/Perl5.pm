@@ -222,7 +222,7 @@ sub Attribs {
 *WriteHistory           = \&Term::ReadLine::Perl5::History::WriteHistory;
 
 # Backward compatibility:
-*addhistory = \&Term::ReadLine::Perl5::add_History;
+*addhistory = \&Term::ReadLine::Perl5::add_history;
 *StifleHistory = \&stifle_history;
 
 
