@@ -44,6 +44,7 @@ my $builder = Module::Build->new(
         'rlib'                    => '0.02',
     },
     requires => {
+        'perl'                    => '5.006002',
         'version'                 => 0,
 	'File::HomeDir'           => 0.54,
 	'File::Spec'              => 0,

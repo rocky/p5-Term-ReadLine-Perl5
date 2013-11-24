@@ -2,7 +2,6 @@ Build.PL
 CHANGES
 ChangeLog
 GNUmakefile
-LICENSE
 MANIFEST
 META.yml
 README.pod
@@ -20,8 +19,8 @@ t/10test-motion.t
 t/10test-readline.t
 t/15test-unescape.t
 t/20test-read-input-file.t
+t/30test-interactive.t
 t/Helper.pm
 t/data/undo.inputrc
-test.pl
 Makefile.PL
 META.json

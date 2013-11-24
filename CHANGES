@@ -1,3 +1,6 @@
+1.23:  2013-11-17 Sister release
+- typo in addhistory
+- Get Term::Readline::Tie version in correctly
 
 1.22:  2013-11-17 Sister release
 - no warnings 'once' for Term::ReadLine::Perl5:Tie;
