@@ -203,6 +203,8 @@ sub remove_history($$) {
 
 __END__
 
+=encoding utf8
+
 =head1 NAME
 
 Term::ReadLine::Perl5 - A Perl5 implementation GNU Readline
