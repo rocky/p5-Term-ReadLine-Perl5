@@ -2,7 +2,7 @@ use strict; use warnings;
 use version;
 
 package Term::ReadLine::Perl5::Tie;
-our $VERSION = '1.22';
+our $VERSION = '1.24';
 
 sub TIEHASH { bless {} }
 

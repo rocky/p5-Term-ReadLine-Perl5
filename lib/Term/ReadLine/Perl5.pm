@@ -4,7 +4,7 @@ package Term::ReadLine::Perl5;
 use warnings; use strict;
 no warnings 'once';
 
-our $VERSION = '1.23';
+our $VERSION = '1.24';
 
 use Carp;
 use Term::ReadLine::Perl5::History;
@@ -313,18 +313,12 @@ tracker|https://github.com/rocky/p5-Term-ReadLine-Perl5/issues>.
 
 =head1 LICENSE
 
-Copyright (c) 2013 Rocky Bernstein.
-Copyright (c) 1995 Ilya Zakharevich.
+This program is free software; you can redistribute it and/or modify
+it under the terms of either:
 
-This program is distributed WITHOUT ANY WARRANTY, including but not
-limited to the implied warranties of merchantability or fitness for a
-particular purpose.
+a) the GNU General Public License as published by the Free Software
+   Foundation; version 2, or
 
-The program is free software. You may distribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation (either version 2 or any later version) and
-the Perl Artistic License as published by O’Reilly Media, Inc. Please
-open the files named gpl-2.0.txt and Artistic for a copy of these
-licenses.
+b) the "Artistic License" which comes with Perl.
 
 =cut

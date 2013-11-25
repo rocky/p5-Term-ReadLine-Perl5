@@ -9,6 +9,9 @@ use Config;
 use File::Basename;
 use File::Spec;
 
+my $min_file_homedir_version = '0.81';
+my $min_perl_version         = '5.006002';
+
 my $lib = File::Spec->catfile(dirname(__FILE__), 'lib');
 unshift @INC, $lib;
 require Term::ReadLine::Perl5;
@@ -35,18 +38,21 @@ my $builder = Module::Build->new(
 	}
     },
 
+    build_requires => {
+        'File::HomeDir'           => $min_file_homedir_version,
+    },
     configure_requires => {
 	'Module::Build'           => '0.4004',  # Min "test_requires"
-	'perl'                    => '5.008008',
+	'perl'                    => $min_perl_version,
     },
     test_requires => {
-        'Test::More'              => 0.81,
+        'File::HomeDir'           => $min_file_homedir_version,
         'rlib'                    => '0.02',
     },
     requires => {
-        'perl'                    => '5.006002',
+        'perl'                    => $min_perl_version,
         'version'                 => 0,
-	'File::HomeDir'           => 0.54,
+        'File::HomeDir'           => $min_file_homedir_version,
 	'File::Spec'              => 0,
         'Term::ReadKey'           => 0,
     },
