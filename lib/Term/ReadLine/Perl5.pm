@@ -277,7 +277,7 @@ C<remove_history($which)>
 Remove history element C<$which> from the history. The removed
 element is returned.
 
-=head2 C<Term::ReadLine::Perl5> Variables
+=head2 Variables
 
 Following GNU Readline/History Library variables can be accessed from
 Perl program.  See 'GNU Readline Library Manual' and ' GNU History
@@ -293,7 +293,7 @@ Examples:
 
 =over 4
 
-=item Readline Variables
+=item Variable Names
 
 	completion_suppress_append (bool)
 	history_base               (int)
