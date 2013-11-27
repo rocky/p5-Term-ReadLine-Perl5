@@ -4,7 +4,7 @@ package Term::ReadLine::Perl5;
 use warnings; use strict;
 no warnings 'once';
 
-our $VERSION = '1.24';
+our $VERSION = '1.25';
 
 use Carp;
 use Term::ReadLine::Perl5::History;
@@ -276,6 +276,33 @@ C<remove_history($which)>
 
 Remove history element C<$which> from the history. The removed
 element is returned.
+
+=head2 C<Term::ReadLine::Perl5> Variables
+
+Following GNU Readline/History Library variables can be accessed from
+Perl program.  See 'GNU Readline Library Manual' and ' GNU History
+Library Manual' for each variable.  You can access them with
+C<Attribs> methods.  Names of keys in this hash conform to standard
+conventions with the leading C<rl_> stripped.
+
+Examples:
+
+    $term = new Term::ReadLine::Perl5 'ReadLineTest'
+    $attribs = $term->Attribs;
+    $v = $attribs->{history_base};	# history_base
+
+=over 4
+
+=item Readline Variables
+
+	completion_suppress_append (bool)
+	history_base               (int)
+	history_stifled            (int)
+        history_length             (int)
+        max_input_history          (int)
+	outstream                  (file handle)
+
+=back
 
 =head1 INSTALL
 

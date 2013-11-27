@@ -14,7 +14,7 @@ least its a start.
 use warnings;
 package Term::ReadLine::Perl5::readline;
 
-$VERSION = '1.24';
+$VERSION = '1.25';
 
 #
 # Separation into my and vars needs more work.
@@ -24,6 +24,7 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $rl_completion_function $rl_basic_word_break_characters
           $rl_completer_word_break_characters $rl_special_prefixes
           $rl_max_numeric_arg $rl_OperateCount
+          $rl_completion_suppress_append
           $KillBuffer $dumb_term $stdin_not_tty $InsertMode
           $mode $winsz $force_redraw
           $minlength $rl_readline_name
@@ -279,6 +280,8 @@ sub preinit
 
     $rl_max_numeric_arg = 200 if !defined($rl_max_numeric_arg);
     $rl_OperateCount = 0 if !defined($rl_OperateCount);
+    $rl_completion_suppress_append = 0
+	if !defined($rl_completion_suppress_append);
 
     $rl_term_set = \@Term::ReadLine::TermCap::rl_term_set;
     @$rl_term_set or $rl_term_set = ["","","",""];
@@ -3121,7 +3124,8 @@ sub complete_internal
         return &F_Ding;
     } elsif ($what_to_do eq "\t") {
         my $replacement = shift(@matches);
-        $replacement .= $rl_completer_terminator_character if @matches == 1;
+	$replacement .= $rl_completer_terminator_character
+	    if @matches == 1 && !$rl_completion_suppress_append;
         &F_Ding if @matches != 1;
         if ($var_TcshCompleteMode) {
             @tcsh_complete_selections = (@matches, $text);

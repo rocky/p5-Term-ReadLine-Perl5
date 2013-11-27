@@ -146,7 +146,6 @@ show_indices;
 ########################################################################
 # 2.3.3 Information About the History List
 
-$attribs->{history_base} = 0;
 show_indices;
 @list_set = qw(zero one two three four);
 $t->stifle_history(4);
