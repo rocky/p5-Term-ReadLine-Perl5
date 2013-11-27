@@ -39,7 +39,10 @@ my $builder = Module::Build->new(
     },
 
     build_requires => {
+        'rlib'                    => '0.02',
         'File::HomeDir'           => $min_file_homedir_version,
+	'File::Spec'              => 0,
+	'Term::ReadKey'           => 0,
     },
     configure_requires => {
 	'Module::Build'           => '0.4004',  # Min "test_requires"
@@ -51,6 +54,7 @@ my $builder = Module::Build->new(
     },
     requires => {
         'perl'                    => $min_perl_version,
+        'rlib'                    => '0.02',
         'version'                 => 0,
         'File::HomeDir'           => $min_file_homedir_version,
 	'File::Spec'              => 0,

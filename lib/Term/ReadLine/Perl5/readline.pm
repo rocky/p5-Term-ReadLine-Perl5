@@ -29,7 +29,7 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $minlength $rl_readline_name
           $rl_NoInitFromFile);
 
-@ISA = qw(Exporter);
+@ISA     = qw(Exporter);
 @EXPORT  = qw($minlength);
 
 
@@ -37,6 +37,7 @@ use Term::ReadLine;  # For Term::ReadLine::TermCap::ornaments
 use File::HomeDir;
 use File::Spec;
 use Term::ReadKey;
+use rlib '../../..';
 
 use Term::ReadLine::Perl5::History;
 
