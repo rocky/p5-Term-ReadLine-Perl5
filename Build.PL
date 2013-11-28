@@ -45,6 +45,7 @@ my $builder = Module::Build->new(
 	'Term::ReadKey'           => 0,
     },
     configure_requires => {
+        'rlib'                    => '0.02',
 	'Module::Build'           => '0.4004',  # Min "test_requires"
 	'perl'                    => $min_perl_version,
     },
