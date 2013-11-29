@@ -10,6 +10,7 @@ build_requires:
 configure_requires:
   Module::Build: 0.4004
   perl: 5.006002
+  rlib: 0.02
 dynamic_config: 1
 generated_by: 'Module::Build version 0.4007, CPAN::Meta::Converter version 2.120921'
 license: perl
@@ -20,16 +21,16 @@ name: Term-ReadLine-Perl5
 provides:
   Term::ReadLine::Perl5:
     file: lib/Term/ReadLine/Perl5.pm
-    version: 1.25
+    version: 1.26
   Term::ReadLine::Perl5::History:
     file: lib/Term/ReadLine/Perl5/History.pm
     version: 0
   Term::ReadLine::Perl5::Tie:
     file: lib/Term/ReadLine/Perl5/Tie.pm
-    version: 1.25
+    version: 1.26
   Term::ReadLine::Perl5::readline:
     file: lib/Term/ReadLine/Perl5/readline.pm
-    version: 1.25
+    version: 1.26
 requires:
   File::HomeDir: 0.81
   File::Spec: 0
@@ -41,7 +42,7 @@ resources:
   bugtracker: https://github.com/rocky/p5-Term-ReadLine-Perl5/issues
   license: http://dev.perl.org/licenses/
   repository: http://github.com/rocky/p5-Term-ReadLine-Perl5
-version: 1.25
+version: 1.26
 x_test_requires:
   File::HomeDir: 0.81
   rlib: 0.02
