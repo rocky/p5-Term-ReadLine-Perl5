@@ -324,7 +324,7 @@ file F<Term/ReadLine/Perl5/CHANGES> up to but not including version
 1.04 contains a list of his changes.
 
 Starting with version 1.04 Rocky Bernstein forked the code, adding GNU
-readline history. He put it into a public git repository (git) and
+readline history. He put it into a public git repository (github) and
 also started modernizing it by doing the things CPAN prefers,
 including adding POD documentation, non-interactive tests, and
 respecting CPAN module namespaces.

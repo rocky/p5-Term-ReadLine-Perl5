@@ -16,8 +16,7 @@ my $lib = File::Spec->catfile(dirname(__FILE__), 'lib');
 unshift @INC, $lib;
 require Term::ReadLine::Perl5;
 
-my $release_status = ($Term::ReadLine::Perl5::VERSION =~ /_/) ?
-    'testing' : 'stable';
+my $release_status = 'stable'; # or 'testing'
 
 my $builder = Module::Build->new(
     module_name         => 'Term::ReadLine::Perl5',
