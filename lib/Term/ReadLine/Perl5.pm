@@ -4,7 +4,7 @@ package Term::ReadLine::Perl5;
 use warnings; use strict;
 no warnings 'once';
 
-our $VERSION = '1.25';
+our $VERSION = '1.26';
 
 use Carp;
 use Term::ReadLine::Perl5::History;

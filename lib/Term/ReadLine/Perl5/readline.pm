@@ -14,7 +14,7 @@ least its a start.
 use warnings;
 package Term::ReadLine::Perl5::readline;
 
-$VERSION = '1.25';
+$VERSION = '1.26';
 
 #
 # Separation into my and vars needs more work.

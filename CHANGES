@@ -1,4 +1,8 @@
-1.25:  2013-11-25 JB Release
+1.26:  2013-11-28
+- Doc changes
+- 3rd attempt to reduce CPAN test unknowns and CPANTS whining.
+
+1.25:  2013-11-27 JB Release
 - Add completion_suppress_append and start documenting attribute variables
 - 2nd attempt to reduce CPAN test unknowns and CPANTS whining.
 
