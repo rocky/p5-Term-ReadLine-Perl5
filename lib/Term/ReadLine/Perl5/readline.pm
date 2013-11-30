@@ -28,6 +28,7 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $KillBuffer $dumb_term $stdin_not_tty $InsertMode
           $mode $winsz $force_redraw
           $minlength $rl_readline_name
+          @winchhooks
           $rl_NoInitFromFile);
 
 @ISA     = qw(Exporter);
@@ -70,7 +71,6 @@ my $inDOS;
 # my (%var_PreferVisibleBell, $var_PreferVisibleBell);
 # my (%var_TcshCompleteMode, $var_TcshCompleteMode);
 # my (%var_CompleteAddsuffix, $var_CompleteAddsuffix);
-# my (@winchhooks);
 # my ($BRKINT, $ECHO, $FIONREAD, $ICANON, $ICRNL, $IGNBRK, $IGNCR, $INLCR,
 #     $ISIG, $ISTRIP, $NCCS, $OPOST, $RAW, $TCGETS, $TCOON, $TCSETS, $TCXONC,
 #     $TERMIOS_CFLAG, $TERMIOS_IFLAG, $TERMIOS_LFLAG, $TERMIOS_NORMAL_IOFF,
@@ -111,19 +111,47 @@ my $Vi_search_re;       # Regular expression (compiled by qr{})
 my $Vi_search_reverse;  # True for '?' search, false for '/'
 
 =head1 SUBROUTINES
+
+C<get_window_size([$redisplay])>
+
+Causes a query to get the terminal width. If the terminal width can't
+be obtained, nothing is done. Otherwise...
+
+=over
+
+=item * Set C<$rl_screen_width> and to the current screen width.
+C<$rl_margin> is then set to be 1/3 of C<$rl_screen_width>.
+
+=item * any window-changeing hooks stored in array C<@winchhooks> are
+run.
+
+=item * If C<$redisplay> is passed and is true, then a redisplay of
+the input line is done by calling C<redisplay()>.
+
+=back
+
+Note: this function is deprecated. It is not in L<Term::ReadLine::GNU>
+or the GNU ReadLine library. As such, it may disappear and be replaced
+by the corresponding L<Term::ReadLine::GNU> routines.
+
 =cut
 
 sub get_window_size
 {
-    my $sig = shift;
-    local($., $@, $!, $^E, $?);         # Preserve $! etc; the rest for hooks
-    my ($num_cols,$num_rows);
+    my $redraw = shift;
 
-    ($num_cols,$num_rows) =  Term::ReadKey::GetTerminalSize($term_OUT);
+    # Preserve $! etc; the rest for hooks
+    local($., $@, $!, $^E, $?);
+
+    my ($num_cols,$num_rows) = (undef, undef);
+    eval {
+	($num_cols,$num_rows) =  Term::ReadKey::GetTerminalSize($term_OUT);
+    };
+    return unless defined($num_cols) and defined($num_rows);
     $rl_screen_width = $num_cols - $rl_correct_sw
 	if defined($num_cols) && $num_cols;
     $rl_margin = int($rl_screen_width/3);
-    if (defined $sig) {
+    if (defined $redraw) {
         $force_redraw = 1;
         &redisplay();
     }
@@ -131,8 +159,8 @@ sub get_window_size
     for my $hook (@winchhooks) {
       eval {&$hook()}; warn $@ if $@ and $^W;
     }
-    local $^W = 0;              # WINCH may be illegal...
-    $SIG{'WINCH'} = "readline::get_window_size";
+    no warnings;
+    $SIG{'WINCH'} = "&Term::ReadLine::Perl5::readline::get_window_size";
 }
 
 # Fix: case-sensitivity of inputrc on/off keywords in
