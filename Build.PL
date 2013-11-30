@@ -14,8 +14,6 @@ my $min_perl_version         = '5.006002';
 
 my $lib = File::Spec->catfile(dirname(__FILE__), 'lib');
 unshift @INC, $lib;
-require Term::ReadLine::Perl5;
-
 my $release_status = 'stable'; # or 'testing'
 
 my $builder = Module::Build->new(

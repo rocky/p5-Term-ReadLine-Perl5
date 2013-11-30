@@ -21,16 +21,16 @@ name: Term-ReadLine-Perl5
 provides:
   Term::ReadLine::Perl5:
     file: lib/Term/ReadLine/Perl5.pm
-    version: 1.26
+    version: 1.27
   Term::ReadLine::Perl5::History:
     file: lib/Term/ReadLine/Perl5/History.pm
     version: 0
   Term::ReadLine::Perl5::Tie:
     file: lib/Term/ReadLine/Perl5/Tie.pm
-    version: 1.26
+    version: 1.27
   Term::ReadLine::Perl5::readline:
     file: lib/Term/ReadLine/Perl5/readline.pm
-    version: 1.26
+    version: 1.27
 requires:
   File::HomeDir: 0.81
   File::Spec: 0
@@ -42,7 +42,7 @@ resources:
   bugtracker: https://github.com/rocky/p5-Term-ReadLine-Perl5/issues
   license: http://dev.perl.org/licenses/
   repository: http://github.com/rocky/p5-Term-ReadLine-Perl5
-version: 1.26
+version: 1.27
 x_test_requires:
   File::HomeDir: 0.81
   rlib: 0.02
