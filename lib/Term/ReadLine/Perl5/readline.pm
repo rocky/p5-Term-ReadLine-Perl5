@@ -14,7 +14,7 @@ least its a start.
 use warnings;
 package Term::ReadLine::Perl5::readline;
 
-$VERSION = '1.28';
+$VERSION = '1.29';
 
 #
 # Separation into my and vars needs more work.
@@ -114,6 +114,10 @@ my $Vi_search_reverse;  # True for '?' search, false for '/'
 
 C<get_window_size([$redisplay])>
 
+I<Note: this function is deprecated. It is not in L<Term::ReadLine::GNU>
+or the GNU ReadLine library. As such, it may disappear and be replaced
+by the corresponding L<Term::ReadLine::GNU> routines.>
+
 Causes a query to get the terminal width. If the terminal width can't
 be obtained, nothing is done. Otherwise...
 
@@ -125,14 +129,14 @@ C<$rl_margin> is then set to be 1/3 of C<$rl_screen_width>.
 =item * any window-changeing hooks stored in array C<@winchhooks> are
 run.
 
+=item * SIG{WINCH} is set to run this routine. Any routines set are
+lost. A better behavior would be to add existing hooks to
+C<@winchhooks>, but hey, this routine is deprecated.
+
 =item * If C<$redisplay> is passed and is true, then a redisplay of
 the input line is done by calling C<redisplay()>.
 
 =back
-
-Note: this function is deprecated. It is not in L<Term::ReadLine::GNU>
-or the GNU ReadLine library. As such, it may disappear and be replaced
-by the corresponding L<Term::ReadLine::GNU> routines.
 
 =cut
 

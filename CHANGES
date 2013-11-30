@@ -1,7 +1,12 @@
-1.26:  2013-11-30
+1.29:  2013-11-30
+- Document and deprecate get_window_size(). If it can't get the window
+   size, don't die.
+- 6th attempt to reduce CPAN test unknowns
+
+1.28:  2013-11-30
 - 5th attempt to reduce CPAN test unknowns
 
-1.26:  2013-11-29
+1.27:  2013-11-29
 - Doc changes
 - 4th attempt to reduce CPAN test unknowns
 
