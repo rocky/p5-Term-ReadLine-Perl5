@@ -14,7 +14,9 @@ least its a start.
 use warnings;
 package Term::ReadLine::Perl5::readline;
 
-$VERSION = '1.29';
+# no critic
+# Version might be below Perl5.pm
+our $VERSION = '1.29';
 
 #
 # Separation into my and vars needs more work.
@@ -163,8 +165,6 @@ sub get_window_size
     for my $hook (@winchhooks) {
       eval {&$hook()}; warn $@ if $@ and $^W;
     }
-    no warnings;
-    $SIG{'WINCH'} = "&Term::ReadLine::Perl5::readline::get_window_size";
 }
 
 # Fix: case-sensitivity of inputrc on/off keywords in
