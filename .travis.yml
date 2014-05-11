@@ -1,11 +1,11 @@
 language: perl
 
 env:
-  - AUTOMATED_TESTING=1
+  - AUTOMATED_TESTING=1 PREREQS="cpanm rlib File::HomeDir File::Spec Term::ReadKey Module::Build"
 
 install:
   # Prerequisites
-  - "cpanm rlib File::HomeDir File::Spec Term::ReadKey"
+  - "cpanm $PREREQS"
 
 perl:
   - "5.18"
