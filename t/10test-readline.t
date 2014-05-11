@@ -1,5 +1,5 @@
 # -*- perl -*-
-#	readline.t - Test script for Term::ReadLine:Perl
+#  Test script for Term::ReadLine:Perl
 #
 #  Adapted from readline.t of Term::ReadLine::Gnu
 #	Copyright (c) 2010 Hiroo Hayashi.  All rights reserved.

@@ -4,8 +4,11 @@
 \B\.git\b
 \B\.gitignore\b
 
-# Continues integration file via travis
+# Continous integration file via travis
 \B\.travis\.yml$
+
+# Perl Critic
+perlcritic\.rc
 
 # Avoid Makemaker generated and utility files.
 \bMANIFEST\.bak

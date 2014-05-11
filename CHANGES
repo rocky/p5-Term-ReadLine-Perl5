@@ -1,3 +1,14 @@
+1.30:  2014-04-11 Happy Mother's day!
+
+- rl_filename_list no longer adds classifier '*', @', '=' suffixes,
+  but does include '/' for directories. Term::ReadLine::GNU and GNU
+  Readline do not add these either. rl_filename_list handles some full
+  tilde expansions, e.g. ~ and ~root, but not partial ones like ~ro,
+  like GNU Readline does.
+
+  This is incompatible change, but T:R:P was incompatible to begin
+  with. Use rl_filename_list_deprecated for the old behavior.
+
 1.29:  2013-11-30
 - Document and deprecate get_window_size(). If it can't get the window
    size, don't die.

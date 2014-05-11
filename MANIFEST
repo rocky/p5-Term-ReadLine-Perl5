@@ -17,6 +17,7 @@ lib/Term/ReadLine/Perl5/readline.pod
 t/00test-pod.t
 t/10test-basic.t
 t/10test-changecase.t
+t/10test-filelist.t
 t/10test-history.t
 t/10test-motion.t
 t/10test-readline.t

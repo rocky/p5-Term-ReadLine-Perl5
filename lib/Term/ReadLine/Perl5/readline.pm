@@ -13,10 +13,11 @@ least its a start.
 =cut
 use warnings;
 package Term::ReadLine::Perl5::readline;
+use File::Glob ':glob';
 
 # no critic
 # Version might be below Perl5.pm
-our $VERSION = '1.29';
+our $VERSION = '1.30';
 
 #
 # Separation into my and vars needs more work.
@@ -3238,16 +3239,58 @@ sub completion_matches
     @matches;
 }
 
-##
-## For use in passing to completion_matches(), returns a list of
-## filenames that begin with the given pattern.  The user of this package
-## can set $rl_completion_function to 'rl_filename_list' to restore the
-## default of filename matching if they'd changed it earlier, either
-## directly or via &rl_basic_commands.
-##
+=head2 rl_filename_list
+
+C<rl_filename_list($pattern)>
+
+Returns a list of completions that begin with the given pattern.  Can
+be used to pass to I<completion_matches()>. Most of the heavy lifting
+is done by a call I<bsd_glob($pattern . '*')> with one exception noted
+in the next paragraph.
+
+This function corresponds to L<Term::ReadLine::GNU> function
+I<rl_filename_list)>, but that doesn't handle tilde expansion while
+this does. Also, directories returned will have the '/' suffix
+appended as is the case returned by GNU Readline, but not
+I<Term::ReadLine::GNU>. Adding the '/' suffix is useful in completion
+because it forces the next completion to complete inside that
+directory.
+
+GNU Readline also will complete partial I<~> names; for example
+I<~roo> maybe expanded to C</root> for the root user, while here
+we won't be able to match that.
+
+The user of this package can set I<$rl_completion_function> to
+'rl_filename_list' to restore the default of filename matching if
+they'd changed it earlier, either directly or via &rl_basic_commands.
+
+=cut
+
 sub rl_filename_list
 {
     my $pattern = $_[0];
+    $pattern .= '*' unless $pattern =~ m{^~[^/]*$};
+    map { -d $_ ? $_ . '/' : $_ } bsd_glob($pattern);
+}
+
+=head2 rl_filename_list_deprecated
+
+C<rl_filename_list_deprecated($pattern)>
+
+This was the I<Term::ReadLine::Perl5> function before version 1.30,
+and the current I<Term::ReadLine::Perl> function.
+
+For reasons that are a mystery to me (rocky), there seemed to be a the
+need to classify the result adding a suffix for executable (*),
+pipe/socket (=), and symbolic link (@), and directory (/). Of these,
+the only useful one is directory since that will cause a further
+completion to continue.
+
+=cut
+sub rl_filename_list_deprecated
+{
+    my $pattern = $_[0];
+    my @glob_expand = bsd_glob($pattern);
     my @files = (<$pattern*>);
     if ($var_CompleteAddsuffix) {
         foreach (@files) {
