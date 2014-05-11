@@ -1,7 +1,14 @@
 language: perl
 
 env:
-  - AUTOMATED_TESTING=1 PREREQS="cpanm rlib File::HomeDir File::Spec Term::ReadKey Module::Build"
+  - AUTOMATED_TESTING=1 PREREQS="rlib File::HomeDir File::Spec Term::ReadKey Module::Build"
+
+install:
+  # Prerequisites
+  - "cpanm $PREREQS"
+
+after_failure:
+  - cat /home/travis/.cpanm/work/*/build.log
 
 install:
   # Prerequisites
