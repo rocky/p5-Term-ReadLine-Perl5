@@ -7,8 +7,8 @@ Term::ReadLine::Perl5::readline
 
 =head1 DESCRIPTION
 
-Wraps what was initially Perl4 into a Perl5 module. It is ugly, but at
-least its a start.
+Wraps what is largely Perl4 into a non-OO Perl5 module. It is ugly, but at
+least its a start. Please use L<Term::ReadLine::Per5> instead.
 
 =cut
 use warnings;
@@ -35,7 +35,8 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $rl_NoInitFromFile);
 
 @ISA     = qw(Exporter);
-@EXPORT  = qw($minlength);
+@EXPORT  = qw($minlength rl_NoInitFromFile rl_bind rl_set
+              rl_basic_commands rl_filename_list completion_function);
 
 
 use Term::ReadLine;  # For Term::ReadLine::TermCap::ornaments

@@ -1,9 +1,12 @@
 =pod
 
-=head1 Term::ReadLine::Perl5::readline
+=head1 Term::ReadLine::Perl5::readline-guide
 
-A pretty full-function package similar to GNU's readline.
-Includes support for EUC-encoded Japanese text.
+A non-OO package similar to GNU's readline. The prefered OO Package is
+L<Term::ReadLine::Perl5>. But that uses this internally.
+
+There is some support for EUC-encoded Japanese text. This should be
+rewritten for Perl Unicode though.
 
 Originally author: Jeffrey Friedl, Omron Corporation
 (jfriedl@omron.co.jp)
@@ -16,37 +19,34 @@ as an early basis for this.
 
 =head2 Synopsis
 
-(see the manual for complete info)
+    use Term::ReadLine::Perl5::readline;
+    $text = &Term::ReadLine::Perl5::readline::readline('waddyawant? ');
 
-Once this package is included (require'd), you can then call:
-
-    $text = &readline::readline($input);
-
-to get lines of input from the user.
+to get a line of input from the user.
 
 Normally, it reads F<~/.inputrc> when loaded. To suppress this, set
 
-        $readline::rl_NoInitFromFile = 1;
+        $rl_NoInitFromFile = 1;
 
 before requiring the package.
 
 Call I<rl_bind()> to add your own key bindings, as in:
 
-        &readline::rl_bind('C-L', 'possible-completions');
+        &rl_bind('C-L', 'possible-completions');
 
 Call rl_set to set mode variables yourself, as in:
 
-        &readline::rl_set('TcshCompleteMode', 'On');
+        &rl_set('TcshCompleteMode', 'On');
 
 To change the input mode (emacs or vi) use F<~/.inputrc> or call
 
-        &readline::rl_set('EditingMode', 'vi');
+        &rl_set('EditingMode', 'vi');
 or:
-        &readline::rl_set('EditingMode', 'emacs');
+        &rl_set('EditingMode', 'emacs');
 
 Call rl_basic_commands to set your own command completion, as in:
 
-       &readline::rl_basic_commands('print', 'list', 'quit', 'run', 'status');
+       &rl_basic_commands('print', 'list', 'quit', 'run', 'status');
 
 =head2 What's Cool
 
@@ -83,7 +83,7 @@ numeric prefixes
 supports multi-byte characters (at least for the Japanese I use).
 
 =item *
-Has a tcsh-like completion-function mode.call &readline::rl_set('tcsh-complete-mode', 'On') to turn on.
+Has a tcsh-like completion-function mode.call &rl_set('tcsh-complete-mode', 'On') to turn on.
 
 =back
 
@@ -344,28 +344,29 @@ If there is just one, that one is used.  Otherwise, they are listed
 in some way depending upon C<$var_TcshCompleteMode>.
 
 The default is to do filename completion.  The function that performs
-this task is _<readline::rl_filename_list()_.
+this task is I<rl_filename_list()>.
 
 A minimal-trouble way to have command-completion is to call
-_readline::rl_basic_commands()_ with an array of command names, such as
-C<readline::rl_basic_commands('quit', 'run', 'set', 'list')>.
+I<rl_basic_commands()> with an array of command names, such as
+C<rl_basic_commands('quit', 'run', 'set', 'list')>.
 Those command names will then be used for completion if the word being
 completed begins the line. Otherwise, completion is disallowed.
 
 The way to have the most power is to provide a function to readline
 which will accept information about a partial word that needs completed,
 and will return the appropriate list of possibilities.
-This is done by setting C<$readline::rl_completion_function> to the name of
+This is done by setting C<$rl_completion_function> to the name of
 the function to run.
 
-That function will be called with three args C<($text, $line, $start)>.
-C<$text> is the partial word that should be completed.  C<$line> is the entire
-input line as it stands, and C<$start> is the index of the C<$text> in C$<line>.
-That is, zero if C<$text> is at the beginning of C<$line>.
+That function will be called with three args C<($text, $line,
+$start)>.  C<$text> is the partial word that should be completed.
+C<$line> is the entire input line as it stands, and C<$start> is the
+index of the C<$text> in C$<line>.  That is, zero if C<$text> is at
+the beginning of C<$line>.
 
-A cool completion function will look at C<$line> and C<$start> and give context-
-sensitive completion lists. Consider something that will do completion
-for two commands:
+A cool completion function will look at C<$line> and C<$start> and
+give context- sensitive completion lists. Consider something that will
+do completion for two commands:
 
     cat FILENAME
     finger USERNAME
@@ -373,7 +374,7 @@ for two commands:
 
 It (untested) might look like:
 
-    $readline::rl_completion_function = "main::complete";
+    $rl_completion_function = "main::complete";
     sub complete {
         local($text, $_, $start) = @_;
         ## return commands which may match if at the beginning....
