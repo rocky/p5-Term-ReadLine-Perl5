@@ -42,23 +42,27 @@ cmp_ok(scalar @results, '>', 0, 'Get at least one expansion');
 is($results[0], __FILE__, 'First entry should match what we passed in');
 
 note('Assume that whoever is logged in to run this has a home directory');
-my $name = getpwuid($<); my $tilde_name = '~' . $name;
 
-@results  = run_filename_list($tilde_name);
-cmp_ok(scalar(@results), '==', 1, "Expansion for my login $tilde_name");
+if (eval {getpwuid($<)}) {
+    my $name = getpwuid($<); my $tilde_name = '~' . $name;
 
-my @results2  = run_filename_list('~');
-cmp_ok(scalar(@results), '==', 1, "Expansion for my login $tilde_name");
-
-# Home directory could have a trailing "/"; remove that;
-my $irs_save = $INPUT_RECORD_SEPARATOR; $INPUT_RECORD_SEPARATOR = '/';
-chomp $results[0]; chomp $results2[0];
-$INPUT_RECORD_SEPARATOR = $irs_save;
-
-# Home directory could be a symbolic link. Make sure each is a directory
-unless ( -l $results[0] || -l $results2[0] ) {
+    @results  = run_filename_list($tilde_name);
+    cmp_ok(scalar(@results), '==', 1, "Expansion for my login $tilde_name");
+    
+    my @results2  = run_filename_list('~');
+    cmp_ok(scalar(@results), '==', 1, "Expansion for my login $tilde_name");
+    
+    # Home directory could have a trailing "/"; remove that;
+    my $irs_save = $INPUT_RECORD_SEPARATOR; $INPUT_RECORD_SEPARATOR = '/';
+    chomp $results[0]; chomp $results2[0];
+    $INPUT_RECORD_SEPARATOR = $irs_save;
+    
+    # Home directory could be a symbolic link. Make sure each is a
+    # directory
+    unless ( -l $results[0] || -l $results2[0] ) {
     is_deeply(\@results2, \@results,
 	      "Expanding ~ should be the same as $tilde_name");
+    }
 }
 
 done_testing();
