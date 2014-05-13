@@ -5,6 +5,7 @@ use strict; use warnings;
 # Note: we don't use Helper here. Should we?
 use rlib '../lib';
 use Test::More;
+use English;
 
 BEGIN {
     $ENV{PERL_RL} = 'Perl5';	# force to use Term::ReadLine::Perl5
@@ -47,7 +48,17 @@ my $name = getpwuid($<); my $tilde_name = '~' . $name;
 cmp_ok(scalar(@results), '==', 1, "Expansion for my login $tilde_name");
 
 my @results2  = run_filename_list('~');
-is_deeply(\@results2, \@results,
-	  "Expanding ~ should be the same as $tilde_name");
+cmp_ok(scalar(@results), '==', 1, "Expansion for my login $tilde_name");
+
+# Home directory could have a trailing "/"; remove that;
+my $irs_save = $INPUT_RECORD_SEPARATOR; $INPUT_RECORD_SEPARATOR = '/';
+chomp $results[0]; chomp $results2[0];
+$INPUT_RECORD_SEPARATOR = $irs_save;
+
+# Home directory could be a symbolic link. Make sure each is a directory
+unless ( -l $results[0] || -l $results2[0] ) {
+    is_deeply(\@results2, \@results,
+	      "Expanding ~ should be the same as $tilde_name");
+}
 
 done_testing();

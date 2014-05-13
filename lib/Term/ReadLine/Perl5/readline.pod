@@ -5,7 +5,8 @@
 A pretty full-function package similar to GNU's readline.
 Includes support for EUC-encoded Japanese text.
 
-Written by Jeffrey Friedl, Omron Corporation (jfriedl@omron.co.jp)
+Originally author: Jeffrey Friedl, Omron Corporation
+(jfriedl@omron.co.jp)
 
 Comments, corrections welcome.
 
