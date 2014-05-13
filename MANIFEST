@@ -13,7 +13,7 @@ lib/Term/ReadLine/Perl5/CHANGES
 lib/Term/ReadLine/Perl5/History.pm
 lib/Term/ReadLine/Perl5/Tie.pm
 lib/Term/ReadLine/Perl5/readline.pm
-lib/Term/ReadLine/Perl5/readline.pod
+lib/Term/ReadLine/Perl5/readline-guide.pod
 t/00test-pod.t
 t/10test-basic.t
 t/10test-changecase.t
