@@ -1,3 +1,9 @@
+1.31:  2014-04-13 Happy Mother's day!
+
+- Fix tilde expansion test on systems without getpwuid and where
+  the initial bsd_glob expansion includes "/";
+- Term::ReadLine::Perl5::readline.pod -> Term::ReadLine::Perl5::readline-guide.pod
+
 1.30:  2014-04-11 Happy Mother's day!
 
 - rl_filename_list no longer adds classifier '*', @', '=' suffixes,

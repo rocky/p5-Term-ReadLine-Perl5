@@ -17,7 +17,7 @@ use File::Glob ':glob';
 
 # no critic
 # Version might be below Perl5.pm
-our $VERSION = '1.30';
+our $VERSION = '1.31';
 
 #
 # Separation into my and vars needs more work.
@@ -3291,7 +3291,6 @@ completion to continue.
 sub rl_filename_list_deprecated
 {
     my $pattern = $_[0];
-    my @glob_expand = bsd_glob($pattern);
     my @files = (<$pattern*>);
     if ($var_CompleteAddsuffix) {
         foreach (@files) {
