@@ -17,7 +17,7 @@ use File::Glob ':glob';
 
 # no critic
 # Version might be below Perl5.pm
-our $VERSION = '1.32';
+our $VERSION = '1.32_01';
 
 #
 # Separation into my and vars needs more work.
@@ -51,7 +51,6 @@ my $autoload_broken = 1;        # currently: defined does not work with a-l
 my $useioctl = 1;
 my $usestty = 1;
 my $max_include_depth = 10;     # follow $include's in init files this deep
-
 
 my $HOME = File::HomeDir->my_home;
 
@@ -3243,17 +3242,44 @@ sub completion_matches
     @matches;
 }
 
+my $have_getpwent = eval("getpwent(); setpwent(); 1");
+
+sub rl_tilde_complete($) {
+    my $prefix = shift;
+    my @names = rl_tilde_expand($prefix);
+    map { (getpwnam($_))[7] } @names;
+}
+
+=head2 rl_tilde_complete
+
+ rl_tilde_expand($prefix) => list of usernames
+
+Returns a list of completions that begin with the given prefix,
+I<$prefix>.  This only works if we have getpwwet() available.
+
+=cut
+
+sub rl_tilde_expand($) {
+    my $prefix = shift;
+    my @matches = ();
+    while (my @fields = (getpwent)[0]) {
+	push @matches, $fields[0]
+	    if ( $prefix eq ''
+		 || $prefix eq substr($fields[0], 0, length($prefix)) );
+    }
+    setpwent();
+    @matches;
+}
+
 =head2 rl_filename_list
 
-C<rl_filename_list($pattern)>
+  rl_filename_list($pattern) => list of files
 
-Returns a list of completions that begin with the given pattern.  Can
-be used to pass to I<completion_matches()>. Most of the heavy lifting
-is done by a call I<bsd_glob($pattern . '*')> with one exception noted
-in the next paragraph.
+Returns a list of completions that begin with the string I<$pattern>.
+Can be used to pass to I<completion_matches()>.
 
-This function corresponds to L<Term::ReadLine::GNU> function
-I<rl_filename_list)>, but that doesn't handle tilde expansion while
+This function corresponds to the L<Term::ReadLine::GNU> function
+I<rl_filename_list)>. But that doesn't handle tilde expansion while
 this does. Also, directories returned will have the '/' suffix
 appended as is the case returned by GNU Readline, but not
 I<Term::ReadLine::GNU>. Adding the '/' suffix is useful in completion
@@ -3261,8 +3287,8 @@ because it forces the next completion to complete inside that
 directory.
 
 GNU Readline also will complete partial I<~> names; for example
-I<~roo> maybe expanded to C</root> for the root user, while here
-we won't be able to match that.
+I<~roo> maybe expanded to C</root> for the root user. When
+getpwent/setpwent is available we provide that.
 
 The user of this package can set I<$rl_completion_function> to
 'rl_filename_list' to restore the default of filename matching if
@@ -3273,8 +3299,16 @@ they'd changed it earlier, either directly or via &rl_basic_commands.
 sub rl_filename_list
 {
     my $pattern = $_[0];
-    $pattern .= '*' unless $pattern =~ m{^~[^/]*$};
-    map { -d $_ ? $_ . '/' : $_ } bsd_glob($pattern);
+    if ($pattern =~ m{^~[^/]*$}) {
+	if ($have_getpwent and length($pattern) > 1) {
+	    map { -d $_ ? $_ . '/' : $_ }
+	    rl_tilde_complete(substr($pattern, 1));
+	} else {
+	    map { -d $_ ? $_ . '/' : $_ } bsd_glob($pattern);
+	}
+    } else {
+	map { -d $_ ? $_ . '/' : $_ } bsd_glob($pattern . '*');
+    }
 }
 
 =head2 rl_filename_list_deprecated

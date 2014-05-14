@@ -16,11 +16,13 @@ BEGIN {
     $ENV{'INPUTRC'} = '/dev/null';
 }
 
-sub run_filename_list($) {
-    my $pat = shift;
+sub run_filename_list($;$) {
+    my ($pat, $no_test_exist) = @_;
     my @results  = Term::ReadLine::Perl5::readline::rl_filename_list($pat);
-    foreach my $file (@results) {
-	ok(-e $file, "returned $file should exist")
+    unless ($no_test_exist) {
+	foreach my $file (@results) {
+	    ok(-e $file, "returned $file should exist")
+	}
     }
     return @results;
 }
@@ -46,11 +48,11 @@ note('Assume that whoever is logged in to run this has a home directory');
 if (eval {getpwuid($<)}) {
     my $name = getpwuid($<); my $tilde_name = '~' . $name;
 
-    @results  = run_filename_list($tilde_name);
-    cmp_ok(scalar(@results), '==', 1, "Expansion for my login $tilde_name");
+    @results  = run_filename_list($tilde_name, 1);
+    cmp_ok(scalar(@results), '>', 0, "Expansion for my login $tilde_name");
 
     my @results2  = run_filename_list('~');
-    cmp_ok(scalar(@results), '==', 1, "Expansion for my login $tilde_name");
+    cmp_ok(scalar(@results), '>', 0, "Expansion for my login $tilde_name");
 
   SKIP: {
       skip 'Until BINGOS gets back to us', 1;
