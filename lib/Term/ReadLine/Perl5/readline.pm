@@ -17,7 +17,7 @@ use File::Glob ':glob';
 
 # no critic
 # Version might be below Perl5.pm
-our $VERSION = '1.31';
+our $VERSION = '1.32';
 
 #
 # Separation into my and vars needs more work.
@@ -116,7 +116,9 @@ my $Vi_search_reverse;  # True for '?' search, false for '/'
 
 =head1 SUBROUTINES
 
-C<get_window_size([$redisplay])>
+=head2 get_window_size
+
+   get_window_size([$redisplay])
 
 I<Note: this function is deprecated. It is not in L<Term::ReadLine::GNU>
 or the GNU ReadLine library. As such, it may disappear and be replaced
@@ -127,18 +129,18 @@ be obtained, nothing is done. Otherwise...
 
 =over
 
-=item * Set C<$rl_screen_width> and to the current screen width.
-C<$rl_margin> is then set to be 1/3 of C<$rl_screen_width>.
+=item * Set I<$rl_screen_width> and to the current screen width.
+I<$rl_margin> is then set to be 1/3 of I<$rl_screen_width>.
 
-=item * any window-changeing hooks stored in array C<@winchhooks> are
+=item * any window-changeing hooks stored in array I<@winchhooks> are
 run.
 
-=item * SIG{WINCH} is set to run this routine. Any routines set are
+=item * I<SIG{WINCH}> is set to run this routine. Any routines set are
 lost. A better behavior would be to add existing hooks to
-C<@winchhooks>, but hey, this routine is deprecated.
+I<@winchhooks>, but hey, this routine is deprecated.
 
-=item * If C<$redisplay> is passed and is true, then a redisplay of
-the input line is done by calling C<redisplay()>.
+=item * If I<$redisplay> is passed and is true, then a redisplay of
+the input line is done by calling I<redisplay()>.
 
 =back
 
@@ -876,9 +878,9 @@ sub filler_Pending ($) {
 
 =head2 _unescape
 
-C<_unescape($string)> -> List of keys
+    _unescape($string) -> List of keys
 
-This internal function that takes C<$string> possibly containing
+This internal function that takes I<$string> possibly containing
 escape sequences, and converts to a series of octal keys.
 
 It has special rules for dealing with readline-specific escape-sequence
@@ -1013,12 +1015,13 @@ and maps the associated bindings to the current KeyMap.
 C<$keyspec> should be the name of key sequence in one of two forms:
 
 Old (GNU readline documented) form:
+
      M-x        to indicate Meta-x
      C-x        to indicate Ctrl-x
      M-C-x      to indicate Meta-Ctrl-x
      x          simple char x
 
-where 'x' above can be a single character, or the special:
+where I<x> above can be a single character, or the special:
 
      special    means
      --------   -----

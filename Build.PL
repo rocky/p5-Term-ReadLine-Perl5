@@ -40,6 +40,10 @@ my $builder = Module::Build->new(
         'File::HomeDir'           => $min_file_homedir_version,
 	'File::Spec'              => 0,
 	'Term::ReadKey'           => 0,
+
+	# For the future: we will split out Term::ReadLine::TermCap
+	# from Term::ReadLine::Stub.pm.
+	'Term::Cap'               => 0,
     },
     configure_requires => {
         'rlib'                    => '0.02',

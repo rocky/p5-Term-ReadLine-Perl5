@@ -388,3 +388,18 @@ It (untested) might look like:
 A real completion function would be more robust.
 
 =cut
+
+=head1 See alos
+
+=over
+
+=item *
+
+L<Term::ReadLine::Perl5:readline> documents more of the nitty gritty
+details as this is embedded along with the code
+
+=item *
+
+L<Term::ReadLine::Perl5> is the OO package most programmers should use.
+
+=back
