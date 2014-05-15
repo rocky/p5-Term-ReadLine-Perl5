@@ -213,10 +213,22 @@ sub preinit
     }
 
     ## not yet supported... always off
-    for ('ConvertMeta', 'MetaFlag', 'MarkModifiedLines', 'PreferVisibleBell',
-         'BlinkMatchingParen', 'VisibleStats', 'ShowAllIfAmbiguous',
-         'PrintCompletionsHorizontally', 'MarkDirectories', 'ExpandTilde',
-         'EnableKeypad', 'DisableCompletion', 'CompletionIgnoreCase') {
+    for (
+	qw(
+	BlinkMatchingParen
+	ConvertMeta
+	EnableKeypad
+	PrintCompletionsHorizontally
+        CompletionIgnoreCase
+        DisableCompletion
+        ExpandTilde
+        MarkDirectories
+        MarkModifiedLines
+        MetaFlag
+        PreferVisibleBell
+        ShowAllIfAmbiguous
+        VisibleStats
+        )) {
         ${"var_$_"} = 0;
         ${"var_$_"}{'Off'} = 0;
         ${"var_$_"}{'On'} = 1;
@@ -336,7 +348,7 @@ sub preinit
                 'C-e',  'EndOfLine',
                 'C-f',  'ForwardChar',
                 'C-g',  'Abort',
-                'M-C-g',        'Abort',
+                'M-C-g', 'Abort',
                 'C-h',  'BackwardDeleteChar',
                 "TAB" , 'Complete',
                 "C-j" , 'AcceptLine',
@@ -2209,7 +2221,13 @@ sub kill_text
 ## Bindable functions... pretty much in the same order as in readline.c ###
 ###########################################################################
 
-=head2 at_end_of_line
+=head2 Bindable functions
+
+There are pretty much in the same order as in readline.c
+
+=cut
+
+=head3 at_end_of_line
 
 Returns true if $D at the end of the line.
 
@@ -2220,7 +2238,7 @@ sub at_end_of_line
     ($D + &CharSize($D)) == (length($line) + 1);
 }
 
-=head2 F_ForwardChar
+=head3 F_ForwardChar
 
 Move forward (right) $count characters.
 
@@ -2236,7 +2254,7 @@ sub F_ForwardChar
     }
 }
 
-=head2 F_BackwaredChar
+=head3 F_BackwaredChar
 
 Move backward (left) $count characters.
 
@@ -2253,7 +2271,7 @@ sub F_BackwardChar
     }
 }
 
-=head2 F_BeginningOfLine
+=head3 F_BeginningOfLine
 
 Go to beginning of line.
 
@@ -2264,7 +2282,7 @@ sub F_BeginningOfLine
     $D = 0;
 }
 
-=head2 F_EndOfLine
+=head3 F_EndOfLine
 
 Move to the end of the line.
 
@@ -2276,7 +2294,7 @@ sub F_EndOfLine
 }
 
 
-=head2 F_ForwardWord
+=head3 F_ForwardWord
 
 Move to the end of this/next word.
 Done as many times as $count says.
@@ -2297,7 +2315,7 @@ sub F_ForwardWord
     }
 }
 
-=head2 F_BackwardWord
+=head3 F_BackwardWord
 
 Move to the beginning of this/next word.
 Done as many times as $count says.
@@ -2317,7 +2335,7 @@ sub F_BackwardWord
     }
 }
 
-=head2 F_RedrawCurrentLine
+=head3 F_RedrawCurrentLine
 
 Refresh the input line.
 
@@ -2328,7 +2346,7 @@ sub F_RedrawCurrentLine
     $force_redraw = 1;
 }
 
-=head2 F_ClearScreen
+=head3 F_ClearScreen
 
 Clear the screen and refresh the line.
 If given a numeric arg other than 1, simply refreshes the line.
@@ -2346,7 +2364,7 @@ sub F_ClearScreen
     $force_redraw = 1;
 }
 
-=head2 F_QuotedInsert
+=head3 F_QuotedInsert
 
 Insert the next character read verbatim.
 
@@ -2358,7 +2376,7 @@ sub F_QuotedInsert
     &F_SelfInsert($count, ord(&getc_with_pending));
 }
 
-=head2 F_TabInsert
+=head3 F_TabInsert
 
 Insert a tab.
 
@@ -2370,7 +2388,7 @@ sub F_TabInsert
     &F_SelfInsert($count, ord("\t"));
 }
 
-=head2 F_OperateAndGetNext
+=head3 F_OperateAndGetNext
 
 Accept the current line and fetch from the history the next line
 relative to current line for default.
@@ -2393,7 +2411,7 @@ sub F_OperateAndGetNext
     }
 }
 
-=head2 F_BackwaredDeleteChar
+=head3 F_BackwaredDeleteChar
 
 Removes $count chars to left of cursor (if not at beginning of line).
 If $count > 1, deleted chars saved to kill buffer.
@@ -2412,7 +2430,7 @@ sub F_BackwardDeleteChar
     &kill_text($oldD, $D, $count > 1);
 }
 
-=head2 F_DeleteChar
+=head3 F_DeleteChar
 
 Removes the $count chars from under the cursor.
 If there is no line and the last command was different, tells
@@ -2444,7 +2462,7 @@ sub F_DeleteChar
     &kill_text($oldD, $D, $count > 1);
 }
 
-=head2 F_UnixWordRubout
+=head3 F_UnixWordRubout
 
 Kill to previous whitespace.
 
@@ -2459,7 +2477,7 @@ sub F_UnixWordRubout
     kill_text($D, $oldD, 1);
 }
 
-=head2 F_UnixLineDiscard
+=head3 F_UnixLineDiscard
 
 Kill line from cursor to beginning of line.
 
@@ -2549,10 +2567,14 @@ sub F_TransposeWords {
 ## not overlap, we get two things to transpose.  Repeat count?
 }
 
-##
-## Switch char at dot with char before it.
-## If at the end of the line, switch the previous two...
-## (NOTE: this could screw up multibyte characters.. should do correctly)
+=head3 F_TransposeChars
+
+Switch char at dot with char before it.
+If at the end of the line, switch the previous two...
+I<Note>: this could screw up multibyte characters.. should do correctly)
+
+=cut
+
 sub F_TransposeChars
 {
     if ($D == length($line) && $D >= 2) {
@@ -2718,7 +2740,7 @@ sub DoSearchStart
 ###########################################################################
 ###########################################################################
 
-=head2 F_KillLine
+=head3 F_KillLine
 
 delete characters from cursor to end of line.
 
@@ -2731,7 +2753,7 @@ sub F_KillLine
     kill_text($D, length($line), 1);
 }
 
-=head2 F_BackwardKillLine
+=head3 F_BackwardKillLine
 
 Delete characters from cursor to beginning of line.
 
@@ -2745,7 +2767,7 @@ sub F_BackwardKillLine
     kill_text(0, $D, 1);
 }
 
-=head2 TextInsert
+=head3 TextInsert
 
 C<TextInsert($count, $string)>
 
@@ -2778,7 +2800,7 @@ sub F_YankNthArg {
    ## not implemented yet
 }
 
-=head2 F_KillWord
+=head3 F_KillWord
 
 Delete characters to the end of the current word. If not on a word, delete to
 ## the end of the next word.
@@ -2794,11 +2816,11 @@ sub F_KillWord
     kill_text($oldD, $D, 1);
 }
 
-=head2 F_BackwardKillWord
+=head3 F_BackwardKillWord
 
-Delete characters backward to the start of the current word, or, if currently
-## not on a word (or just at the start of a word), to the start of the
-## previous word.
+Delete characters backward to the start of the current word, or, if
+currently not on a word (or just at the start of a word), to the start
+of the previous word.
 
 =cut
 sub F_BackwardKillWord
@@ -2814,7 +2836,7 @@ sub F_BackwardKillWord
 ###########################################################################
 
 
-=head2 F_Abort
+=head3 F_Abort
 
 Abort the current input.
 
@@ -2825,7 +2847,7 @@ sub F_Abort
 }
 
 
-=head2 F_DoLowercaseVersion
+=head3 F_DoLowercaseVersion
 
 If the character that got us here is upper case,
 do the lower-case equivalent command.
@@ -2842,7 +2864,7 @@ sub F_DoLowercaseVersion
     }
 }
 
-=head2 F_DoControlVersion
+=head3 F_DoControlVersion
 
 do the equiv with control key...
 If the character that got us here is upper case,
@@ -2863,7 +2885,7 @@ sub F_DoControlVersion
     &do_command(*KeyMap, $_[0], $key);
 }
 
-=head2 F_DoMetaVersion
+=head3 F_DoMetaVersion
 
 do the equiv with meta key...
 
@@ -2877,7 +2899,7 @@ sub F_DoMetaVersion
     &do_command(*KeyMap, $_[0], ord "\e");
 }
 
-=head2 F_DoEscVersion
+=head3 F_DoEscVersion
 
 If the character that got us here is Alt-Char,
 do the Esc Char equiv...
@@ -2899,7 +2921,7 @@ sub F_DoEscVersion
     &F_Ding;
 }
 
-=head2 F_Undo
+=head3 F_Undo
 
 Undo one level.
 
@@ -2916,7 +2938,7 @@ sub F_Undo
     }
 }
 
-=head2 F_RevertLine
+=head3 F_RevertLine
 
 Replace the current line to some "before" state.
 
@@ -2942,9 +2964,11 @@ sub F_EmacsEditingMode
 ###########################################################################
 
 
-##
-## (Attempt to) interrupt the current program.
-##
+=head3 F_Interrupt
+
+(Attempt to) interrupt the current program via I<kill('INT')>
+=cut
+
 sub F_Interrupt
 {
     local $\ = '';
@@ -2972,9 +2996,12 @@ sub F_UniversalArgument
     &F_DigitArgument;
 }
 
-##
-## For typing a numeric prefix to a command....
-##
+
+=head3 F_DigitArgument
+
+Give a numeric prefix to the subsequent command
+
+=cut
 sub F_DigitArgument
 {
     my $in = chr $_[1];
@@ -3030,9 +3057,12 @@ sub F_ToggleInsertMode
     $InsertMode = !$InsertMode;
 }
 
-##
-## (Attempt to) suspend the program.
-##
+=head3
+
+(Attempt to) suspend the program via I<kill('TSTP')>
+
+=cut
+
 sub F_Suspend
 {
     if ($inDOS && length($line)==0) { # EOF sent
@@ -3048,10 +3078,12 @@ sub F_Suspend
     $force_redraw = 1;
 }
 
-##
-## Ring the bell.
-## Should do something with $var_PreferVisibleBell here, but what?
-##
+=head3 F_Ding
+
+Ring the bell.
+
+Should do something with I<$var_PreferVisibleBel>l here, but what?
+=cut
 sub F_Ding {
     local $\ = '';
     print $term_OUT "\007";
@@ -3062,9 +3094,14 @@ sub F_Ding {
 #### command/file completion  ############################################
 ##########################################################################
 
-##
-## List possible completions
-##
+=head2 command/file completion routines
+
+=head3 F_PossibleCompletions
+
+List possible completions
+
+=cut
+
 sub F_PossibleCompletions
 {
     &complete_internal('?');
@@ -3078,17 +3115,20 @@ sub F_InsertPossibleCompletions
     &complete_internal('*');
 }
 
-##
-## Do a completion operation.
-## If the last thing we did was a completion operation, we'll
-## now list the options available (under normal emacs mode).
-##
-## Under TcshCompleteMode, each contiguous subsequent completion operation
-## lists another of the possible options.
-##
-## Returns true if a completion was done, false otherwise, so vi completion
-##     routines can test it.
-##
+=head3 F_Complete
+
+Do a completion operation.  If the last thing we did was a completion
+operation, we'll now list the options available (under normal emacs
+mode).
+
+In I<TcshCompleteMode>, each contiguous subsequent completion
+operation lists another of the possible options.
+
+Returns true if a completion was done, false otherwise, so vi
+completion routines can test it.
+
+=cut
+
 sub F_Complete
 {
     if ($lastcommand eq 'F_Complete') {
@@ -3193,20 +3233,6 @@ sub complete_internal
     1;
 }
 
-##
-## completion_matches(func, text, line, start)
-##
-## FUNC is a function to call as FUNC(TEXT, LINE, START)
-##      where TEXT is the item to be completed
-##            LINE is the whole command line, and
-##            START is the starting index of TEXT in LINE.
-## The FUNC should return a list of items that might match.
-##
-## completion_matches will return that list, with the longest common
-## prefix prepended as the first item of the list.  Therefor, the list
-## will either be of zero length (meaning no matches) or of 2 or more.....
-##
-
 ## Works with &rl_basic_commands. Return items from @rl_basic_commands
 ## that start with the pattern in $text.
 sub use_basic_commands {
@@ -3215,6 +3241,24 @@ sub use_basic_commands {
   grep(/^$text/, @rl_basic_commands);
 }
 
+=head3 completion_matches
+
+   completion_matches(func, text, line, start)
+
+I<func> is a function to call as
+
+   func($text, $line, $start)
+
+where I<$text> is the item to be completed,
+I<$line> is the whole command line, and
+I<$start> is the starting index of I<$text> in I<$line>.
+The function I<$func> should return a list of items that might match.
+
+completion_matches will return that list, with the longest common
+prefix prepended as the first item of the list.  Therefore, the list
+will either be of zero length (meaning no matches) or of 2 or more.....
+
+=cut
 sub completion_matches
 {
     my ($func, $text, $line, $start) = @_;
@@ -3246,11 +3290,16 @@ my $have_getpwent = eval("getpwent(); setpwent(); 1");
 
 sub rl_tilde_complete($) {
     my $prefix = shift;
+    return $prefix unless $have_getpwent;
     my @names = rl_tilde_expand($prefix);
-    map { (getpwnam($_))[7] } @names;
+    if (scalar @names == 1) {
+	(getpwnam($names[0]))[7];
+    } else {
+	map {'~' . $_} @names;
+    }
 }
 
-=head2 rl_tilde_complete
+=head3 rl_tilde_expand
 
  rl_tilde_expand($prefix) => list of usernames
 
@@ -3271,7 +3320,7 @@ sub rl_tilde_expand($) {
     @matches;
 }
 
-=head2 rl_filename_list
+=head3 rl_filename_list
 
   rl_filename_list($pattern) => list of files
 
@@ -3311,7 +3360,7 @@ sub rl_filename_list
     }
 }
 
-=head2 rl_filename_list_deprecated
+=head3 rl_filename_list_deprecated
 
 C<rl_filename_list_deprecated($pattern)>
 
@@ -3397,7 +3446,9 @@ sub pretty_print_list
     }
 }
 
-##----------------- Vi Routines --------------------------------
+=head2 vi Routines
+
+=cut
 
 sub F_ViAcceptLine
 {
@@ -3405,10 +3456,13 @@ sub F_ViAcceptLine
     &F_ViInput();
 }
 
-# Repeat the most recent one of these vi commands:
-#
-#   a A c C d D i I p P r R s S x X ~
-#
+=head3 F_ViRepeatLastCommand
+
+Repeat the most recent one of these vi commands:
+
+   a A c C d D i I p P r R s S x X ~
+
+=cut
 sub F_ViRepeatLastCommand {
     my($count) = @_;
     return &F_Ding if !$Last_vi_command;
@@ -3656,10 +3710,12 @@ sub F_ViBackwardDeleteChar {
     $D = $other_end;
 }
 
-##
-## Prepend line with '#', add to history, and clear the input buffer
-##     (this feature was borrowed from ksh).
-##
+=head3 F_SaveLine
+
+Prepend line with '#', add to history, and clear the input buffer
+(this feature was borrowed from ksh).
+
+=cut
 sub F_SaveLine
 {
     local $\ = '';
@@ -3672,20 +3728,23 @@ sub F_SaveLine
     &F_ViInput() if $Vi_mode;
 }
 
-#
-# Come here if we see a non-positioning keystroke when a positioning
-#     keystroke is expected.
-#
+=head3 F_ViNonePosition
+
+Come here if we see a non-positioning keystroke when a positioning
+keystroke is expected.
+=cut
 sub F_ViNonPosition {
     # Not a positioning command - undefine the cursor to indicate the error
     #     to get_position().
     undef $D;
 }
 
-#
-# Come here if we see <esc><char>, but *not* an arrow key or other
-#     mapped sequence, when a positioning keystroke is expected.
-#
+=head3 ViPositionEsc
+
+Comes here if we see I<esc>I<char>, but I<not> an arrow key or other
+mapped sequence, when a positioning keystroke is expected.
+=cut
+
 sub F_ViPositionEsc {
     my($count, $ord) = @_;
 
@@ -3728,9 +3787,10 @@ sub get_position {
     $D;
 }
 
-##
-## Go to first non-space character of line.
-##
+=head3 F_ViFirstWord
+
+Go to first non-space character of line.
+=cut
 sub F_ViFirstWord
 {
     $D = 0;
@@ -3768,8 +3828,11 @@ sub F_ViToggleCase {
     }
 }
 
-# Go to the numbered history line, as listed by the 'H' command, i.e. the
-#     current $line is line 1, the youngest line in @rl_History is 2, etc.
+=head3
+Go to the numbered history line, as listed by the 'H' command, i.e. the
+current $line is line 1, the youngest line in @rl_History is 2, etc.
+=cut
+
 sub F_ViHistoryLine {
     my($n) = @_;
     &get_line_from_history(@rl_History - $n + 1);
@@ -3839,10 +3902,13 @@ sub force_redisplay {
     &redisplay(@_);
 }
 
-# Search history for matching string.  As with vi in nomagic mode, the
-#     ^, $, \<, and \> positional assertions, the \* quantifier, the \.
-#     character class, and the \[ character class delimiter all have special
-#     meaning here.
+=head3 F_ViSearch
+
+Search history for matching string.  As with vi in nomagic mode, the
+^, $, \<, and \> positional assertions, the \* quantifier, the \.
+character class, and the \[ character class delimiter all have special
+meaning here.
+=cut
 sub F_ViSearch {
     my($n, $ord) = @_;
 
@@ -3932,7 +3998,8 @@ sub do_vi_search {
     ($D, $line) = (0, $rl_History[$rl_HistoryIndex]);
 }
 
-# Using local $line, $D, and $prompt, get and return the string to search for.
+# Using local $line, $D, and $prompt, get and return the string to
+# search for.
 sub get_vi_search_str {
     my($c) = @_;
 
@@ -3963,9 +4030,10 @@ sub F_ViSearchBackwardDeleteChar {
     }
 }
 
-##
-## Kill entire line and enter input mode
-##
+=head3 F_ViChangeEntireLine
+
+Kill entire line and enter input mode
+=cut
 sub F_ViChangeEntireLine
 {
     &start_dot_buf(@_);
@@ -3973,9 +4041,10 @@ sub F_ViChangeEntireLine
     &vi_input_mode;
 }
 
-##
-## Kill characters and enter input mode
-##
+=head3 F_ViChangeChar
+
+Kill characters and enter input mode
+=cut
 sub F_ViChangeChar
 {
     &start_dot_buf(@_);
@@ -3996,7 +4065,7 @@ sub F_ViReplaceChar
     &F_SelfInsert(1, ord($c));
 }
 
-=head2 F_ViChangeLine
+=head3 F_ViChangeLine
 
 Delete characteres from cursor to end of line and enter VI input mode.
 
