@@ -1,3 +1,7 @@
+1.33:  2014-04-19 Henry Frankel
+- Fix up ~ expansion via getpwent. For example. ~ro now may expand
+  to ~rocky and~root. More POD in readline.pm
+
 1.32:  2014-04-14
 - Remove a tilde expand test until BINGOS gets back to me on why
   it fails on his setup
