@@ -3284,7 +3284,7 @@ sub completion_matches
     @matches;
 }
 
-my $have_getpwent = eval("getpwent(); setpwent(); 1");
+my $have_getpwent = eval{getpwent() && setpwent(); 1};
 
 sub rl_tilde_complete($) {
     my $prefix = shift;
