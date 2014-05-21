@@ -1,6 +1,4 @@
 # -*- Perl -*-
-=pod
-
 =head1 NAME
 
 Term::ReadLine::Perl5::readline
@@ -17,7 +15,7 @@ use File::Glob ':glob';
 
 # no critic
 # Version might be below Perl5.pm
-our $VERSION = '1.33';
+our $VERSION = '1.34';
 
 #
 # Separation into my and vars needs more work.

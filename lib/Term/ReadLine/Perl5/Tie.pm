@@ -5,7 +5,7 @@ package Term::ReadLine::Perl5::Tie;
 
 # version might not be below other places in this routine
 # no critic
-our $VERSION = '1.32';
+our $VERSION = '1.34';
 
 sub TIEHASH { bless {} }
 

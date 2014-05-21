@@ -45,7 +45,7 @@ is($results[0], __FILE__, 'First entry should match what we passed in');
 
 note('Assume that whoever is logged in to run this has a home directory');
 
-if (eval {getpwuid($<)}) {
+if (eval {getpwuid($<); setpwent(); 1}) {
     my $name = getpwuid($<); my $tilde_name = '~' . $name;
 
     @results  = run_filename_list($tilde_name, 1);
