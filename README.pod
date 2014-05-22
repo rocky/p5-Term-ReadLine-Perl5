@@ -32,74 +32,7 @@ history of previous input.
 This package typically used in command-line interfaces and REPLs (Read,
 Eval, Print, Loop).
 
-=head2 SUBROUTINES
-
-=head3
-
-C<Term::ReadLine::Perl-E<gt>new($name, [*IN, [*OUT])>
-
-Returns a handle for subsequent calls to readline functions.
-
-C<$name> is the name of the application.
-
-Optionally you can add two arguments for input and output
-filehandles. These arguments should be globs.
-
-This routine might also be called via
-C<Term::ReadLine-E<gt>new($term_name)> if other Term::ReadLine packages
-like L<Term::ReadLine::Gnu> is not available or if you have
-C<$ENV{PERL_RL}> set to 'Perl5';
-
-At present, because this code has lots of global state, we currently don't
-support more than one readline instance.
-
-Somebody please volunteer to rewrite this code!
-
-=head3 stifle_history
-
-C<stifle_history($max)>
-
-Stifle or put a cap on the history list, remembering only C<$max>
-number of lines.
-
-=head3 Minline
-
-C<MinLine([$minlength])>
-
-If C<$minlength> is given, set C<$readline::minlength> the minimum
-length a $line for it to go into the readline history.
-
-The previous value is returned.
-
-=head3 remove_history
-
-C<remove_history($which)>
-
-Remove history element C<$which> from the history. The removed
-element is returned.
-
-=head2 Variables
-
-Following GNU Readline/History Library variables can be accessed from
-Perl program.  See 'GNU Readline Library Manual' and ' GNU History
-Library Manual' for each variable.  You can access them via the
-C<Attribs> method.  Names of keys in this hash conform to standard
-conventions with the leading C<rl_> stripped.
-
-Example:
-
-    $term = new Term::ReadLine::Perl5 'ReadLineTest'
-    $attribs = $term->Attribs;
-    $v = $attribs->{history_base};	# history_base
-
-=head3 Attribute Names
-
-	completion_suppress_append (bool)
-	history_base               (int)
-	history_stifled            (int)
-        history_length             (int)
-        max_input_history          (int)
-	outstream                  (file handle)
+See L<Term/ReadLine/Perl5> for details on the API.
 
 =head1 INSTALL
 

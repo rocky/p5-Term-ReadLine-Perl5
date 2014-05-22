@@ -1,10 +1,38 @@
 # -*- Perl -*-
-# POD documentation is after __END__
 package Term::ReadLine::Perl5;
+
+=encoding utf8
+
+=head1 NAME
+
+Term::ReadLine::Perl5 - A Perl5 implementation GNU Readline
+
+=head2 Overview
+
+This is a implementation of the GNU Readline/History Library written
+in Perl5.
+
+GNU Readline reads lines from an interactive terminal with I<emacs> or
+I<vi> editing capabilities. It provides as mechanism for saving
+history of previous input.
+
+This package typically used in command-line interfaces and REPLs (Read,
+Eval, Print, Loop).
+
+=head1 SYNOPSIS
+
+  use Term::ReadLine::Perl5;
+  $term = new Term::ReadLine::Perl5 'ProgramName';
+  while ( defined ($_ = $term->readline('prompt>')) ) {
+    ...
+  }
+
+=cut
+
 use warnings; use strict;
 no warnings 'once';
 
-our $VERSION = '1.35';
+our $VERSION = '1.35_01';
 
 use Carp;
 use Term::ReadLine::Perl5::History;
@@ -13,6 +41,31 @@ use Term::ReadLine::Perl5::readline;
 
 our @ISA = qw(Term::ReadLine::Stub);
 my (%attribs, $term);
+
+=head2 Variables
+
+Following GNU Readline/History Library variables can be accessed from
+Perl program.  See 'GNU Readline Library Manual' and ' GNU History
+Library Manual' for each variable.  You can access them via the
+C<Attribs> method.  Names of keys in this hash conform to standard
+conventions with the leading C<rl_> stripped.
+
+Example:
+
+    $term = new Term::ReadLine::Perl5 'ReadLineTest'
+    $attribs = $term->Attribs;
+    $v = $attribs->{history_base};	# history_base
+
+=head3 Attribute Names
+
+	completion_suppress_append (bool)
+	history_base               (int)
+	history_stifled            (int)
+        history_length             (int)
+        max_input_history          (int)
+	outstream                  (file handle)
+
+=cut
 
 my %features = (
 		 appname => 1,       # "new" is recognized
@@ -31,30 +84,47 @@ my %features = (
 		 stiflehistory => 1, # we have stifle_history()
       );
 
-# Note: Some additional feature via Term::ReadLine::Stub are added when a "new" is done
+sub Features { \%features; }
 
-# Term::ReadLine::Perl->new($name, [*IN, [*OUT])
-# Returns a handle for subsequent calls to readline functions.
-#
-# $name is the name of the application.
-#
-# Optionally you can add two arguments for input and output
-# filehandles. These arguments should be globs.
-#
-# This routine might also be called via
-# Term::ReadLine->new($term_name) if other Term::ReadLine packages
-# like Term::ReadLine::Gnu is not available or if you have
-# $ENV{PERL_RL} set to 'Perl5';
-#
-# At present, because this code has lots of global state, we currently don't
-# support more than one readline instance.
-#
-# Somebody please volunteer to rewrite this code!
+tie %attribs, 'Term::ReadLine::Perl5::Tie' or die ;
+sub Attribs {
+  \%attribs;
+}
+
+=head2 SUBROUTINES
+
+=cut
+
 sub readline {
   shift;
   &Term::ReadLine::Perl5::readline::readline(@_);
 }
 
+=head3 new
+
+C<Term::ReadLine::Perl-E<gt>new($name, [*IN, [*OUT])>
+
+Returns a handle for subsequent calls to readline functions.
+
+C<$name> is the name of the application.
+
+Optionally you can add two arguments for input and output
+filehandles. These arguments should be globs.
+
+This routine might also be called via
+C<Term::ReadLine-E<gt>new($term_name)> if other Term::ReadLine packages
+like L<Term::ReadLine::Gnu> is not available or if you have
+C<$ENV{PERL_RL}> set to 'Perl5';
+
+I<Note>: Some additional feature via Term::ReadLine::Stub are added
+when a "new" is done
+
+At present, because this code has lots of global state, we currently don't
+support more than one readline instance.
+
+Somebody please volunteer to rewrite this code!
+
+=cut
 sub new {
   require Term::ReadLine;
   $features{tkRunning} = Term::ReadLine::Stub->Features->{'tkRunning'};
@@ -116,46 +186,24 @@ sub newTTY {
 
 sub ReadLine {'Term::ReadLine::Perl5'}
 
-# stifle_history($max)
-#
-# Stifle or put a cap on the history list, remembering only C<$max>
-# number of lines.
-#
-### FIXME: stifle_history is still here because it updates $attribs.
-## Pass a reference?
-sub stifle_history($$) {
-  shift;
-  my $max = shift;
-  $max = 0 if !defined($max) || $max < 0;
+=head3 Minline
 
-  if (scalar @rl_History > $max) {
-      splice @rl_History, $max;
-      $attribs{history_length} = scalar @rl_History;
-  }
+C<MinLine([$minlength])>
 
-  $history_stifled = 1;
-  $rl_max_input_history = $max;
-}
+If C<$minlength> is given, set C<$readline::minlength> the minimum
+length a $line for it to go into the readline history.
 
-
-# MinLine([$minlength])
-#
-# If $minlength is given, set $readline::minlength the minimum
-# length a $line for it to go into the readline history.
-#
-# The previous value is returned.
+The previous value is returned.
+=cut
 sub MinLine($;$) {
     my $old = $minlength;
     $minlength = $_[1] if @_ == 2;
     return $old;
 }
 
-sub Features { \%features; }
+=head2 History Subroutines
 
-tie %attribs, 'Term::ReadLine::Perl5::Tie' or die ;
-sub Attribs {
-  \%attribs;
-}
+=cut
 #################### History ##########################################
 
 # GNU ReadLine names
@@ -179,11 +227,38 @@ sub Attribs {
 *addhistory = \&Term::ReadLine::Perl5::add_history;
 *StifleHistory = \&stifle_history;
 
-# remove_history($which)>
-#
-# Remove history element C<$which> from the history. The removed
-# element is returned.
-#
+=head3 stifle_history
+
+C<stifle_history($max)>
+
+Stifle or put a cap on the history list, remembering only C<$max>
+number of lines.
+
+=cut
+### FIXME: stifle_history is still here because it updates $attribs.
+## Pass a reference?
+sub stifle_history($$) {
+  shift;
+  my $max = shift;
+  $max = 0 if !defined($max) || $max < 0;
+
+  if (scalar @rl_History > $max) {
+      splice @rl_History, $max;
+      $attribs{history_length} = scalar @rl_History;
+  }
+
+  $history_stifled = 1;
+  $rl_max_input_history = $max;
+}
+
+=head3 remove_history
+
+C<remove_history($which)>
+
+Remove history element C<$which> from the history. The removed
+element is returned.
+=cut
+
 sub remove_history($$) {
   shift;
   my $which = $_[0];
@@ -200,148 +275,3 @@ sub remove_history($$) {
 }
 
 1;
-
-__END__
-
-=encoding utf8
-
-=head1 NAME
-
-Term::ReadLine::Perl5 - A Perl5 implementation GNU Readline
-
-=head1 SYNOPSIS
-
-  use Term::ReadLine::Perl5;
-  $term = new Term::ReadLine::Perl5 'ProgramName';
-  while ( defined ($_ = $term->readline('prompt>')) ) {
-    ...
-  }
-
-=head1 DESCRIPTION
-
-=head2 Overview
-
-This is a implementation of the GNU Readline/History Library written
-in Perl5.
-
-GNU Readline reads lines from an interactive terminal with I<emacs> or
-I<vi> editing capabilities. It provides as mechanism for saving
-history of previous input.
-
-This package typically used in command-line interfaces and REPLs (Read,
-Eval, Print, Loop).
-
-=head2 SUBROUTINES
-
-=head3
-
-C<Term::ReadLine::Perl-E<gt>new($name, [*IN, [*OUT])>
-
-Returns a handle for subsequent calls to readline functions.
-
-C<$name> is the name of the application.
-
-Optionally you can add two arguments for input and output
-filehandles. These arguments should be globs.
-
-This routine might also be called via
-C<Term::ReadLine-E<gt>new($term_name)> if other Term::ReadLine packages
-like L<Term::ReadLine::Gnu> is not available or if you have
-C<$ENV{PERL_RL}> set to 'Perl5';
-
-At present, because this code has lots of global state, we currently don't
-support more than one readline instance.
-
-Somebody please volunteer to rewrite this code!
-
-=head3 stifle_history
-
-C<stifle_history($max)>
-
-Stifle or put a cap on the history list, remembering only C<$max>
-number of lines.
-
-=head3 Minline
-
-C<MinLine([$minlength])>
-
-If C<$minlength> is given, set C<$readline::minlength> the minimum
-length a $line for it to go into the readline history.
-
-The previous value is returned.
-
-=head3 remove_history
-
-C<remove_history($which)>
-
-Remove history element C<$which> from the history. The removed
-element is returned.
-
-=head2 Variables
-
-Following GNU Readline/History Library variables can be accessed from
-Perl program.  See 'GNU Readline Library Manual' and ' GNU History
-Library Manual' for each variable.  You can access them via the
-C<Attribs> method.  Names of keys in this hash conform to standard
-conventions with the leading C<rl_> stripped.
-
-Example:
-
-    $term = new Term::ReadLine::Perl5 'ReadLineTest'
-    $attribs = $term->Attribs;
-    $v = $attribs->{history_base};	# history_base
-
-=head3 Attribute Names
-
-	completion_suppress_append (bool)
-	history_base               (int)
-	history_stifled            (int)
-        history_length             (int)
-        max_input_history          (int)
-	outstream                  (file handle)
-
-=head1 INSTALL
-
-To install this module type:
-
-    perl Build.PL
-    make
-    # for interactive testing:
-    make test
-    # for non-interactive testing
-    AUTOMATED_TESTING=1 make test
-    make install # might need sudo make install
-
-=head1 DEVELOPMENT HISTORY
-
-The first implementation was in Perl4 (mostly) by Jeffrey
-Friedl. He referenced FSF the code Roland Schemers F<line_edit.pl>.
-
-Ilya Zakharevich turned this into a Perl5 module called
-L<Term::ReadLine::Perl>. Some of the changes he made include using
-L<Term::ReadKey> if present, and made this work under I<xterm>. The
-file F<Term/ReadLine/Perl5/CHANGES> up to but not including version
-1.04 contains a list of his changes.
-
-Starting with version 1.04 Rocky Bernstein forked the code, adding GNU
-readline history. He put it into a public git repository (github) and
-also started modernizing it by doing the things CPAN prefers,
-including adding POD documentation, non-interactive tests, and
-respecting CPAN module namespaces.
-
-=head1 BUGS
-
-Bugs are accepted via the L<github issues
-tracker|https://github.com/rocky/p5-Term-ReadLine-Perl5/issues>.
-
-=head1 LICENSE
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of either:
-
-a) the GNU General Public License as published by the Free Software
-   Foundation; version 2, or
-
-b) the "Artistic License" which comes with Perl.
-
-=cut

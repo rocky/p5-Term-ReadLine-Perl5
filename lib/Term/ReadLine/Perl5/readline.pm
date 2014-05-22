@@ -15,7 +15,7 @@ use File::Glob ':glob';
 
 # no critic
 # Version might be below Perl5.pm
-our $VERSION = '1.35';
+our $VERSION = '1.35_01';
 
 #
 # Separation into my and vars needs more work.
