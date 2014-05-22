@@ -28,6 +28,7 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $rl_completion_suppress_append
           $KillBuffer $dumb_term $stdin_not_tty $InsertMode
           $mode $winsz $force_redraw
+          $have_getpwent
           $minlength $rl_readline_name
           @winchhooks
           $rl_NoInitFromFile);
@@ -3284,7 +3285,9 @@ sub completion_matches
     @matches;
 }
 
-my $have_getpwent = eval{getpwent() && setpwent(); 1};
+$have_getpwent = eval{
+    my @fields = getpwent(); setpwent(); 1;
+};
 
 sub rl_tilde_complete($) {
     my $prefix = shift;
@@ -3309,6 +3312,7 @@ I<$prefix>.  This only works if we have getpwwet() available.
 sub rl_tilde_expand($) {
     my $prefix = shift;
     my @matches = ();
+    setpwent();
     while (my @fields = (getpwent)[0]) {
 	push @matches, $fields[0]
 	    if ( $prefix eq ''
