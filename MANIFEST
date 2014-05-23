@@ -11,7 +11,10 @@ README.pod
 lib/Term/ReadLine/Perl5.pm
 lib/Term/ReadLine/Perl5/CHANGES
 lib/Term/ReadLine/Perl5/History.pm
+lib/Term/ReadLine/Perl5/Common.pm
+lib/Term/ReadLine/Perl5/TermCap.pm
 lib/Term/ReadLine/Perl5/Tie.pm
+lib/Term/ReadLine/Perl5/Tk.pm
 lib/Term/ReadLine/Perl5/readline.pm
 lib/Term/ReadLine/Perl5/readline-guide.pod
 t/00test-pod.t

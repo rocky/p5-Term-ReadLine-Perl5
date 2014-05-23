@@ -38,12 +38,12 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
               rl_basic_commands rl_filename_list completion_function);
 
 
-use Term::ReadLine;  # For Term::ReadLine::TermCap::ornaments
 use File::HomeDir;
 use File::Spec;
 use Term::ReadKey;
-use rlib '../../..';
 
+use rlib '../../..';
+use Term::ReadLine::Perl5::TermCap; # For ornaments
 use Term::ReadLine::Perl5::History;
 
 my $autoload_broken = 1;        # currently: defined does not work with a-l

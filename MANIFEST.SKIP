@@ -65,6 +65,11 @@ perlcritic\.rc
 \bbuild.com$
 ^MANIFEST\.SKIP
 
+# May someday copy these from Term::ReadLine::Perl
+^Common\.pm$
+^Tk\.pm$
+
+
 # Avoid archives of this distribution
 \bDevel-Trepan-[\d\.\_]+
 ^MYMETA.yml$

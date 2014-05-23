@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-#  Copyright (C) 2013 Rocky Bernstein <rocky@cpan.org>
+#  Copyright (C) 2013-2014 Rocky Bernstein <rocky@cpan.org>
 #
 
 use strict;
@@ -14,7 +14,7 @@ my $min_perl_version         = '5.006002';
 
 my $lib = File::Spec->catfile(dirname(__FILE__), 'lib');
 unshift @INC, $lib;
-my $release_status = 'stable'; # or 'stable'; # or 'testing'
+my $release_status = 'testing'; # or 'stable';
 my $builder = Module::Build->new(
     module_name         => 'Term::ReadLine::Perl5',
     add_to_cleanup      => ['Term-ReadLine-Perl5*', 'tmp*', '.history.text',
@@ -39,9 +39,6 @@ my $builder = Module::Build->new(
         'File::HomeDir'           => $min_file_homedir_version,
 	'File::Spec'              => 0,
 	'Term::ReadKey'           => 0,
-
-	# For the future: we will split out Term::ReadLine::TermCap
-	# from Term::ReadLine::Stub.pm.
 	'Term::Cap'               => 0,
     },
     configure_requires => {

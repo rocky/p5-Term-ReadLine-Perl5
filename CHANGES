@@ -1,3 +1,10 @@
+1.36:
+
+- Add Term::ReadLine::Perl5::{Common,TermCap,Tk} to remove cyclic
+  dependency between Term::ReadLine::Perl5 and Term::ReadLine.
+- Remove POD redundancy between Term::ReadLine::Perl5 README and
+  Term::ReadLine::Perl5
+
 1.35:  2014-04-22
 
 - more work on ~ expand for FreeBSD.
