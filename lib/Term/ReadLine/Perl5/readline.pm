@@ -220,7 +220,6 @@ sub preinit
 	PrintCompletionsHorizontally
         CompletionIgnoreCase
         DisableCompletion
-        ExpandTilde
         MarkDirectories
         MarkModifiedLines
         MetaFlag
@@ -362,7 +361,7 @@ sub preinit
                 'C-s',  'ForwardSearchHistory',
                 'C-t',  'TransposeChars',
                 'C-u',  'UnixLineDiscard',
-                ##'C-v',        'QuotedInsert',
+                ##'C-v', 'QuotedInsert',
                 'C-v',  'HistorySearchForward',
                 'C-w',  'UnixWordRubout',
                 qq/"\cX\cX"/,   'ExchangePointAndMark',
@@ -383,35 +382,36 @@ sub preinit
                 qq/"\cX\@c\@"/, 'SetMark',
                 qq/"\cX\@c "/,  'SetMark',
                 qq/"\cX\@m\\*"/,        'DoMetaVersion',
-                'C-y',  'Yank',
-                'C-z',  'Suspend',
-                'C-\\', 'Ding',
-                'C-^',  'Ding',
-                'C-_',  'Undo',
+                'C-y',  '  Yank',
+                'C-z',    'Suspend',
+                'C-\\',   'Ding',
+                'C-^',    'Ding',
+                'C-_',    'Undo',
                 'DEL',  ($inDOS ?
                          'BackwardKillWord' : # <Control>+<Backspace>
                          'BackwardDeleteChar'
                         ),
-                'M-<',  'BeginningOfHistory',
-                'M->',  'EndOfHistory',
-                'M-DEL',        'BackwardKillWord',
-                'M-C-h',        'BackwardKillWord',
-                'M-C-j',        'ViInput',
-                'M-C-v',        'QuotedInsert',
-                'M-b',  'BackwardWord',
-                'M-c',  'CapitalizeWord',
-                'M-d',  'KillWord',
-                'M-f',  'ForwardWord',
-                'M-h',  'PrintHistory',
-                'M-l',  'DownCaseWord',
-                'M-r',  'RevertLine',
-                'M-t',  'TransposeWords',
-                'M-u',  'UpcaseWord',
-                'M-v',  'HistorySearchBackward',
-                'M-y',  'YankPop',
-                "M-?",  'PossibleCompletions',
-                "M-TAB",        'TabInsert',
-                'M-#',  'SaveLine',
+                'M-<',    'BeginningOfHistory',
+                'M->',    'EndOfHistory',
+                'M-DEL',  'BackwardKillWord',
+                'M-C-h',  'BackwardKillWord',
+                'M-C-j',  'ViInput',
+                'M-C-v',  'QuotedInsert',
+                'M-b',    'BackwardWord',
+                'M-c',    'CapitalizeWord',
+                'M-d',    'KillWord',
+                'M-f',    'ForwardWord',
+                'M-h',    'PrintHistory',
+                'M-l',    'DownCaseWord',
+                'M-r',    'RevertLine',
+                'M-t',    'TransposeWords',
+                'M-u',    'UpcaseWord',
+                'M-v',    'HistorySearchBackward',
+                'M-y',    'YankPop',
+                "M-?",    'PossibleCompletions',
+		'M-~',    'TildeExpand',
+                "M-TAB",  'TabInsert',
+                'M-#',    'SaveLine',
                 qq/"\e[A"/,  'previous-history',
                 qq/"\e[B"/,  'next-history',
                 qq/"\e[C"/,  'forward-char',
@@ -422,11 +422,11 @@ sub preinit
                 qq/"\eOD"/,  'backward-char',
                 qq/"\eOy"/,  'HistorySearchBackward',   # vt: PageUp
                 qq/"\eOs"/,  'HistorySearchForward',    # vt: PageDown
-                qq/"\e[[A"/,  'previous-history',
-                qq/"\e[[B"/,  'next-history',
-                qq/"\e[[C"/,  'forward-char',
-                qq/"\e[[D"/,  'backward-char',
-                qq/"\e[2~"/,   'ToggleInsertMode', # X: <Insert>
+                qq/"\e[[A"/, 'previous-history',
+                qq/"\e[[B"/, 'next-history',
+                qq/"\e[[C"/, 'forward-char',
+                qq/"\e[[D"/, 'backward-char',
+                qq/"\e[2~"/, 'ToggleInsertMode', # X: <Insert>
                 # Mods: 1 + bitmask: 1 Shift, 2 Alt, 4 Control, 8 (sometimes) Meta
                 qq/"\e[2;2~"/,  'YankClipboard',    # <Shift>+<Insert>
                 qq/"\e[3;2~"/,  'KillRegionClipboard',    # <Shift>+<Delete>
@@ -2488,9 +2488,85 @@ sub F_UnixLineDiscard
     kill_text(0, $D, 1);
 }
 
+=head3 F_UpcaseWord
+
+Uppercase the current (or following) word. With a negative argument,
+uppercase the previous word, but do not move the cursor.
+
+=cut
 sub F_UpcaseWord     { &changecase($_[0], 'up');   }
+
+=head3 F_DownCaseWord
+
+Lowercase the current (or following) word. With a negative argument, lowercase the previous word, but do not move the cursor.
+
+=cut
 sub F_DownCaseWord   { &changecase($_[0], 'down'); }
+
+=head3 F_CapitalizeWord
+
+Capitalize the current (or following) word. With a negative argument, capitalize the previous word, but do not move the cursor.
+
+=cut
 sub F_CapitalizeWord { &changecase($_[0], 'cap');  }
+
+=head3 F_TildeExpand
+
+Perform tilde expansion on the current word.
+
+=cut
+sub F_TildeExpand {
+
+    my $what_to_do = shift;
+    my ($point, $end) = ($D, $D);
+
+    # In vi mode, complete if the cursor is at the *end* of a word, not
+    #     after it.
+    ($point++, $end++) if $Vi_mode;
+
+    # Get text to work complete on.
+    if ($point) {
+        ## Not at the beginning of the line; Isolate the word to be
+        ## completed.
+        1 while (--$point && (-1 == index($rl_completer_word_break_characters,
+                substr($line, $point, 1))));
+
+        # Either at beginning of line or at a word break.
+        # If at a word break (that we don't want to save), skip it.
+        $point++ if (
+	    (index($rl_completer_word_break_characters,
+		   substr($line, $point, 1)) != -1) &&
+	    (index($rl_special_prefixes, substr($line, $point, 1)) == -1)
+	    );
+    }
+
+    my $text = substr($line, $point, $end - $point);
+
+    # If the first character of the current word is a tilde, perform
+    # tilde expansion and insert the result.  If not a tilde, do
+    # nothing.
+    return if substr($text, 0, 1) ne '~';
+
+    my @matches = rl_tilde_complete($text);
+    if (@matches == 0) {
+        return &F_Ding;
+    }
+    my $replacement = shift(@matches);
+    $replacement .= $rl_completer_terminator_character
+	if @matches == 1 && !$rl_completion_suppress_append;
+    &F_Ding if @matches != 1;
+    if ($var_TcshCompleteMode) {
+	@tcsh_complete_selections = (@matches, $text);
+	$tcsh_complete_start = $point;
+	$tcsh_complete_len = length($replacement);
+    }
+
+    if ($replacement ne '') {
+	# Finally! Do the replacement.
+	substr($line, $point, $end-$point) = $replacement;
+	$D = $D - ($end - $point) + length($replacement);
+    }
+}
 
 ##
 ## Translated from GNUs readline.c
@@ -2535,6 +2611,13 @@ sub changecase
     $D = $olddot if defined($olddot);
 }
 
+=head3 F_TransposeWords
+
+Drag the word before point past the word after point, moving point
+past that word as well. If the insertion point is at the end of the
+line, this transposes the last two words on the line.
+
+=cut
 sub F_TransposeWords {
     my $c = shift;
     return F_Ding() unless $c;
@@ -2585,16 +2668,29 @@ sub F_TransposeChars
     }
 }
 
+=head3 F_PreviousHistory
+
+Move `back' through the history list, fetching the previous command.
+
+=cut
 sub F_PreviousHistory {
     &get_line_from_history($rl_HistoryIndex - shift);
 }
 
-sub F_NextHistory {
+=head3 F_PreviousHistory
+
+Move `forward' through the history list, fetching the next command.
+
+=cut
+sub F_NextHistoryw {
     &get_line_from_history($rl_HistoryIndex + shift);
 }
 
+=head3 F_BeginningOfHistory
 
+Move to the first line in the history.
 
+=cut
 sub F_BeginningOfHistory
 {
     &get_line_from_history(0);
@@ -3193,7 +3289,8 @@ sub complete_internal
 
     my $text = substr($line, $point, $end - $point);
     $rl_completer_terminator_character = ' ';
-    @matches = &completion_matches($rl_completion_function,$text,$line,$point);
+    my @matches =
+	&completion_matches($rl_completion_function,$text,$line,$point);
 
     if (@matches == 0) {
         return &F_Ding;
