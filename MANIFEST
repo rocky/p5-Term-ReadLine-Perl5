@@ -6,18 +6,18 @@ LICENSE
 MANIFEST
 META.json
 META.yml
+Build.PL
 Makefile.PL
-README.pod
+README.pod			     # General overview
+demo/shell.pl                        # demo code to try out features
 lib/Term/ReadLine/Perl5.pm
-lib/Term/ReadLine/Perl5/CHANGES
+lib/Term/ReadLine/Perl5/CHANGES	     # What's up?
 lib/Term/ReadLine/Perl5/History.pm
-lib/Term/ReadLine/Perl5/Common.pm
 lib/Term/ReadLine/Perl5/TermCap.pm
 lib/Term/ReadLine/Perl5/Tie.pm
-lib/Term/ReadLine/Perl5/Tk.pm
 lib/Term/ReadLine/Perl5/readline.pm
 lib/Term/ReadLine/Perl5/readline-guide.pod
-t/00test-pod.t
+t/00test-pod.t				# Make sure POD is Kosher
 t/10test-basic.t
 t/10test-changecase.t
 t/10test-filelist.t
@@ -28,4 +28,4 @@ t/15test-unescape.t
 t/20test-read-input-file.t
 t/Helper.pm
 t/data/undo.inputrc
-test.pl
+test.pl					# Old-style test program

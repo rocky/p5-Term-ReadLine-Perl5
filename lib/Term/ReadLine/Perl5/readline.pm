@@ -31,7 +31,9 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $have_getpwent
           $minlength $rl_readline_name
           @winchhooks
-          $rl_NoInitFromFile);
+          $rl_NoInitFromFile
+          $DEBUG;
+          );
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw($minlength rl_NoInitFromFile rl_bind rl_set
@@ -176,6 +178,8 @@ sub get_window_size
 # lower case before hash lookup.
 sub preinit
 {
+    $DEBUG = 0;
+
     ## Set up the input and output handles
 
     $term_IN = \*STDIN unless defined $term_IN;
@@ -328,6 +332,7 @@ sub preinit
     $rl_completion_suppress_append = 0
 	if !defined($rl_completion_suppress_append);
 
+    no warnings 'once';
     $rl_term_set = \@Term::ReadLine::TermCap::rl_term_set;
     @$rl_term_set or $rl_term_set = ["","","",""];
 
@@ -339,7 +344,7 @@ sub preinit
 
     &InitKeymap(*emacs_keymap, 'SelfInsert', 'emacs_keymap',
                 ($inDOS ? () : ('C-@',  'SetMark') ),
-                'C-a',  'BeginningOfLine',
+                'C-a',  'BeginningOfLiane',
                 'C-b',  'BackwardChar',
                 'C-c',  'Interrupt',
                 'C-d',  'DeleteChar',
@@ -1126,19 +1131,84 @@ sub rl_bind
             push(@keys, $key);
         }
 
-        #
-        ## Now do the mapping of the sequence represented in @keys
-         #
-        # print "&actually_do_binding($func, @keys)\n"; ##DEBUG
+        # Now do the mapping of the sequence represented in @keys
+        printf "rl_bind(%s, (%s)\n", $func, join(', ', @keys) if $DEBUG;
         push @arr, $func, [@keys];
         #&actually_do_binding($func, \@keys);
     }
     &actually_do_binding(@arr);
 }
 
+# Handle one line of an input file. Note we also assume
+# local-bound arrays @action and @level.
+sub process_init_line($$$)
+{
+    $_ = shift;
+    my $file = shift;
+    my $include_depth = shift;
+    s/^\s+//;
+    return if m/^\s*(#|$)/;
+    $InputLocMsg = " [$file line $.]";
+    if (/^\$if\s+(.*)/) {
+	my($test) = $1;
+	push(@level, 'if');
+	if ($action[$#action] ne 'exec') {
+	    ## We're supposed to be skipping or ignoring this level,
+	    ## so for subsequent levels we really ignore completely.
+	    push(@action, 'ignore');
+	} else {
+	    ## We're executing this IF... do the test.
+	    ## The test is either "term=xxxx", or just a string that
+	    ## we compare to $rl_readline_name;
+	    if ($test =~ /term=([a-z0-9]+)/) {
+		$test = ($ENV{'TERM'} && $1 eq $ENV{'TERM'});
+	    } else {
+		$test = $test =~ /^(perl|$rl_readline_name)\s*$/i;
+	    }
+	    push(@action, $test ? 'exec' : 'skip');
+	}
+	return;
+    } elsif (/^\$endif\b/) {
+	die qq/\rWarning$InputLocMsg: unmatched endif\n/ if @level == 0;
+	pop(@level);
+	pop(@action);
+	return;
+    } elsif (/^\$else\b/) {
+	die qq/\rWarning$InputLocMsg: unmatched else\n/ if
+	    @level == 0 || $level[$#level] ne 'if';
+	$level[$#level] = 'else'; ## an IF turns into an ELSE
+	if ($action[$#action] eq 'skip') {
+	    $action[$#action] = 'exec'; ## if were SKIPing, now EXEC
+	} else {
+	    $action[$#action] = 'ignore'; ## otherwise, just IGNORE.
+	}
+	return;
+    } elsif (/^\$include\s+(\S+)/) {
+	if ($include_depth > $max_include_depth) {
+	    warn "Deep recursion in \$include directives in $file.\n";
+	} else {
+	    read_an_init_file($1, $include_depth + 1);
+	}
+    } elsif ($action[$#action] ne 'exec') {
+	## skipping this one....
+	# Readline permits trailing comments in inputrc
+	# For example, /etc/inputrc on Mandrake Linux boxes has trailing
+	# comments
+    } elsif (m/\s*set\s+(\S+)\s+(\S*)/) { # Allow trailing comment
+	&rl_set($1, $2, $file);
+    } elsif (m/^\s*(\S+):\s+("(?:\\.|[^\\\"])*"|'(\\.|[^\\\'])*')/) { # Allow trailing comment
+	&rl_bind($1, $2);
+    } elsif (m/^\s*(\S+|"[^\"]+"):\s+(\S+)/) { # Allow trailing comment
+	&rl_bind($1, $2);
+    } else {
+	chomp;
+	warn "\rWarning$InputLocMsg: Bad line [$_]\n" if $^W;
+    }
+}
+
 =head2 read_an_init_file
 
-C<read_an_init_file(inputrc_file)>
+C<read_an_init_file(inputrc_file, [include_depth])>
 
 Reads and executes I<inputrc_file> which does things like Sets input
 key bindings in key maps.
@@ -1147,84 +1217,26 @@ If there was a problem return 0.  Otherwise return 1;
 
 =cut
 
-sub read_an_init_file {
+sub read_an_init_file($;$)
+{
     my $file = shift;
-    my $include_depth = shift;
+    my $include_depth = shift or 0;
     local *RC;
 
     $file = File::Spec->catfile($HOME, $file) unless -f $file;
     return 0 unless open RC, "< $file";
-    my (@action) = ('exec'); ## exec, skip, ignore (until appropriate endif)
-    my (@level) = ();        ## if, else
+    local (@action) = ('exec'); ## exec, skip, ignore (until appropriate endnif)
+    local (@level) = ();        ## if, else
 
     local $/ = "\n";
-    while (<RC>) {
-        s/^\s+//;
-        next if m/^\s*(#|$)/;
-        $InputLocMsg = " [$file line $.]";
-        if (/^\$if\s+(.*)/) {
-            my($test) = $1;
-            push(@level, 'if');
-            if ($action[$#action] ne 'exec') {
-                ## We're supposed to be skipping or ignoring this level,
-                ## so for subsequent levels we really ignore completely.
-                push(@action, 'ignore');
-            } else {
-                ## We're executing this IF... do the test.
-                ## The test is either "term=xxxx", or just a string that
-                ## we compare to $rl_readline_name;
-                if ($test =~ /term=([a-z0-9]+)/) {
-                    $test = ($ENV{'TERM'} && $1 eq $ENV{'TERM'});
-                } else {
-                    $test = $test =~ /^(perl|$rl_readline_name)\s*$/i;
-                }
-                push(@action, $test ? 'exec' : 'skip');
-            }
-            next;
-        } elsif (/^\$endif\b/) {
-            die qq/\rWarning$InputLocMsg: unmatched endif\n/ if @level == 0;
-            pop(@level);
-            pop(@action);
-            next;
-        } elsif (/^\$else\b/) {
-            die qq/\rWarning$InputLocMsg: unmatched else\n/ if
-                @level == 0 || $level[$#level] ne 'if';
-            $level[$#level] = 'else'; ## an IF turns into an ELSE
-            if ($action[$#action] eq 'skip') {
-                $action[$#action] = 'exec'; ## if were SKIPing, now EXEC
-            } else {
-                $action[$#action] = 'ignore'; ## otherwise, just IGNORE.
-            }
-            next;
-        } elsif (/^\$include\s+(\S+)/) {
-            if ($include_depth > $max_include_depth) {
-                warn "Deep recursion in \$include directives in $file.\n";
-            } else {
-                read_an_init_file($1, $include_depth + 1);
-            }
-        } elsif ($action[$#action] ne 'exec') {
-            ## skipping this one....
-        # Readline permits trailing comments in inputrc
-        # For example, /etc/inputrc on Mandrake Linux boxes has trailing
-    # comments
-        } elsif (m/\s*set\s+(\S+)\s+(\S*)/) { # Allow trailing comment
-            &rl_set($1, $2, $file);
-        } elsif (m/^\s*(\S+):\s+("(?:\\.|[^\\\"])*"|'(\\.|[^\\\'])*')/) { # Allow trailing comment
-            &rl_bind($1, $2);
-        } elsif (m/^\s*(\S+|"[^\"]+"):\s+(\S+)/) { # Allow trailing comment
-            &rl_bind($1, $2);
-        } else {
-            chomp;
-            warn "\rWarning$InputLocMsg: Bad line [$_]\n" if $^W;
-        }
-    }
+    process_init_line($_, $file, $include_depth) while <RC>;
     close(RC);
     return 1;
 }
 
 sub F_ReReadInitFile
 {
-    my ($file) = $ENV{'TRP_INPUTRC'};
+    my ($file) = $ENV{'TRP5_INPUTRC'};
     $file = $ENV{'INPUTRC'} unless defined $file;
     unless (defined $file) {
         return unless defined $HOME;
@@ -1296,6 +1308,7 @@ C<undef> on EOF.
 
 sub readline
 {
+    no warnings 'once';
     $Term::ReadLine::Perl5::term->register_Tk
       if not $Term::ReadLine::registered and $Term::ReadLine::toloop
         and defined &Tk::DoOneEvent;
