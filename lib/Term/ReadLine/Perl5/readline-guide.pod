@@ -2,8 +2,8 @@
 
 =head1 Term::ReadLine::Perl5::readline-guide
 
-A non-OO package similar to GNU's readline. The prefered OO Package is
-L<Term::ReadLine::Perl5>. But that uses this internally.
+A non-OO package similar to GNU's readline. The preferred OO Package
+is L<Term::ReadLine::Perl5>. But that uses this internally.
 
 There is some support for EUC-encoded Japanese text. This should be
 rewritten for Perl Unicode though.
@@ -11,9 +11,10 @@ rewritten for Perl Unicode though.
 Originally author: Jeffrey Friedl, Omron Corporation
 (jfriedl@omron.co.jp)
 
-Comments, corrections welcome.
+Comments, corrections welcome. Someone please volunteer to rewrite
+this!
 
-Thanks to the people at FSF for readline (and the code I referenced
+Thanks to the people at FSF for readline (and the code referenced
 while writing this), and for Roland Schemers whose line_edit.pl I used
 as an early basis for this.
 
@@ -53,10 +54,10 @@ Call rl_basic_commands to set your own command completion, as in:
 =over
 
 =item *
-hey, it's in perl.
+It's in Perl.
 
 =item *
-Pretty full GNU readline like library...
+Pretty full GNU readline-like library...
 
 =item *
 support for F<~/.inputrc>
@@ -87,16 +88,15 @@ Has a tcsh-like completion-function mode.call &rl_set('tcsh-complete-mode', 'On'
 
 =back
 
-
 =head2 What's not Cool
 
 =over
 
 =item *
-Can you say HUGE?
+It is huge
 
 =item *
-I can't spell, so comments riddled with misspellings.
+Uses lots of global state
 
 =item *
 Written by someone that has never really used readline.
@@ -109,7 +109,7 @@ fixed someday, but I like it as it is now...
 Killbuffer not a ring.. just one level.
 
 =item *
-Obviously not well tested yet.
+Not well tested.
 
 =item *
 Written by someone that doesn't have a bell on his terminal, so
@@ -389,7 +389,7 @@ A real completion function would be more robust.
 
 =cut
 
-=head1 See alos
+=head1 See also
 
 =over
 

@@ -5,8 +5,18 @@ Term::ReadLine::Perl5::readline
 
 =head1 DESCRIPTION
 
-Wraps what is largely Perl4 into a non-OO Perl5 module. It is ugly, but at
-least its a start. Please use L<Term::ReadLine::Per5> instead.
+A non-OO package similar to GNU's readline. The preferred OO Package
+is L<Term::ReadLine::Perl5>. But that uses this internally.
+
+It could be made better by removing more of the global state and
+moving it into the L<Term::ReadLine::Perl5> side.
+
+There is some support for EUC-encoded Japanese text. This should be
+rewritten for Perl Unicode though.
+
+Someone please volunteer to rewrite this!
+
+See also L<Term::ReadLine::Perl5::readline-guide>.
 
 =cut
 use warnings;
@@ -14,8 +24,8 @@ package Term::ReadLine::Perl5::readline;
 use File::Glob ':glob';
 
 # no critic
-# Version might be below Perl5.pm
-our $VERSION = '1.36';
+# Version can be below the version given in Term::ReadLine::Perl5
+our $VERSION = '1.36_01';
 
 #
 # Separation into my and vars needs more work.
@@ -116,61 +126,7 @@ my $Vi_search_reverse;  # True for '?' search, false for '/'
 
 =head1 SUBROUTINES
 
-=head2 get_window_size
-
-   get_window_size([$redisplay])
-
-I<Note: this function is deprecated. It is not in L<Term::ReadLine::GNU>
-or the GNU ReadLine library. As such, it may disappear and be replaced
-by the corresponding L<Term::ReadLine::GNU> routines.>
-
-Causes a query to get the terminal width. If the terminal width can't
-be obtained, nothing is done. Otherwise...
-
-=over
-
-=item * Set I<$rl_screen_width> and to the current screen width.
-I<$rl_margin> is then set to be 1/3 of I<$rl_screen_width>.
-
-=item * any window-changeing hooks stored in array I<@winchhooks> are
-run.
-
-=item * I<SIG{WINCH}> is set to run this routine. Any routines set are
-lost. A better behavior would be to add existing hooks to
-I<@winchhooks>, but hey, this routine is deprecated.
-
-=item * If I<$redisplay> is passed and is true, then a redisplay of
-the input line is done by calling I<redisplay()>.
-
-=back
-
 =cut
-
-sub get_window_size
-{
-    my $redraw = shift;
-
-    # Preserve $! etc; the rest for hooks
-    local($., $@, $!, $^E, $?);
-
-    my ($num_cols,$num_rows) = (undef, undef);
-    eval {
-	($num_cols,$num_rows) =  Term::ReadKey::GetTerminalSize($term_OUT);
-    };
-    return unless defined($num_cols) and defined($num_rows);
-    $rl_screen_width = $num_cols - $rl_correct_sw
-	if defined($num_cols) && $num_cols;
-    $rl_margin = int($rl_screen_width/3);
-    if (defined $redraw) {
-        $force_redraw = 1;
-        &redisplay();
-    }
-
-    for my $hook (@winchhooks) {
-      eval {&$hook()}; warn $@ if $@ and $^W;
-    }
-}
-
 # Fix: case-sensitivity of inputrc on/off keywords in
 #      `set' commands. readline lib doesn't care about case.
 # changed case of keys 'On' and 'Off' to 'on' and 'off'
@@ -1022,7 +978,12 @@ sub actually_do_binding
   }
 }
 
-=head2 rl_bind
+=head2 GNU ReadLine-ish Routines
+
+Many of these aren't the the name GNU readline uses, nor do they
+correspond to GNU ReadLine functions. Sigh.
+
+=head3 rl_bind
 
 Accepts an array as pairs ($keyspec, $function, [$keyspec, $function]...).
 and maps the associated bindings to the current KeyMap.
@@ -1139,6 +1100,172 @@ sub rl_bind
     &actually_do_binding(@arr);
 }
 
+=head3 rl_set
+
+C<rl_set($var_name, $value_string)>
+
+Sets the named variable as per the given value, if both are appropriate.
+Allows the user of the package to set such things as HorizontalScrollMode
+and EditingMode.  Value_string may be of the form
+
+      HorizontalScrollMode
+      horizontal-scroll-mode
+
+Also called during the parsing of F<~/.inputrc> for "set var value" lines.
+
+The previous value is returned, or undef on error.
+
+Consider the following example for how to add additional variables
+accessible via rl_set (and hence via F<~/.inputrc>).
+
+Want:
+
+We want an external variable called "FooTime" (or "foo-time").
+It may have values "January", "Monday", or "Noon".
+Internally, we'll want those values to translate to 1, 2, and 12.
+
+How:
+
+Have an internal variable $var_FooTime that will represent the current
+internal value, and initialize it to the default value.
+Make an array %var_FooTime whose keys and values are are the external
+(January, Monday, Noon) and internal (1, 2, 12) values:
+
+    $var_FooTime = $var_FooTime{'January'} =  1; #default
+                   $var_FooTime{'Monday'}  =  2;
+                   $var_FooTime{'Noon'}    = 12;
+
+=cut
+
+sub rl_set
+{
+    local($var, $val) = @_;
+
+    # &preinit's keys are all Capitalized
+    $val = ucfirst lc $val if $val =~ /^(on|off)$/i;
+
+    $var = 'CompleteAddsuffix' if $var eq 'visible-stats';
+
+    ## if the variable is in the form "some-name", change to "SomeName"
+    local($_) = "\u$var";
+    local($return) = undef;
+    s/-(.)/\u$1/g;
+
+    # Skip unknown variables:
+    return unless defined $ {'readline::'}{"var_$_"};
+    local(*V);    # avoid <Undefined value assign to typeglob> warning
+    { local $^W; *V = $ {'readline::'}{"var_$_"}; }
+    if (!defined($V)) {                 # XXX Duplicate check?
+        warn("Warning$InputLocMsg:\n".
+             "  Invalid variable `$var'\n") if $^W;
+    } elsif (!defined($V{$val})) {
+        local(@selections) = keys(%V);
+        warn("Warning$InputLocMsg:\n".
+             "  Invalid value `$val' for variable `$var'.\n".
+             "  Choose from [@selections].\n") if $^W;
+    } else {
+        $return = $V;
+        $V = $V{$val}; ## make the setting
+    }
+    $return;
+}
+
+=head3 rl_tilde_expand
+
+ rl_tilde_expand($prefix) => list of usernames
+
+Returns a list of completions that begin with the given prefix,
+I<$prefix>.  This only works if we have getpwwet() available.
+
+=cut
+
+sub rl_tilde_expand($) {
+    my $prefix = shift;
+    my @matches = ();
+    setpwent();
+    while (my @fields = (getpwent)[0]) {
+	push @matches, $fields[0]
+	    if ( $prefix eq ''
+		 || $prefix eq substr($fields[0], 0, length($prefix)) );
+    }
+    setpwent();
+    @matches;
+}
+
+=head3 rl_filename_list
+
+  rl_filename_list($pattern) => list of files
+
+Returns a list of completions that begin with the string I<$pattern>.
+Can be used to pass to I<completion_matches()>.
+
+This function corresponds to the L<Term::ReadLine::GNU> function
+I<rl_filename_list)>. But that doesn't handle tilde expansion while
+this does. Also, directories returned will have the '/' suffix
+appended as is the case returned by GNU Readline, but not
+I<Term::ReadLine::GNU>. Adding the '/' suffix is useful in completion
+because it forces the next completion to complete inside that
+directory.
+
+GNU Readline also will complete partial I<~> names; for example
+I<~roo> maybe expanded to C</root> for the root user. When
+getpwent/setpwent is available we provide that.
+
+The user of this package can set I<$rl_completion_function> to
+'rl_filename_list' to restore the default of filename matching if
+they'd changed it earlier, either directly or via &rl_basic_commands.
+
+=cut
+
+sub rl_filename_list
+{
+    my $pattern = $_[0];
+    if ($pattern =~ m{^~[^/]*$}) {
+	if ($have_getpwent and length($pattern) > 1) {
+	    map { -d $_ ? $_ . '/' : $_ }
+	    tilde_complete(substr($pattern, 1));
+	} else {
+	    map { -d $_ ? $_ . '/' : $_ } bsd_glob($pattern);
+	}
+    } else {
+	map { -d $_ ? $_ . '/' : $_ } bsd_glob($pattern . '*');
+    }
+}
+
+=head3 rl_filename_list_deprecated
+
+C<rl_filename_list_deprecated($pattern)>
+
+This was the I<Term::ReadLine::Perl5> function before version 1.30,
+and the current I<Term::ReadLine::Perl> function.
+
+For reasons that are a mystery to me (rocky), there seemed to be a the
+need to classify the result adding a suffix for executable (*),
+pipe/socket (=), and symbolic link (@), and directory (/). Of these,
+the only useful one is directory since that will cause a further
+completion to continue.
+
+=cut
+sub rl_filename_list_deprecated
+{
+    my $pattern = $_[0];
+    my @files = (<$pattern*>);
+    if ($var_CompleteAddsuffix) {
+        foreach (@files) {
+            if (-l $_) {
+                $_ .= '@';
+            } elsif (-d _) {
+                $_ .= '/';
+            } elsif (-x _) {
+                $_ .= '*';
+            } elsif (-S _ || -p _) {
+                $_ .= '=';
+            }
+        }
+    }
+    return @files;
+}
+
 # Handle one line of an input file. Note we also assume
 # local-bound arrays @action and @level.
 sub process_init_line($$$)
@@ -1204,6 +1331,32 @@ sub process_init_line($$$)
 	chomp;
 	warn "\rWarning$InputLocMsg: Bad line [$_]\n" if $^W;
     }
+}
+
+=head3 rl_basic_commands
+
+Called with a list of possible commands, will allow command completion
+on those commands, but only for the first word on a line.  For
+example:
+
+    &rl_basic_commands('set', 'quit', 'type', 'run');
+
+This is for people that want quick and simple command completion.
+A more thoughtful implementation would set I<$rl_completion_function>
+to a routine that would look at the context of the word being completed
+and return the appropriate possibilities.
+
+=cut
+sub rl_basic_commands
+{
+     @rl_basic_commands = @_;
+     $rl_completion_function = 'use_basic_commands';
+}
+
+sub rl_getc {
+    $Term::ReadLine::Perl5::term->Tk_loop
+	if $Term::ReadLine::toloop && defined &Tk::DoOneEvent;
+    return Term::ReadKey::ReadKey(0, $term_IN);
 }
 
 ###########################################################################
@@ -1453,6 +1606,46 @@ search. By default, this command is unbound.
 sub F_HistorySearchForward
 {
     &DoSearchStart(($_[0] >= 0 ? 0 : 1),substr($line,0,$D));
+}
+
+sub F_PrintHistory {
+    my($count) = @_;
+
+    $count = 20 if $count == 1;             # Default - assume 'H', not '1H'
+    my $end = $rl_HistoryIndex + $count/2;
+    $end = @rl_History if $end > @rl_History;
+    my $start = $end - $count + 1;
+    $start = 0 if $start < 0;
+
+    my $lmh = length $rl_MaxHistorySize;
+
+    my $lspace = ' ' x ($lmh+3);
+    my $hdr = "$lspace-----";
+    $hdr .= " (Use ESC <num> UP to retrieve command <num>) -----" unless $Vi_mode;
+    $hdr .= " (Use '<num>G' to retrieve command <num>) -----" if $Vi_mode;
+
+    local ($\, $,) = ('','');
+    print "\n$hdr\n";
+    print $lspace, ". . .\n" if $start > 0;
+    my $i;
+    my $shift = ($Vi_mode != 0);
+    for $i ($start .. $end) {
+        print + ($i == $rl_HistoryIndex) ? '>' : ' ',
+
+                sprintf("%${lmh}d: ", @rl_History - $i + $shift),
+
+                ($i < @rl_History)       ? $rl_History[$i] :
+                ($i == $rl_HistoryIndex) ? $line           :
+                                           $line_for_revert,
+
+                "\n";
+    }
+    print $lspace, ". . .\n" if $end < @rl_History;
+    print "$hdr\n";
+
+    &force_redisplay();
+
+    &F_ViInput() if $line eq '' && $Vi_mode;
 }
 
 ###########################################################################
@@ -1866,12 +2059,6 @@ sub F_UniversalArgument
 ###########################################################################
 =head2 Letting Readline Type For You
 
-=head3
-
-
-
-=cut
-
 =head3 F_Complete
 
 Do a completion operation.  If the last thing we did was a completion
@@ -2033,7 +2220,7 @@ sub F_TildeExpand {
     # nothing.
     return if substr($text, 0, 1) ne '~';
 
-    my @matches = rl_tilde_complete($text);
+    my @matches = tilde_complete($text);
     if (@matches == 0) {
         return &F_Ding;
     }
@@ -2474,7 +2661,613 @@ sub F_ViPositionEsc {
     &F_ViNonPosition;
 }
 
+sub F_ViUndo {
+    return &F_Ding unless defined $Vi_undo_state;
+    my $state = savestate();
+    &getstate($Vi_undo_state);
+    $Vi_undo_state = $state;
+}
+
+sub F_ViUndoAll {
+    $Vi_undo_state = $Vi_undo_all_state;
+    &F_ViUndo;
+}
+
+sub F_ViChange
+{
+    my($count, $ord) = @_;
+    &start_dot_buf(@_);
+    &do_delete($count, $ord, $Vi_change_patterns) || return();
+    &vi_input_mode;
+}
+
+sub F_ViDelete
+{
+    my($count, $ord) = @_;
+    &start_dot_buf(@_);
+    &do_delete($count, $ord, $Vi_delete_patterns);
+    &end_dot_buf;
+}
+
+sub F_ViDeleteChar {
+    my($count) = @_;
+    &save_dot_buf(@_);
+    my $other_end = $D + $count;
+    $other_end = length($line) if $other_end > length($line);
+    &kill_text($D, $other_end, 1);
+}
+
+sub F_ViBackwardDeleteChar {
+    my($count) = @_;
+    &save_dot_buf(@_);
+    my $other_end = $D - $count;
+    $other_end = 0 if $other_end < 0;
+    &kill_text($other_end, $D, 1);
+    $D = $other_end;
+}
+
+=head3 F_ViFirstWord
+
+Go to first non-space character of line.
+=cut
+sub F_ViFirstWord
+{
+    $D = 0;
+    &forward_scan(1, q{\s+});
+}
+
+=head3 F_ViTtoggleCase
+
+# Like the emacs case transforms.
+
+I<Note>: this doesn't work for multi-byte characters.
+=cut
+
+sub F_ViToggleCase {
+    my($count) = @_;
+    &save_dot_buf(@_);
+    while ($count-- > 0) {
+        substr($line, $D, 1) =~ tr/A-Za-z/a-zA-Z/;
+        &F_ForwardChar(1);
+        if (&at_end_of_line) {
+            &F_BackwardChar(1);
+            last;
+        }
+    }
+}
+
+=head3 F_ViHistoryLine
+Go to the numbered history line, as listed by the 'H' command, i.e. the
+current $line is line 1, the youngest line in @rl_History is 2, etc.
+=cut
+
+sub F_ViHistoryLine {
+    my($n) = @_;
+    &get_line_from_history(@rl_History - $n + 1);
+}
+
+=head3 F_ViSearch
+
+Search history for matching string.  As with vi in nomagic mode, the
+^, $, \<, and \> positional assertions, the \* quantifier, the \.
+character class, and the \[ character class delimiter all have special
+meaning here.
+=cut
+sub F_ViSearch {
+    my($n, $ord) = @_;
+
+    my $c = pack('c', $ord);
+
+    my $str = &get_vi_search_str($c);
+    if (!defined $str) {
+        # Search aborted by deleting the '/' at the beginning of the line
+        return &F_ViInput() if $line eq '';
+        return();
+    }
+
+    # Null string repeats last search
+    if ($str eq '') {
+        return &F_Ding unless defined $Vi_search_re;
+    }
+    else {
+        # Convert to a regular expression.  Interpret $str Like vi in nomagic
+        #     mode: '^', '$', '\<', and '\>' positional assertions, '\*'
+        #     quantifier, '\.' and '\[]' character classes.
+
+        my @chars = ($str =~ m{(\\?.)}g);
+        my(@re, @tail);
+        unshift(@re,   shift(@chars)) if @chars and $chars[0]  eq '^';
+        push   (@tail, pop(@chars))   if @chars and $chars[-1] eq '$';
+        my $in_chclass;
+        my %chmap = (
+            '\<' => '\b(?=\w)',
+            '\>' => '(?<=\w)\b',
+            '\*' => '*',
+            '\[' => '[',
+            '\.' => '.',
+        );
+        my $ch;
+        foreach $ch (@chars) {
+            if ($in_chclass) {
+                # Any backslashes in vi char classes are literal
+                push(@re, "\\") if length($ch) > 1;
+                push(@re, $ch);
+                $in_chclass = 0 if $ch =~ /\]$/;
+            }
+            else {
+                push(@re, (length $ch == 2) ? ($chmap{$ch} || $ch) :
+                          ($ch =~ /^\w$/)   ? $ch                  :
+                                              ("\\", $ch));
+                $in_chclass = 1 if $ch eq '\[';
+            }
+        }
+        my $re = join('', @re, @tail);
+        $Vi_search_re = q{$re};
+    }
+
+    local $reverse = $Vi_search_reverse = ($c eq '/') ? 1 : 0;
+    &do_vi_search();
+}
+
+sub F_ViRepeatSearch {
+    my($n, $ord) = @_;
+    my $c = pack('c', $ord);
+    return &F_Ding unless defined $Vi_search_re;
+    local $reverse = $Vi_search_reverse;
+    $reverse ^= 1 if $c eq 'N';
+    &do_vi_search();
+}
+
+sub F_ViEndSearch {}
+
+sub F_ViSearchBackwardDeleteChar {
+    if ($line eq '') {
+        # Backspaced past beginning of line - terminate search mode
+        undef $line;
+    }
+    else {
+        &F_BackwardDeleteChar(@_);
+    }
+}
+
+=head3 F_ViChangeEntireLine
+
+Kill entire line and enter input mode
+=cut
+sub F_ViChangeEntireLine
+{
+    &start_dot_buf(@_);
+    kill_text(0, length($line), 1);
+    &vi_input_mode;
+}
+
+=head3 F_ViChangeChar
+
+Kill characters and enter input mode
+=cut
+sub F_ViChangeChar
+{
+    &start_dot_buf(@_);
+    &F_DeleteChar(@_);
+    &vi_input_mode;
+}
+
+sub F_ViReplaceChar
+{
+    &start_dot_buf(@_);
+    my $c = &getc_with_pending;
+    $c = &getc_with_pending if $c eq "\cV";   # ctrl-V
+    return &F_ViCommandMode if $c eq "\e";
+    &end_dot_buf;
+
+    local $InsertMode = 0;
+    local $D = $D;                  # Preserve cursor position
+    &F_SelfInsert(1, ord($c));
+}
+
+=head3 F_ViChangeLine
+
+Delete characteres from cursor to end of line and enter VI input mode.
+
+=cut
+
+sub F_ViChangeLine
+{
+    &start_dot_buf(@_);
+    &F_KillLine(@_);
+    &vi_input_mode;
+}
+
+sub F_ViDeleteLine
+{
+    &save_dot_buf(@_);
+    &F_KillLine(@_);
+}
+
+sub F_ViPut
+{
+    my($count) = @_;
+    &save_dot_buf(@_);
+    my $text2add = $KillBuffer x $count;
+    my $ll = length($line);
+    $D++;
+    $D = $ll if $D > $ll;
+    substr($line, $D, 0) = $KillBuffer x $count;
+    $D += length($text2add) - 1;
+}
+
+sub F_ViPutBefore
+{
+    &save_dot_buf(@_);
+    &TextInsert($_[0], $KillBuffer);
+}
+
+sub F_ViYank
+{
+    my($count, $ord) = @_;
+    my $pos = &get_position($count, undef, $ord, $Vi_yank_patterns);
+    &F_Ding if !defined $pos;
+    if ($pos < 0) {
+        # yy
+        &F_ViYankLine;
+    }
+    else {
+        my($from, $to) = ($pos > $D) ? ($D, $pos) : ($pos, $D);
+        $KillBuffer = substr($line, $from, $to-$from);
+    }
+}
+
+sub F_ViYankLine
+{
+    $KillBuffer = $line;
+}
+
+sub F_ViInput
+{
+    @_ = (1, ord('i')) if !@_;
+    &start_dot_buf(@_);
+    &vi_input_mode;
+}
+
+sub F_ViBeginInput
+{
+    &start_dot_buf(@_);
+    &F_BeginningOfLine;
+    &vi_input_mode;
+}
+
+sub F_ViReplaceMode
+{
+    &start_dot_buf(@_);
+    $InsertMode = 0;
+    $var_EditingMode = $var_EditingMode{'vi'};
+    $Vi_mode = 1;
+}
+# The previous keystroke was an escape, but the sequence was not recognized
+#     as a mapped sequence (like an arrow key).  Enter vi comand mode and
+#     process this keystroke.
+sub F_ViAfterEsc {
+    my($n, $ord) = @_;
+    &F_ViCommandMode;
+    &do_command($var_EditingMode, 1, $ord);
+}
+
+sub F_ViAppend
+{
+    &start_dot_buf(@_);
+    &vi_input_mode;
+    &F_ForwardChar;
+}
+
+sub F_ViAppendLine
+{
+    &start_dot_buf(@_);
+    &vi_input_mode;
+    &F_EndOfLine;
+}
+
+sub F_ViCommandMode
+{
+    $var_EditingMode = $var_EditingMode{'vicmd'};
+    $Vi_mode = 1;
+}
+
+sub F_ViAcceptInsert {
+    local $in_accept_line = 1;
+    &F_ViEndInsert;
+    &F_ViAcceptLine;
+}
+
+sub F_ViEndInsert
+{
+    if ($Dot_buf) {
+        if ($line eq '' and $Dot_buf->[0] eq 'i') {
+            # We inserted nothing into an empty $line - assume it was a
+            #     &F_ViInput() call with no arguments, and don't save command.
+            undef $Dot_buf;
+        }
+        else {
+            # Regardless of which keystroke actually terminated this insert
+            #     command, replace it with an <esc> in the dot buffer.
+            @{$Dot_buf}[-1] = "\e";
+            &end_dot_buf;
+        }
+    }
+    &F_ViCommandMode;
+    # Move cursor back to the last inserted character, but not when
+    # we're about to accept a line of input
+    &F_BackwardChar(1) unless $in_accept_line;
+}
+
+sub F_ViDigit {
+    my($count, $ord) = @_;
+
+    my $n = 0;
+    my $ord0 = ord('0');
+    while (1) {
+
+        $n *= 10;
+        $n += $ord - $ord0;
+
+        my $c = &getc_with_pending;
+        return unless defined $c;
+        $ord = ord($c);
+        last unless $c =~ /^\d$/;
+    }
+
+    $n *= $count;                   # So  2d3w  deletes six words
+    $n = $rl_max_numeric_arg if $n > $rl_max_numeric_arg;
+
+    &do_command($var_EditingMode, $n, $ord);
+}
+
+sub F_ViComplete {
+    my($n, $ord) = @_;
+
+    $Dot_state = savestate();     # Completion is undo-able
+    undef $Dot_buf;              #       but not redo-able
+
+    my $ch;
+    while (1) {
+
+        &F_Complete() or return;
+
+        # Vi likes the cursor one character right of where emacs like it.
+        &F_ForwardChar(1);
+        &force_redisplay();
+
+        # Look ahead to the next input keystroke.
+        $ch = &getc_with_pending();
+        last unless ord($ch) == $ord;   # Not a '\' - quit.
+
+        # Another '\' was typed - put the cursor back where &F_Complete left
+        #     it, and try again.
+        &F_BackwardChar(1);
+        $lastcommand = 'F_Complete';   # Play along with &F_Complete's kludge
+    }
+    unshift(@Pending, $ch);      # Unget the lookahead keystroke
+
+    # Successful completion - enter input mode with cursor beyond end of word.
+    &vi_input_mode;
+}
+
+sub F_ViInsertPossibleCompletions {
+    $Dot_state = savestate();     # Completion is undo-able
+    undef $Dot_buf;              #       but not redo-able
+
+    &complete_internal('*') or return;
+
+    # Successful completion - enter input mode with cursor beyond end of word.
+    &F_ForwardChar(1);
+    &vi_input_mode;
+}
+
+sub F_ViPossibleCompletions {
+
+    # List possible completions
+    &complete_internal('?');
+
+    # Enter input mode with cursor where we left off.
+    &F_ForwardChar(1);
+    &vi_input_mode;
+}
+
+sub F_CopyRegionAsKillClipboard {
+    return clipboard_set($line) unless $line_rl_mark == $rl_HistoryIndex;
+    &F_CopyRegionAsKill;
+    clipboard_set($KillBuffer);
+}
+
+sub F_KillRegionClipboard {
+    &F_KillRegion;
+    clipboard_set($KillBuffer);
+}
+
+sub F_YankClipboard
+{
+    remove_selection();
+    my $in;
+    if ($^O eq 'os2') {
+      eval {
+        require OS2::Process;
+        $in = OS2::Process::ClipbrdText();
+        $in =~ s/\r\n/\n/g;             # With old versions, or what?
+      }
+    } elsif ($^O eq 'MSWin32') {
+      eval {
+        require Win32::Clipboard;
+        $in = Win32::Clipboard::GetText();
+        $in =~ s/\r\n/\n/g;  # is this needed?
+      }
+    } else {
+      my $mess;
+      if ($ENV{RL_PASTE_CMD}) {
+        $mess = "Reading from pipe `$ENV{RL_PASTE_CMD}'";
+        open PASTE, "$ENV{RL_PASTE_CMD} |" or warn("$mess: $!"), return;
+      } elsif (defined $HOME) {
+	my $cutpastefile = File::Spec($HOME, '.rl_cutandpaste');
+        $mess = "Reading from file `$cutpastefile'";
+        open PASTE, "< $cutpastefile" or warn("$mess: $!"), return;
+      }
+      if ($mess) {
+        local $/;
+        $in = <PASTE>;
+        close PASTE or warn("$mess, closing: $!");
+      }
+    }
+    if (defined $in) {
+        $in =~ s/\n+$//;
+        return &TextInsert($_[0], $in);
+    }
+    &TextInsert($_[0], $KillBuffer);
+}
+
+sub F_BeginUndoGroup {
+    push @undoGroupS, $#undo;
+}
+
+sub F_EndUndoGroup {
+    return F_Ding unless @undoGroupS;
+    my $last = pop @undoGroupS;
+    return unless $#undo > $last + 1;
+    my $now = pop @undo;
+    $#undo = $last;
+    push @undo, $now;
+}
+
+sub F_DoNothing {               # E.g., reset digit-argument
+    1;
+}
+
+sub F_ForceMemorizeDigitArgument {
+    $memorizedArg = shift;
+}
+
+sub F_MemorizeDigitArgument {
+    return if defined $memorizedArg;
+    $memorizedArg = shift;
+}
+
+sub F_UnmemorizeDigitArgument {
+    $memorizedArg = undef;
+}
+
+sub F_MemorizePos {
+    $memorizedPos = $D;
+}
+
 ###########################################################################
+
+# It is assumed that F_MemorizePos was called, then something was inserted,
+# then F_MergeInserts is called with a prefix argument to multiply
+# insertion by
+
+sub F_MergeInserts {
+    my $n = shift;
+    return F_Ding unless defined $memorizedPos and $n > 0;
+    my ($b, $e) = ($memorizedPos, $D);
+    ($b, $e) = ($e, $b) if $e < $b;
+    if ($n) {
+        substr($line, $e, 0) = substr($line, $b, $e - $b) x ($n - 1);
+    } else {
+        substr($line, $b, $e - $b) = '';
+    }
+    $D = $b + ($e - $b) * $n;
+}
+
+sub F_ResetDigitArgument {
+    return F_Ding unless defined $memorizedArg;
+    my $in = &getc_with_pending;
+    return unless defined $in;
+    my $ord = ord $in;
+    local(*KeyMap) = $var_EditingMode;
+    &do_command(*KeyMap, $memorizedArg, $ord);
+}
+
+sub F_BeginPasteGroup {
+    my $c = shift;
+    $memorizedArg = $c unless defined $memorizedArg;
+    F_BeginUndoGroup(1);
+    $memorizedPos = $D;
+}
+
+sub F_EndPasteGroup {
+    my $c = $memorizedArg;
+    undef $memorizedArg;
+    $c = 1 unless defined $c;
+    F_MergeInserts($c);
+    F_EndUndoGroup(1);
+}
+
+sub F_BeginEditGroup {
+    $memorizedArg = shift;
+    F_BeginUndoGroup(1);
+}
+
+sub F_EndEditGroup {
+    undef $memorizedArg;
+    F_EndUndoGroup(1);
+}
+
+###########################################################################
+=head2 Internal Routines
+
+=head3 get_window_size
+
+   get_window_size([$redisplay])
+
+I<Note: this function is deprecated. It is not in L<Term::ReadLine::GNU>
+or the GNU ReadLine library. As such, it may disappear and be replaced
+by the corresponding L<Term::ReadLine::GNU> routines.>
+
+Causes a query to get the terminal width. If the terminal width can't
+be obtained, nothing is done. Otherwise...
+
+=over
+
+=item * Set I<$rl_screen_width> and to the current screen width.
+I<$rl_margin> is then set to be 1/3 of I<$rl_screen_width>.
+
+=item * any window-changeing hooks stored in array I<@winchhooks> are
+run.
+
+=item * I<SIG{WINCH}> is set to run this routine. Any routines set are
+lost. A better behavior would be to add existing hooks to
+I<@winchhooks>, but hey, this routine is deprecated.
+
+=item * If I<$redisplay> is passed and is true, then a redisplay of
+the input line is done by calling I<redisplay()>.
+
+=back
+
+=cut
+
+sub get_window_size
+{
+    my $redraw = shift;
+
+    # Preserve $! etc; the rest for hooks
+    local($., $@, $!, $^E, $?);
+
+    my ($num_cols,$num_rows) = (undef, undef);
+    eval {
+	($num_cols,$num_rows) =  Term::ReadKey::GetTerminalSize($term_OUT);
+    };
+    return unless defined($num_cols) and defined($num_rows);
+    $rl_screen_width = $num_cols - $rl_correct_sw
+	if defined($num_cols) && $num_cols;
+    $rl_margin = int($rl_screen_width/3);
+    if (defined $redraw) {
+        $force_redraw = 1;
+        &redisplay();
+    }
+
+    for my $hook (@winchhooks) {
+      eval {&$hook()}; warn $@ if $@ and $^W;
+    }
+}
+
+
 sub get_ornaments_selected {
     return if @$rl_term_set >= 6;
     local $^W=0;
@@ -2505,7 +3298,7 @@ sub get_line {
   scalar <$term_IN>;
 }
 
-=head2 readline_dumb
+=head3 readline_dumb
 
 A version readline for a dumb terminal, that is one that doesn't have
 many terminal editing capabilities.
@@ -2525,7 +3318,7 @@ sub readline_dumb
     return $line;
 }
 
-=head2 readline
+=head3 readline
 
 C<&readline::readline($prompt, $default)>
 
@@ -2729,7 +3522,7 @@ sub readline
     $AcceptLine; ## return the line accepted.
 }
 
-=head2 ctrl
+=head3 ctrl
 
 C<ctrl($ord)>
 
@@ -2763,7 +3556,7 @@ sub ResetTTY {
     return Term::ReadKey::ReadMode(0, $term_IN);
 }
 
-=head2 substr_with_props
+=head3 substr_with_props
 
 C<substr_with_props($prompt, $string, $from, $len, $ket, $bsel, $esel)>
 
@@ -2837,7 +3630,7 @@ sub redisplay_high {
   $force_redraw = 1;
 }
 
-=head2 redisplay
+=head3 redisplay
 
 C<redisplay()>
 
@@ -3076,13 +3869,7 @@ sub getc_with_pending {
     $key;
 }
 
-sub rl_getc {
-    $Term::ReadLine::Perl5::term->Tk_loop
-	if $Term::ReadLine::toloop && defined &Tk::DoOneEvent;
-    return Term::ReadKey::ReadKey(0, $term_IN);
-}
-
-=head2 get_command
+=head3 get_command
 
 C<get_command(*keymap, $ord_command_char)>
 
@@ -3105,7 +3892,7 @@ sub get_command
     $cmd
 }
 
-=head2 do_command
+=head3 do_command
 
 C<do_command(*keymap, $numericarg, $key)>
 
@@ -3124,7 +3911,7 @@ sub do_command
     $lastcommand = $cmd;
 }
 
-=head2 savestate
+=head3 savestate
 
 C<savestate()>
 
@@ -3139,7 +3926,7 @@ sub savestate
     [$D, $si, $LastCommandKilledText, $KillBuffer, $line, @_];
 }
 
-=head2 preserve_state
+=head3 preserve_state
 
 C<preserve_tate()>
 
@@ -3177,77 +3964,7 @@ sub max     { $_[0] > $_[1] ? $_[0] : $_[1]; }
 sub isupper { ord($_[0]) >= ord('A') && ord($_[0]) <= ord('Z'); }
 sub islower { ord($_[0]) >= ord('a') && ord($_[0]) <= ord('z'); }
 
-=head2 rl_set
-
-C<rl_set($var_name, $value_string)>
-
-Sets the named variable as per the given value, if both are appropriate.
-Allows the user of the package to set such things as HorizontalScrollMode
-and EditingMode.  Value_string may be of the form
-
-      HorizontalScrollMode
-      horizontal-scroll-mode
-
-Also called during the parsing of F<~/.inputrc> for "set var value" lines.
-
-The previous value is returned, or undef on error.
-
-Consider the following example for how to add additional variables
-accessible via rl_set (and hence via F<~/.inputrc>).
-
-Want:
-
-We want an external variable called "FooTime" (or "foo-time").
-It may have values "January", "Monday", or "Noon".
-Internally, we'll want those values to translate to 1, 2, and 12.
-
-How:
-
-Have an internal variable $var_FooTime that will represent the current
-internal value, and initialize it to the default value.
-Make an array %var_FooTime whose keys and values are are the external
-(January, Monday, Noon) and internal (1, 2, 12) values:
-
-    $var_FooTime = $var_FooTime{'January'} =  1; #default
-                   $var_FooTime{'Monday'}  =  2;
-                   $var_FooTime{'Noon'}    = 12;
-
-=cut
-
-sub rl_set
-{
-    local($var, $val) = @_;
-
-    # &preinit's keys are all Capitalized
-    $val = ucfirst lc $val if $val =~ /^(on|off)$/i;
-
-    $var = 'CompleteAddsuffix' if $var eq 'visible-stats';
-
-    ## if the variable is in the form "some-name", change to "SomeName"
-    local($_) = "\u$var";
-    local($return) = undef;
-    s/-(.)/\u$1/g;
-
-    # Skip unknown variables:
-    return unless defined $ {'readline::'}{"var_$_"};
-    local(*V);    # avoid <Undefined value assign to typeglob> warning
-    { local $^W; *V = $ {'readline::'}{"var_$_"}; }
-    if (!defined($V)) {                 # XXX Duplicate check?
-        warn("Warning$InputLocMsg:\n".
-             "  Invalid variable `$var'\n") if $^W;
-    } elsif (!defined($V{$val})) {
-        local(@selections) = keys(%V);
-        warn("Warning$InputLocMsg:\n".
-             "  Invalid value `$val' for variable `$var'.\n".
-             "  Choose from [@selections].\n") if $^W;
-    } else {
-        $return = $V;
-        $V = $V{$val}; ## make the setting
-    }
-    $return;
-}
-
-=head2 OnSecondByte
+=head3 OnSecondByte
 
 C<OnSecondByte($index)>
 
@@ -3278,7 +3995,7 @@ sub OnSecondByte
 }
 
 
-=head2 CharSize
+=head3 CharSize
 
 C<CharSize($index)>
 
@@ -3354,8 +4071,10 @@ sub normal_tty_mode
 
 sub ___ResetTTY
 {
-# print "before ResetTTY\n\r";
-# system 'stty -a';
+    if ($DEBUG) {
+	print "before ResetTTY\n\r";
+	system 'stty -a';
+    }
 
     @termios = unpack($termios_t,$base_termios);
     $termios[$TERMIOS_IFLAG] |= $TERMIOS_NORMAL_ION;
@@ -3367,11 +4086,13 @@ sub ___ResetTTY
     $termios = pack($termios_t,@termios);
     &ioctl($term_IN,$TCSETS,$termios) || die "Can't ioctl TCSETS: $!";
 
-# print "after ResetTTY\n\r";
-# system 'stty -a';
+    if ($DEBUG) {
+	print "after ResetTTY\n\r";
+	system 'stty -a';
+    }
 }
 
-=head2 WordBreak
+=head3 WordBreak
 
 C<WordBreak(index)>
 
@@ -3392,7 +4113,7 @@ sub getstate
     $ThisCommandKilledText = $LastCommandKilledText;
 }
 
-=head2 kill_text
+=head3 kill_text
 
 kills from D=$_[0] to $_[1] (to the killbuffer if $_[2] is true)
 
@@ -3432,13 +4153,18 @@ sub at_end_of_line
     ($D + &CharSize($D)) == (length($line) + 1);
 }
 
-##
-## Translated from GNUs readline.c
-## One arg is 'up' to upcase $_[0] words,
-##            'down' to downcase them,
-##         or something else to capitalize them.
-## If $_[0] is negative, the dot is not moved.
-##
+=head3 changecase
+
+     changecase($count, $up_down_caps)
+
+Translated from GNU's I<readline.c>.
+
+If I<$up_down_caps> is 'up' to upcase I<$count> words;
+'down' to downcase them, or something else to capitalize them.
+
+If I<$count> is negative, the dot is not moved.
+
+=cut
 sub changecase
 {
     my $op = $_[1];
@@ -3475,8 +4201,20 @@ sub changecase
     $D = $olddot if defined($olddot);
 }
 
-## returns a new $i or -1 if not found.
-sub search {
+=head3 search
+
+    search($position, $string)
+
+Checks if $string is at position I<$rl_History[$position]> and returns
+I<$position> if found or -1 if not found.
+
+This is intended to be the called first in a potentially repetitive
+search, which is why the unusual return value. See also
+L<searchStart>.
+
+=cut
+
+sub search($$) {
   my ($i, $str) = @_;
   return -1 if $i < 0 || $i > $#rl_History;      ## for safety
   while (1) {
@@ -3559,8 +4297,20 @@ sub DoSearch
     }
 }
 
-## returns a new $i or -1 if not found.
-sub searchStart {
+=head3 search
+
+    searchStart($position, $reverse, $string)
+
+I<$reverse> should be either +1, or -1;
+
+Checks if $string is at position I<$rl_History[$position+$reverse]> and
+returns I<$position> if found or -1 if not found.
+
+This is intended to be the called first in a potentially repetitive
+search, which is why the unusual return value. See also L<search>.
+
+=cut
+sub searchStart($$$) {
   my ($i, $reverse, $str) = @_;
   $i += $reverse ? - 1: +1;
   return -1 if $i < 0 || $i > $#rl_History;  ## for safety
@@ -3606,30 +4356,28 @@ sub TextInsert {
   $D += length($text2add);
 }
 
-##########################################################################
-#### command/file completion  ############################################
-##########################################################################
+=head3 complete_internal
 
-##
-## The meat of command completion. Patterned closely after GNU's.
-##
-## The supposedly partial word at the cursor is "completed" as per the
-## single argument:
-##      "\t"    complete as much of the word as is unambiguous
-##      "?"     list possibilities.
-##      "*"     replace word with all possibilities. (who would use this?)
-##
-## A few notable variables used:
-##   $rl_completer_word_break_characters
-##      -- characters in this string break a word.
-##   $rl_special_prefixes
-##      -- but if in this string as well, remain part of that word.
-##
-## Returns true if a completion was done, false otherwise, so vi completion
-##     routines can test it.
-##
+The meat of command completion. Patterned closely after GNU's.
 
+The supposedly partial word at the cursor is "completed" as per the
+single argument:
+     "\t"    complete as much of the word as is unambiguous
+     "?"     list possibilities.
+     "*"     replace word with all possibilities. (who would use this?)
+
+A few notable variables used:
+  $rl_completer_word_break_characters
+     -- characters in this string break a word.
+  $rl_special_prefixes
+     -- but if in this string as well, remain part of that word.
+
+Returns true if a completion was done, false otherwise, so vi completion
+    routines can test it.
+
+=cut
 sub complete_internal
+
 {
     my $what_to_do = shift;
     my ($point, $end) = ($D, $D);
@@ -3695,9 +4443,21 @@ sub complete_internal
     1;
 }
 
-## Works with &rl_basic_commands. Return items from @rl_basic_commands
-## that start with the pattern in $text.
-sub use_basic_commands {
+=head3 use_basic_commands
+
+  use_basic_commands($text, $line, $start);
+
+Used as a completion function by I<&rl_basic_commands>. Return items
+from I<@rl_basic_commands> that start with the pattern in I<$text>.
+
+I<$start> should be 0, signifying matching from the beginning of the
+line, for this to work. Otherwise we return the empty list.  I<$line>
+is ignored, but needs to be there in to match the completion-function
+API.
+
+=cut
+
+sub use_basic_commands($$$) {
   my ($text, $line, $start) = @_;
   return () if $start != 0;
   grep(/^$text/, @rl_basic_commands);
@@ -3752,7 +4512,7 @@ $have_getpwent = eval{
     my @fields = getpwent(); setpwent(); 1;
 };
 
-sub rl_tilde_complete($) {
+sub tilde_complete($) {
     my $prefix = shift;
     return $prefix unless $have_getpwent;
     my @names = rl_tilde_expand($prefix);
@@ -3763,123 +4523,15 @@ sub rl_tilde_complete($) {
     }
 }
 
-=head3 rl_tilde_expand
+=head2 pretty_print_list
 
- rl_tilde_expand($prefix) => list of usernames
+Print an array in columns like ls -C.  Originally based on stuff
+(lsC2.pl) by utashiro@sran230.sra.co.jp (Kazumasa Utashiro).
 
-Returns a list of completions that begin with the given prefix,
-I<$prefix>.  This only works if we have getpwwet() available.
-
-=cut
-
-sub rl_tilde_expand($) {
-    my $prefix = shift;
-    my @matches = ();
-    setpwent();
-    while (my @fields = (getpwent)[0]) {
-	push @matches, $fields[0]
-	    if ( $prefix eq ''
-		 || $prefix eq substr($fields[0], 0, length($prefix)) );
-    }
-    setpwent();
-    @matches;
-}
-
-=head3 rl_filename_list
-
-  rl_filename_list($pattern) => list of files
-
-Returns a list of completions that begin with the string I<$pattern>.
-Can be used to pass to I<completion_matches()>.
-
-This function corresponds to the L<Term::ReadLine::GNU> function
-I<rl_filename_list)>. But that doesn't handle tilde expansion while
-this does. Also, directories returned will have the '/' suffix
-appended as is the case returned by GNU Readline, but not
-I<Term::ReadLine::GNU>. Adding the '/' suffix is useful in completion
-because it forces the next completion to complete inside that
-directory.
-
-GNU Readline also will complete partial I<~> names; for example
-I<~roo> maybe expanded to C</root> for the root user. When
-getpwent/setpwent is available we provide that.
-
-The user of this package can set I<$rl_completion_function> to
-'rl_filename_list' to restore the default of filename matching if
-they'd changed it earlier, either directly or via &rl_basic_commands.
+See L<Array::Columnize> for a more flexible and more general routine.
 
 =cut
 
-sub rl_filename_list
-{
-    my $pattern = $_[0];
-    if ($pattern =~ m{^~[^/]*$}) {
-	if ($have_getpwent and length($pattern) > 1) {
-	    map { -d $_ ? $_ . '/' : $_ }
-	    rl_tilde_complete(substr($pattern, 1));
-	} else {
-	    map { -d $_ ? $_ . '/' : $_ } bsd_glob($pattern);
-	}
-    } else {
-	map { -d $_ ? $_ . '/' : $_ } bsd_glob($pattern . '*');
-    }
-}
-
-=head3 rl_filename_list_deprecated
-
-C<rl_filename_list_deprecated($pattern)>
-
-This was the I<Term::ReadLine::Perl5> function before version 1.30,
-and the current I<Term::ReadLine::Perl> function.
-
-For reasons that are a mystery to me (rocky), there seemed to be a the
-need to classify the result adding a suffix for executable (*),
-pipe/socket (=), and symbolic link (@), and directory (/). Of these,
-the only useful one is directory since that will cause a further
-completion to continue.
-
-=cut
-sub rl_filename_list_deprecated
-{
-    my $pattern = $_[0];
-    my @files = (<$pattern*>);
-    if ($var_CompleteAddsuffix) {
-        foreach (@files) {
-            if (-l $_) {
-                $_ .= '@';
-            } elsif (-d _) {
-                $_ .= '/';
-            } elsif (-x _) {
-                $_ .= '*';
-            } elsif (-S _ || -p _) {
-                $_ .= '=';
-            }
-        }
-    }
-    return @files;
-}
-
-##
-## For use by the user of the package. Called with a list of possible
-## commands, will allow command completion on those commands, but only
-## for the first word on a line.
-## For example: &rl_basic_commands('set', 'quit', 'type', 'run');
-##
-## This is for people that want quick and simple command completion.
-## A more thoughtful implementation would set $rl_completion_function
-## to a routine that would look at the context of the word being completed
-## and return the appropriate possibilities.
-##
-sub rl_basic_commands
-{
-     @rl_basic_commands = @_;
-     $rl_completion_function = 'use_basic_commands';
-}
-
-##
-## Print an array in columns like ls -C.  Originally based on stuff
-## (lsC2.pl) by utashiro@sran230.sra.co.jp (Kazumasa Utashiro).
-##
 sub pretty_print_list
 {
     my @list = @_;
@@ -3938,34 +4590,6 @@ sub save_dot_buf {
     &end_dot_buf;
 }
 
-sub F_ViUndo {
-    return &F_Ding unless defined $Vi_undo_state;
-    my $state = savestate();
-    &getstate($Vi_undo_state);
-    $Vi_undo_state = $state;
-}
-
-sub F_ViUndoAll {
-    $Vi_undo_state = $Vi_undo_all_state;
-    &F_ViUndo;
-}
-
-sub F_ViChange
-{
-    my($count, $ord) = @_;
-    &start_dot_buf(@_);
-    &do_delete($count, $ord, $Vi_change_patterns) || return();
-    &vi_input_mode;
-}
-
-sub F_ViDelete
-{
-    my($count, $ord) = @_;
-    &start_dot_buf(@_);
-    &do_delete($count, $ord, $Vi_delete_patterns);
-    &end_dot_buf;
-}
-
 sub do_delete {
 
     my($count, $ord, $poshash) = @_;
@@ -3984,24 +4608,13 @@ sub do_delete {
     1;    # True return value
 }
 
-sub F_ViDeleteChar {
-    my($count) = @_;
-    &save_dot_buf(@_);
-    my $other_end = $D + $count;
-    $other_end = length($line) if $other_end > length($line);
-    &kill_text($D, $other_end, 1);
-}
+=head2 get_position
 
-sub F_ViBackwardDeleteChar {
-    my($count) = @_;
-    &save_dot_buf(@_);
-    my $other_end = $D - $count;
-    $other_end = 0 if $other_end < 0;
-    &kill_text($other_end, $D, 1);
-    $D = $other_end;
-}
+    get_poition($count, $ord, $fulline_ord, $poshash)
 
-# Interpret vi positioning commands
+Interpret vi positioning commands
+=cut
+
 sub get_position {
     my ($count, $ord, $fullline_ord, $poshash) = @_;
 
@@ -4034,16 +4647,6 @@ sub get_position {
     $D;
 }
 
-=head3 F_ViFirstWord
-
-Go to first non-space character of line.
-=cut
-sub F_ViFirstWord
-{
-    $D = 0;
-    &forward_scan(1, q{\s+});
-}
-
 sub forward_scan {
     my($count, $re) = @_;
     while ($count--) {
@@ -4058,31 +4661,6 @@ sub backward_scan {
         last unless substr($line, 0, $D) =~ m{($re)$};
         $D -= length($1);
     }
-}
-
-# Note: like the emacs case transforms, this doesn't work for
-#       two-byte characters.
-sub F_ViToggleCase {
-    my($count) = @_;
-    &save_dot_buf(@_);
-    while ($count-- > 0) {
-        substr($line, $D, 1) =~ tr/A-Za-z/a-zA-Z/;
-        &F_ForwardChar(1);
-        if (&at_end_of_line) {
-            &F_BackwardChar(1);
-            last;
-        }
-    }
-}
-
-=head3
-Go to the numbered history line, as listed by the 'H' command, i.e. the
-current $line is line 1, the youngest line in @rl_History is 2, etc.
-=cut
-
-sub F_ViHistoryLine {
-    my($n) = @_;
-    &get_line_from_history(@rl_History - $n + 1);
 }
 
 sub get_line_from_history {
@@ -4103,122 +4681,10 @@ sub get_line_from_history {
     $rl_HistoryIndex = $n;
 }
 
-sub F_PrintHistory {
-    my($count) = @_;
-
-    $count = 20 if $count == 1;             # Default - assume 'H', not '1H'
-    my $end = $rl_HistoryIndex + $count/2;
-    $end = @rl_History if $end > @rl_History;
-    my $start = $end - $count + 1;
-    $start = 0 if $start < 0;
-
-    my $lmh = length $rl_MaxHistorySize;
-
-    my $lspace = ' ' x ($lmh+3);
-    my $hdr = "$lspace-----";
-    $hdr .= " (Use ESC <num> UP to retrieve command <num>) -----" unless $Vi_mode;
-    $hdr .= " (Use '<num>G' to retrieve command <num>) -----" if $Vi_mode;
-
-    local ($\, $,) = ('','');
-    print "\n$hdr\n";
-    print $lspace, ". . .\n" if $start > 0;
-    my $i;
-    my $shift = ($Vi_mode != 0);
-    for $i ($start .. $end) {
-        print + ($i == $rl_HistoryIndex) ? '>' : ' ',
-
-                sprintf("%${lmh}d: ", @rl_History - $i + $shift),
-
-                ($i < @rl_History)       ? $rl_History[$i] :
-                ($i == $rl_HistoryIndex) ? $line           :
-                                           $line_for_revert,
-
-                "\n";
-    }
-    print $lspace, ". . .\n" if $end < @rl_History;
-    print "$hdr\n";
-
-    &force_redisplay();
-
-    &F_ViInput() if $line eq '' && $Vi_mode;
-}
-
 # Redisplay the line, without attempting any optimization
 sub force_redisplay {
     local $force_redraw = 1;
     &redisplay(@_);
-}
-
-=head3 F_ViSearch
-
-Search history for matching string.  As with vi in nomagic mode, the
-^, $, \<, and \> positional assertions, the \* quantifier, the \.
-character class, and the \[ character class delimiter all have special
-meaning here.
-=cut
-sub F_ViSearch {
-    my($n, $ord) = @_;
-
-    my $c = pack('c', $ord);
-
-    my $str = &get_vi_search_str($c);
-    if (!defined $str) {
-        # Search aborted by deleting the '/' at the beginning of the line
-        return &F_ViInput() if $line eq '';
-        return();
-    }
-
-    # Null string repeats last search
-    if ($str eq '') {
-        return &F_Ding unless defined $Vi_search_re;
-    }
-    else {
-        # Convert to a regular expression.  Interpret $str Like vi in nomagic
-        #     mode: '^', '$', '\<', and '\>' positional assertions, '\*'
-        #     quantifier, '\.' and '\[]' character classes.
-
-        my @chars = ($str =~ m{(\\?.)}g);
-        my(@re, @tail);
-        unshift(@re,   shift(@chars)) if @chars and $chars[0]  eq '^';
-        push   (@tail, pop(@chars))   if @chars and $chars[-1] eq '$';
-        my $in_chclass;
-        my %chmap = (
-            '\<' => '\b(?=\w)',
-            '\>' => '(?<=\w)\b',
-            '\*' => '*',
-            '\[' => '[',
-            '\.' => '.',
-        );
-        my $ch;
-        foreach $ch (@chars) {
-            if ($in_chclass) {
-                # Any backslashes in vi char classes are literal
-                push(@re, "\\") if length($ch) > 1;
-                push(@re, $ch);
-                $in_chclass = 0 if $ch =~ /\]$/;
-            }
-            else {
-                push(@re, (length $ch == 2) ? ($chmap{$ch} || $ch) :
-                          ($ch =~ /^\w$/)   ? $ch                  :
-                                              ("\\", $ch));
-                $in_chclass = 1 if $ch eq '\[';
-            }
-        }
-        my $re = join('', @re, @tail);
-        $Vi_search_re = q{$re};
-    }
-
-    local $reverse = $Vi_search_reverse = ($c eq '/') ? 1 : 0;
-    &do_vi_search();
-}
-
-sub F_ViRepeatSearch {
-    my($n, $ord) = @_;
-    my $c = pack('c', $ord);
-    return &F_Ding unless defined $Vi_search_re;
-    local $reverse = $Vi_search_reverse;
-    $reverse ^= 1 if $c eq 'N';
-    &do_vi_search();
 }
 
 ## returns a new $i or -1 if not found.
@@ -4265,266 +4731,11 @@ sub get_vi_search_str {
     $line;
 }
 
-sub F_ViEndSearch {}
-
-sub F_ViSearchBackwardDeleteChar {
-    if ($line eq '') {
-        # Backspaced past beginning of line - terminate search mode
-        undef $line;
-    }
-    else {
-        &F_BackwardDeleteChar(@_);
-    }
-}
-
-=head3 F_ViChangeEntireLine
-
-Kill entire line and enter input mode
-=cut
-sub F_ViChangeEntireLine
-{
-    &start_dot_buf(@_);
-    kill_text(0, length($line), 1);
-    &vi_input_mode;
-}
-
-=head3 F_ViChangeChar
-
-Kill characters and enter input mode
-=cut
-sub F_ViChangeChar
-{
-    &start_dot_buf(@_);
-    &F_DeleteChar(@_);
-    &vi_input_mode;
-}
-
-sub F_ViReplaceChar
-{
-    &start_dot_buf(@_);
-    my $c = &getc_with_pending;
-    $c = &getc_with_pending if $c eq "\cV";   # ctrl-V
-    return &F_ViCommandMode if $c eq "\e";
-    &end_dot_buf;
-
-    local $InsertMode = 0;
-    local $D = $D;                  # Preserve cursor position
-    &F_SelfInsert(1, ord($c));
-}
-
-=head3 F_ViChangeLine
-
-Delete characteres from cursor to end of line and enter VI input mode.
-
-=cut
-
-sub F_ViChangeLine
-{
-    &start_dot_buf(@_);
-    &F_KillLine(@_);
-    &vi_input_mode;
-}
-
-sub F_ViDeleteLine
-{
-    &save_dot_buf(@_);
-    &F_KillLine(@_);
-}
-
-sub F_ViPut
-{
-    my($count) = @_;
-    &save_dot_buf(@_);
-    my $text2add = $KillBuffer x $count;
-    my $ll = length($line);
-    $D++;
-    $D = $ll if $D > $ll;
-    substr($line, $D, 0) = $KillBuffer x $count;
-    $D += length($text2add) - 1;
-}
-
-sub F_ViPutBefore
-{
-    &save_dot_buf(@_);
-    &TextInsert($_[0], $KillBuffer);
-}
-
-sub F_ViYank
-{
-    my($count, $ord) = @_;
-    my $pos = &get_position($count, undef, $ord, $Vi_yank_patterns);
-    &F_Ding if !defined $pos;
-    if ($pos < 0) {
-        # yy
-        &F_ViYankLine;
-    }
-    else {
-        my($from, $to) = ($pos > $D) ? ($D, $pos) : ($pos, $D);
-        $KillBuffer = substr($line, $from, $to-$from);
-    }
-}
-
-sub F_ViYankLine
-{
-    $KillBuffer = $line;
-}
-
-sub F_ViInput
-{
-    @_ = (1, ord('i')) if !@_;
-    &start_dot_buf(@_);
-    &vi_input_mode;
-}
-
-sub F_ViBeginInput
-{
-    &start_dot_buf(@_);
-    &F_BeginningOfLine;
-    &vi_input_mode;
-}
-
-sub F_ViReplaceMode
-{
-    &start_dot_buf(@_);
-    $InsertMode = 0;
-    $var_EditingMode = $var_EditingMode{'vi'};
-    $Vi_mode = 1;
-}
-
 sub vi_input_mode
 {
     $InsertMode = 1;
     $var_EditingMode = $var_EditingMode{'vi'};
     $Vi_mode = 1;
-}
-
-# The previous keystroke was an escape, but the sequence was not recognized
-#     as a mapped sequence (like an arrow key).  Enter vi comand mode and
-#     process this keystroke.
-sub F_ViAfterEsc {
-    my($n, $ord) = @_;
-    &F_ViCommandMode;
-    &do_command($var_EditingMode, 1, $ord);
-}
-
-sub F_ViAppend
-{
-    &start_dot_buf(@_);
-    &vi_input_mode;
-    &F_ForwardChar;
-}
-
-sub F_ViAppendLine
-{
-    &start_dot_buf(@_);
-    &vi_input_mode;
-    &F_EndOfLine;
-}
-
-sub F_ViCommandMode
-{
-    $var_EditingMode = $var_EditingMode{'vicmd'};
-    $Vi_mode = 1;
-}
-
-sub F_ViAcceptInsert {
-    local $in_accept_line = 1;
-    &F_ViEndInsert;
-    &F_ViAcceptLine;
-}
-
-sub F_ViEndInsert
-{
-    if ($Dot_buf) {
-        if ($line eq '' and $Dot_buf->[0] eq 'i') {
-            # We inserted nothing into an empty $line - assume it was a
-            #     &F_ViInput() call with no arguments, and don't save command.
-            undef $Dot_buf;
-        }
-        else {
-            # Regardless of which keystroke actually terminated this insert
-            #     command, replace it with an <esc> in the dot buffer.
-            @{$Dot_buf}[-1] = "\e";
-            &end_dot_buf;
-        }
-    }
-    &F_ViCommandMode;
-    # Move cursor back to the last inserted character, but not when
-    # we're about to accept a line of input
-    &F_BackwardChar(1) unless $in_accept_line;
-}
-
-sub F_ViDigit {
-    my($count, $ord) = @_;
-
-    my $n = 0;
-    my $ord0 = ord('0');
-    while (1) {
-
-        $n *= 10;
-        $n += $ord - $ord0;
-
-        my $c = &getc_with_pending;
-        return unless defined $c;
-        $ord = ord($c);
-        last unless $c =~ /^\d$/;
-    }
-
-    $n *= $count;                   # So  2d3w  deletes six words
-    $n = $rl_max_numeric_arg if $n > $rl_max_numeric_arg;
-
-    &do_command($var_EditingMode, $n, $ord);
-}
-
-sub F_ViComplete {
-    my($n, $ord) = @_;
-
-    $Dot_state = savestate();     # Completion is undo-able
-    undef $Dot_buf;              #       but not redo-able
-
-    my $ch;
-    while (1) {
-
-        &F_Complete() or return;
-
-        # Vi likes the cursor one character right of where emacs like it.
-        &F_ForwardChar(1);
-        &force_redisplay();
-
-        # Look ahead to the next input keystroke.
-        $ch = &getc_with_pending();
-        last unless ord($ch) == $ord;   # Not a '\' - quit.
-
-        # Another '\' was typed - put the cursor back where &F_Complete left
-        #     it, and try again.
-        &F_BackwardChar(1);
-        $lastcommand = 'F_Complete';   # Play along with &F_Complete's kludge
-    }
-    unshift(@Pending, $ch);      # Unget the lookahead keystroke
-
-    # Successful completion - enter input mode with cursor beyond end of word.
-    &vi_input_mode;
-}
-
-sub F_ViInsertPossibleCompletions {
-    $Dot_state = savestate();     # Completion is undo-able
-    undef $Dot_buf;              #       but not redo-able
-
-    &complete_internal('*') or return;
-
-    # Successful completion - enter input mode with cursor beyond end of word.
-    &F_ForwardChar(1);
-    &vi_input_mode;
-}
-
-sub F_ViPossibleCompletions {
-
-    # List possible completions
-    &complete_internal('?');
-
-    # Enter input mode with cursor where we left off.
-    &F_ForwardChar(1);
-    &vi_input_mode;
 }
 
 sub clipboard_set {
@@ -4555,141 +4766,6 @@ sub clipboard_set {
     }
     print COPY $in;
     close COPY or warn("$mess: closing $!");
-}
-
-sub F_CopyRegionAsKillClipboard {
-    return clipboard_set($line) unless $line_rl_mark == $rl_HistoryIndex;
-    &F_CopyRegionAsKill;
-    clipboard_set($KillBuffer);
-}
-
-sub F_KillRegionClipboard {
-    &F_KillRegion;
-    clipboard_set($KillBuffer);
-}
-
-sub F_YankClipboard
-{
-    remove_selection();
-    my $in;
-    if ($^O eq 'os2') {
-      eval {
-        require OS2::Process;
-        $in = OS2::Process::ClipbrdText();
-        $in =~ s/\r\n/\n/g;             # With old versions, or what?
-      }
-    } elsif ($^O eq 'MSWin32') {
-      eval {
-        require Win32::Clipboard;
-        $in = Win32::Clipboard::GetText();
-        $in =~ s/\r\n/\n/g;  # is this needed?
-      }
-    } else {
-      my $mess;
-      if ($ENV{RL_PASTE_CMD}) {
-        $mess = "Reading from pipe `$ENV{RL_PASTE_CMD}'";
-        open PASTE, "$ENV{RL_PASTE_CMD} |" or warn("$mess: $!"), return;
-      } elsif (defined $HOME) {
-	my $cutpastefile = File::Spec($HOME, '.rl_cutandpaste');
-        $mess = "Reading from file `$cutpastefile'";
-        open PASTE, "< $cutpastefile" or warn("$mess: $!"), return;
-      }
-      if ($mess) {
-        local $/;
-        $in = <PASTE>;
-        close PASTE or warn("$mess, closing: $!");
-      }
-    }
-    if (defined $in) {
-        $in =~ s/\n+$//;
-        return &TextInsert($_[0], $in);
-    }
-    &TextInsert($_[0], $KillBuffer);
-}
-
-sub F_BeginUndoGroup {
-    push @undoGroupS, $#undo;
-}
-
-sub F_EndUndoGroup {
-    return F_Ding unless @undoGroupS;
-    my $last = pop @undoGroupS;
-    return unless $#undo > $last + 1;
-    my $now = pop @undo;
-    $#undo = $last;
-    push @undo, $now;
-}
-
-sub F_DoNothing {               # E.g., reset digit-argument
-    1;
-}
-
-sub F_ForceMemorizeDigitArgument {
-    $memorizedArg = shift;
-}
-
-sub F_MemorizeDigitArgument {
-    return if defined $memorizedArg;
-    $memorizedArg = shift;
-}
-
-sub F_UnmemorizeDigitArgument {
-    $memorizedArg = undef;
-}
-
-sub F_MemorizePos {
-    $memorizedPos = $D;
-}
-
-# It is assumed that F_MemorizePos was called, then something was inserted,
-# then F_MergeInserts is called with a prefix argument to multiply
-# insertion by
-
-sub F_MergeInserts {
-    my $n = shift;
-    return F_Ding unless defined $memorizedPos and $n > 0;
-    my ($b, $e) = ($memorizedPos, $D);
-    ($b, $e) = ($e, $b) if $e < $b;
-    if ($n) {
-        substr($line, $e, 0) = substr($line, $b, $e - $b) x ($n - 1);
-    } else {
-        substr($line, $b, $e - $b) = '';
-    }
-    $D = $b + ($e - $b) * $n;
-}
-
-sub F_ResetDigitArgument {
-    return F_Ding unless defined $memorizedArg;
-    my $in = &getc_with_pending;
-    return unless defined $in;
-    my $ord = ord $in;
-    local(*KeyMap) = $var_EditingMode;
-    &do_command(*KeyMap, $memorizedArg, $ord);
-}
-
-sub F_BeginPasteGroup {
-    my $c = shift;
-    $memorizedArg = $c unless defined $memorizedArg;
-    F_BeginUndoGroup(1);
-    $memorizedPos = $D;
-}
-
-sub F_EndPasteGroup {
-    my $c = $memorizedArg;
-    undef $memorizedArg;
-    $c = 1 unless defined $c;
-    F_MergeInserts($c);
-    F_EndUndoGroup(1);
-}
-
-sub F_BeginEditGroup {
-    $memorizedArg = shift;
-    F_BeginUndoGroup(1);
-}
-
-sub F_EndEditGroup {
-    undef $memorizedArg;
-    F_EndUndoGroup(1);
 }
 
 =head3 read_an_init_file

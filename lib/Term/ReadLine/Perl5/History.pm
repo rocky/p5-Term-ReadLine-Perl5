@@ -1,3 +1,4 @@
+#  Copyright (C) 2014 Rocky Bernstein <rocky@cpan.org>
 package Term::ReadLine::Perl5::History;
 =pod
 
@@ -8,7 +9,10 @@ Term::ReadLine::Perl5::History
 =head1 DESCRIPTION
 
 Variables and functions supporting Term::ReadLine::Perl5's command
-history.
+history. This pretends to be OO code even though it doesn't make use
+of the object's state. Instead it relies on a global history mechanism.
+
+The underlying non-OO routines are elsewhere.
 
 =cut
 
@@ -34,13 +38,15 @@ $history_base    = 0;
 
 =head2 add_line_to_history
 
-Insert C<$line> into history list if C<$line> is:
+B<add_line_to_history>(I<$line>, I<$minlength>
+
+Insert I<$line> into history list if I<$line> is:
 
 =over
 
 =item *
 
-bigger than the minimal length C<$minlength>
+bigger than the minimal length I<$minlength>
 
 =item *
 
@@ -50,7 +56,7 @@ not same as last entry
 
 =cut
 
-sub add_line_to_history
+sub add_line_to_history($$)
 {
     my ($line, $minlength) = @_;
     if (length($line) >= $minlength
@@ -69,14 +75,14 @@ sub add_line_to_history
 
 =head2 add_history
 
-C<add_history($line1, ...)>
+B<add_history>(I<$line1>, ...)
 
-Place @_ at the end of the history list unless the history is stifled,
-or there are already too many items.
+Place lines in array I<@_> at the end of the history list unless the
+history is stifled, or there are already too many items.
 
 =cut
 
-sub add_history {
+sub add_history($) {
     shift;
     if ($history_stifled &&
 	($rl_history_length ==
@@ -96,34 +102,34 @@ sub add_history {
 
 =head2 clear_history
 
-C<clear_history()>
+B<clear_history>()
 
 Clear or reset readline history.
 
 =cut
 
-sub clear_history {
+sub clear_history($) {
   shift;
   @rl_History = ();
   $rl_HistoryIndex =
       $rl_history_length = 0;
 }
 
-sub history_list
+sub history_list($)
 {
     @rl_History[1..$#rl_History]
 }
 
 =head2 replace_history_entry
 
-C<replace_history_entry($which, $data)>
+B<replace_history_entry(I<$which>, I<$data>)>
 
-Make the history entry at C<$which> have C<$data>.  This returns the old
-entry. In the case of an invalid C<$which>, $<undef> is returned.
+Make the history entry at I<$which> have I<$data>.  This returns the old
+entry. In the case of an invalid I<$which>, I<undef> is returned.
 
 =cut
 
-sub replace_history_entry {
+sub replace_history_entry($) {
   shift;
   my ($which, $data) = @_;
   return undef if $which < 0 || $which >= $rl_history_length;
@@ -142,13 +148,13 @@ is positive if the history was stifled and negative if it wasn't.
 
 =cut
 
-sub unstifle_history {
-  if ($history_stifled) {
-    $history_stifled = 0;
-    return (scalar @rl_History);
-  } else {
-    return - scalar @rl_History;
-  }
+sub unstifle_history($) {
+    if ($history_stifled) {
+	$history_stifled = 0;
+	return (scalar @rl_History);
+    } else {
+	return - scalar @rl_History;
+    }
 }
 
 =head2 history_is_stifled
@@ -186,7 +192,7 @@ sub read_history {
 
 =head2 remove_history
 
-C<remove_history($which, $history_length)>
+B<remove_history>(I<$which>, I<$history_length>)
 
 Remove history element C<$which> from the history. The removed
 element is returned.
@@ -218,21 +224,19 @@ sub write_history {
 
 =head2 ReadHistory
 
-C<ReadHistory([FILENAME [,FROM [,TO]]])>
+B<ReadHistory>([I<$filename> [,I<$from> [,I<$to>]]])
 
-	int	read_history(str filename = '~/.history',
-			     int from = 0, int to = -1)
+	$i = read_history('~/.history')
+	$i = read_history_range('~/.history')
 
-	int	read_history_range(str filename = '~/.history',
-				   int from = 0, int to = -1)
+Adds the contents of I<$filename> to the history list, a line at a
+time.  If $<filename> is false, then read from F<~/.history>.  Start
+reading at line I<$from> and end at I<$to>.  If I<$from> is omitted or
+zero, start at the beginning.  If I<$to> is omitted or less than
+I<$from>, then read until the end of the file.  Returns true if
+successful, or false if not.
 
-adds the contents of C<FILENAME> to the history list, a line at a
-time.  If C<FILENAME> is false, then read from F<~/.history>.  Start
-reading at line C<FROM> and end at C<TO>.  If C<FROM> is omitted or
-zero, start at the beginning.  If C<TO> is omitted or less than
-C<FROM>, then read until the end of the file.  Returns true if
-successful, or false if not.  C<read_history()> is an aliase of
-C<read_history_range()>.
+I<read_history()> is an alias of I<read_history_range()>.
 
 =cut
 
@@ -242,12 +246,12 @@ sub ReadHistory {
 
 =head2 WriteHistory
 
-C<WriteHistory([FILENAME])>
+B<WriteHistory>([I<$filename>])
 
-	int	write_history(str filename = '~/.history')
+	$i = write_history('~/.history')
 
-writes the current history to C<FILENAME>, overwriting C<FILENAME> if
-necessary.  If C<FILENAME> is false, then write the history list to
+Writes the current history to I<$filename>, overwriting I<$filename> if
+necessary.  If I<$filename> is false, then write the history list to
 F<~/.history>.  Returns true if successful, or false if not.
 
 
@@ -259,9 +263,9 @@ sub WriteHistory {
 
 =head2 SetHistory
 
-C<SetHistory(LINE1 [, LINE2, ...])>
+B<SetHistory>(I<$line1> [, I<$line2>, ...])
 
-sets the history of input, from where it can be used.
+Sets the history of input, from where it can be used.
 
 =cut
 
@@ -272,7 +276,9 @@ sub SetHistory {
     $rl_history_length = $rl_max_input_history = scalar(@rl_History);
 }
 
-=head2 C<GetHistory>
+=head2 GetHistory
+
+B<GetHistory>
 
 returns the history of input as a list.
 
