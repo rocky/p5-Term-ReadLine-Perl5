@@ -1362,7 +1362,7 @@ sub rl_getc {
 ###########################################################################
 ## Bindable functions... pretty much in the same order as in readline.c ###
 ###########################################################################
-=head1 Bindable functions
+=head1 BINDABLE FUNCTIONS
 
 There are pretty much in the same order as in readline.c
 
@@ -2737,8 +2737,11 @@ sub F_ViToggleCase {
 }
 
 =head3 F_ViHistoryLine
-Go to the numbered history line, as listed by the 'H' command, i.e. the
-current $line is line 1, the youngest line in @rl_History is 2, etc.
+
+Go to the numbered history line, as listed by the 'H' command,
+i.e. the current $line is line 1, the youngest line in I<@rl_History>
+is 2, etc.
+
 =cut
 
 sub F_ViHistoryLine {
@@ -3320,12 +3323,15 @@ sub readline_dumb
 
 =head3 readline
 
-C<&readline::readline($prompt, $default)>
+    &readline::readline($prompt, $default)>
 
-The main routine to call interactively read lines.
+The main routine to call interactively read lines. Parameter
+I<$prompt> is the text you want to prompt with If it is empty string,
+no preceding prompt text is given. It is I<undef> a default value of
+"INPUT> " is used.
 
-C<$default> can be omitted. The next input line is returned or
-C<undef> on EOF.
+Parameter I<$default> is the default value; it can be can be
+omitted. The next input line is returned or I<undef> on EOF.
 
 =cut
 
@@ -4528,7 +4534,7 @@ sub tilde_complete($) {
     }
 }
 
-=head2 pretty_print_list
+=head3 pretty_print_list
 
 Print an array in columns like ls -C.  Originally based on stuff
 (lsC2.pl) by utashiro@sran230.sra.co.jp (Kazumasa Utashiro).
@@ -4613,7 +4619,7 @@ sub do_delete {
     1;    # True return value
 }
 
-=head2 get_position
+=head3 get_position
 
     get_poition($count, $ord, $fulline_ord, $poshash)
 

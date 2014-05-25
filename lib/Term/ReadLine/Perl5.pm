@@ -19,6 +19,11 @@ history of previous input.
 This package typically used in command-line interfaces and REPLs (Read,
 Eval, Print, Loop).
 
+With the source code comes a shell program that can be used to
+interactively try and set capabilities of this package. It also gives
+shows an example for how to use interact with the packages as it
+provides, for example some completion routines.
+
 =head1 SYNOPSIS
 
   use Term::ReadLine::Perl5;
@@ -32,7 +37,7 @@ Eval, Print, Loop).
 use warnings; use strict;
 no warnings 'once';
 
-our $VERSION = '1.37';
+our $VERSION = '1.37_01';
 
 use Carp;
 use Term::ReadLine::Perl5::History;
@@ -91,7 +96,19 @@ sub Attribs {
   \%attribs;
 }
 
-=head2 SUBROUTINES
+=head1 SUBROUTINES
+
+=head2 readline
+
+   $bool = $term->readline($prompt, $default)
+
+The main routine to call interactively read lines. Parameter
+I<$prompt> is the text you want to prompt with If it is empty string,
+no preceding prompt text is given. It is I<undef> a default value of
+"INPUT> " is used.
+
+Parameter I<$default> is the default value; it can be can be
+omitted. The next input line is returned or I<undef> on EOF.
 
 =cut
 
@@ -100,7 +117,7 @@ sub readline {
   &Term::ReadLine::Perl5::readline::readline(@_);
 }
 
-=head3 new
+=head2 new
 
 C<Term::ReadLine::Perl-E<gt>new($name, [*IN, [*OUT])>
 
@@ -186,7 +203,7 @@ sub newTTY {
 
 sub ReadLine {'Term::ReadLine::Perl5'}
 
-=head3 Minline
+=head2 Minline
 
 C<MinLine([$minlength])>
 
@@ -229,7 +246,7 @@ sub MinLine($;$) {
 
 =head3 stifle_history
 
-C<stifle_history($max)>
+   $term->remove_history($max)
 
 Stifle or put a cap on the history list, remembering only C<$max>
 number of lines.
@@ -253,7 +270,7 @@ sub stifle_history($$) {
 
 =head3 remove_history
 
-C<remove_history($which)>
+   $removed = $term->remove_history($which)
 
 Remove history element C<$which> from the history. The removed
 element is returned.
@@ -274,4 +291,10 @@ sub remove_history($$) {
   return $removed;
 }
 
+=head1 SEE ALSO
+
+L<Term::ReadLine::Perl5::readline>, L<Term::ReadLine::Perl5::readline-guide>,
+and L<Term::ReadLine::Perl5::History>,
+
+=cut
 1;

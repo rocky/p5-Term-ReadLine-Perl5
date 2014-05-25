@@ -27,6 +27,7 @@ perlcritic\.rc
 \btmp/
 
 \bhow-to-make-a-release\.txt
+\btestall\.sh
 
 # Avoid temp and backup files.
 ~$
