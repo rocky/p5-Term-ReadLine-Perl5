@@ -1,6 +1,22 @@
 use strict; use warnings;
 use version;
 
+=head1 NAME
+
+Term::ReadLine::Perl5::Tie
+
+=head1 DESCRIPTION
+
+Used by L<Term::ReadLine::Perl> to bind
+I<%Term::ReadLine::Perl5::attribs> to their corresponding
+I<%Term::ReadLine::readline> value in reading and setting those
+attributes.
+
+=head1 SEE ALSO
+
+L<Term::ReadLine::Perl5>
+
+=cut
 package Term::ReadLine::Perl5::Tie;
 
 # version might not be below other places in this routine

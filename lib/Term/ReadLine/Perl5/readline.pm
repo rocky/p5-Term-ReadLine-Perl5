@@ -1152,9 +1152,9 @@ sub rl_set
     s/-(.)/\u$1/g;
 
     # Skip unknown variables:
-    return unless defined $ {'readline::'}{"var_$_"};
+    return unless defined $ {'Term::ReadLine::Perl5::readline::'}{"var_$_"};
     local(*V);    # avoid <Undefined value assign to typeglob> warning
-    { local $^W; *V = $ {'readline::'}{"var_$_"}; }
+    { local $^W; *V = $ {'Term::ReadLine::Perl5::readline::'}{"var_$_"}; }
     if (!defined($V)) {                 # XXX Duplicate check?
         warn("Warning$InputLocMsg:\n".
              "  Invalid variable `$var'\n") if $^W;
@@ -3544,8 +3544,9 @@ sub SetTTY {
     #return system 'stty raw -echo' if defined &DB::DB;
     Term::ReadKey::ReadMode(4, $term_IN);
     if ($^O eq 'MSWin32') {
-	# If we reached this, Perl isn't cygwin; Enter sends \r; thus we need binmode
-	# XXXX Do we need to undo???  $term_IN is most probably private now...
+	# If we reached this, Perl isn't cygwin; Enter sends \r; thus
+	# we need binmode XXXX Do we need to undo???  $term_IN is most
+	# probably private now...
 	binmode $term_IN;
     }
     return 1;
@@ -3857,7 +3858,7 @@ sub redisplay
     $force_redraw = 0;
 }
 
-sub min { $_[0] < $_[1] ? $_[0] : $_[1]; }
+sub min($$) { $_[0] < $_[1] ? $_[0] : $_[1]; }
 
 sub getc_with_pending {
 
@@ -3960,15 +3961,15 @@ sub remove_selection {
     return;
 }
 
-sub max     { $_[0] > $_[1] ? $_[0] : $_[1]; }
-sub isupper { ord($_[0]) >= ord('A') && ord($_[0]) <= ord('Z'); }
-sub islower { ord($_[0]) >= ord('a') && ord($_[0]) <= ord('z'); }
+sub max($$)     { $_[0] > $_[1] ? $_[0] : $_[1]; }
+sub isupper($) { ord($_[0]) >= ord('A') && ord($_[0]) <= ord('Z'); }
+sub islower($) { ord($_[0]) >= ord('a') && ord($_[0]) <= ord('z'); }
 
 =head3 OnSecondByte
 
-C<OnSecondByte($index)>
+B<OnSecondByte>(I<$index>)
 
-Returns true if the byte at C<$index> into C<$line> is the second byte
+Returns true if the byte at I<$index> into I<$line> is the second byte
 of a two-byte character.
 
 =cut
@@ -3997,15 +3998,15 @@ sub OnSecondByte
 
 =head3 CharSize
 
-C<CharSize($index)>
+BC<CharSize>(I<$index>)
 
-Returns the size of the character at the given C<$index> in the
+Returns the size of the character at the given I<$index> in the
 current line.  Most characters are just one byte in length.  However,
 if the byte at the index and the one after both have the high bit set
-and $_rl_japanese_mb is set, those two bytes are one character of size
-two.
+and I<$_rl_japanese_mb> is set, those two bytes are one character of
+size two.
 
-Assumes that C<$index> points to the first of a 2-byte char if not
+Assumes that I<$index> points to the first of a 2-byte char if not
 pointing to a 1-byte char.
 
 TODO: handle Unicode
@@ -4037,8 +4038,10 @@ sub XonTTY
 
 sub ___SetTTY
 {
-# print "before SetTTY\n\r";
-# system 'stty -a';
+    if ($DEBUG) {
+	print "before ResetTTY\n\r";
+	system 'stty -a';
+    }
 
     &XonTTY;
 
@@ -4057,8 +4060,10 @@ sub ___SetTTY
     $termios = pack($termios_t,@termios);
     &ioctl($term_IN,$TCSETS,$termios) || die "Can't ioctl TCSETS: $!";
 
-# print "after SetTTY\n\r";
-# system 'stty -a';
+    if ($DEBUG) {
+	print "after ResetTTY\n\r";
+	system 'stty -a';
+    }
 }
 
 sub normal_tty_mode
@@ -4663,7 +4668,7 @@ sub backward_scan {
     }
 }
 
-sub get_line_from_history {
+sub get_line_from_history($) {
     my($n) = @_;
     return &F_Ding if $n < 0 or $n > @rl_History;
     return if $n == $rl_HistoryIndex;
@@ -4713,7 +4718,7 @@ sub do_vi_search {
 
 # Using local $line, $D, and $prompt, get and return the string to
 # search for.
-sub get_vi_search_str {
+sub get_vi_search_str($) {
     my($c) = @_;
 
     local $prompt = $prompt . $c;
@@ -4731,14 +4736,14 @@ sub get_vi_search_str {
     $line;
 }
 
-sub vi_input_mode
+sub vi_input_mode()
 {
     $InsertMode = 1;
     $var_EditingMode = $var_EditingMode{'vi'};
     $Vi_mode = 1;
 }
 
-sub clipboard_set {
+sub clipboard_set($) {
     my $in = shift;
     if ($^O eq 'os2') {
       eval {

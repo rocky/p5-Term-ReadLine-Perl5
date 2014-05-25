@@ -8,7 +8,7 @@ Term::ReadLine::Perl5::History
 
 =head1 DESCRIPTION
 
-Variables and functions supporting Term::ReadLine::Perl5's command
+Variables and functions supporting L<Term::ReadLine::Perl5>'s command
 history. This pretends to be OO code even though it doesn't make use
 of the object's state. Instead it relies on a global history mechanism.
 
@@ -36,9 +36,11 @@ $rl_max_input_history = 0;
 $history_stifled = 0;
 $history_base    = 0;
 
+=head1 SUBROUTINES
+
 =head2 add_line_to_history
 
-B<add_line_to_history>(I<$line>, I<$minlength>
+B<add_line_to_history>(I<$line>, I<$minlength>)
 
 Insert I<$line> into history list if I<$line> is:
 
@@ -288,4 +290,13 @@ sub GetHistory {
     @rl_History;
 }
 
+=head1 AUTHOR
+
+Rocky Bernstein
+
+=head1 SEE ALSO
+
+L<Term::ReadLine::Perl5>
+
+=cut
 1;
