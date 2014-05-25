@@ -1,9 +1,11 @@
-1.36:
+1.36: 2014-04-25
 
-- Add Term::ReadLine::Perl5::{Common,TermCap,Tk} to remove cyclic
+- Add Term::ReadLine::Perl5::TermCap to remove cyclic
   dependency between Term::ReadLine::Perl5 and Term::ReadLine.
 - Remove POD redundancy between Term::ReadLine::Perl5 README and
   Term::ReadLine::Perl5
+- Start to organize and document readline.pm better.
+- Add demo program for interactive test. More should be done here.
 
 1.35:  2014-04-22
 

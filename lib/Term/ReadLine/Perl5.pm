@@ -32,7 +32,7 @@ Eval, Print, Loop).
 use warnings; use strict;
 no warnings 'once';
 
-our $VERSION = '1.35_01';
+our $VERSION = '1.36';
 
 use Carp;
 use Term::ReadLine::Perl5::History;

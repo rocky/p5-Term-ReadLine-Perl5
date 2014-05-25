@@ -15,7 +15,7 @@ use File::Glob ':glob';
 
 # no critic
 # Version might be below Perl5.pm
-our $VERSION = '1.35_01';
+our $VERSION = '1.36';
 
 #
 # Separation into my and vars needs more work.
@@ -1207,6 +1207,12 @@ sub process_init_line($$$)
 }
 
 ###########################################################################
+## Bindable functions... pretty much in the same order as in readline.c ###
+###########################################################################
+=head1 Bindable functions
+
+There are pretty much in the same order as in readline.c
+
 =head2 Commands For Moving
 
 =head3 F_BeginningOfLine
@@ -1783,6 +1789,11 @@ sub F_YankPop    {
    ## not implemented yet
 }
 
+sub F_YankNthArg {
+   1;
+   ## not implemented yet
+}
+
 ###########################################################################
 =head2 Specifying Numeric Arguments
 
@@ -2072,6 +2083,398 @@ sub F_ExchangePointAndMark {
     $force_redraw = 1;
 }
 
+=head3 F_OperateAndGetNext
+
+Accept the current line and fetch from the history the next line
+relative to current line for default.
+
+=cut
+
+sub F_OperateAndGetNext
+{
+    my $count = shift;
+
+    &F_AcceptLine;
+
+    my $remainingEntries = $#rl_History - $rl_HistoryIndex;
+    if ($count > 0 && $remainingEntries >= 0) {  # there is something to repeat
+        if ($remainingEntries > 0) {  # if we are not on last line
+            $rl_HistoryIndex++;       # fetch next one
+            $count = $remainingEntries if $count > $remainingEntries;
+        }
+        $rl_OperateCount = $count;
+    }
+}
+
+=head3 F_DoLowercaseVersion
+
+If the character that got us here is upper case,
+do the lower-case equivalent command.
+
+=cut
+
+sub F_DoLowercaseVersion
+{
+    my $c = $_[1];
+    if (isupper($c)) {
+        &do_command(*KeyMap, $_[0], lc($c));
+    } else {
+        &F_Ding;
+    }
+}
+
+=head3 F_DoControlVersion
+
+do the equiv with control key...
+If the character that got us here is upper case,
+do the lower-case equivalent command.
+
+=cut
+
+sub F_DoControlVersion
+{
+    local *KeyMap = $var_EditingMode;
+    my $key = $_[1];
+
+    if ($key == ord('?')) {
+        $key = 0x7F;
+    } else {
+        $key &= ~(0x80 | 0x60);
+    }
+    &do_command(*KeyMap, $_[0], $key);
+}
+
+=head3 F_DoMetaVersion
+
+do the equiv with meta key...
+
+=cut
+
+sub F_DoMetaVersion
+{
+    local *KeyMap = $var_EditingMode;
+    unshift @Pending, chr $_[1];
+
+    &do_command(*KeyMap, $_[0], ord "\e");
+}
+
+=head3 F_DoEscVersion
+
+If the character that got us here is Alt-Char,
+do the Esc Char equiv...
+
+=cut
+
+sub F_DoEscVersion
+{
+    my ($ord, $t) = $_[1];
+    &F_Ding unless $KeyMap{'Esc'};
+    for $t (([ord 'w', '`1234567890-='],
+             [ord ',', 'zxcvbnm,./\\'],
+             [16,      'qwertyuiop[]'],
+             [ord(' ') - 2, 'asdfghjkl;\''])) {
+      next unless $ord >= $t->[0] and $ord < $t->[0] + length($t->[1]);
+      $ord = ord substr $t->[1], $ord - $t->[0], 1;
+      return &do_command($KeyMap{'Esc'}, $_[0], $ord);
+    }
+    &F_Ding;
+}
+
+sub F_EmacsEditingMode
+{
+    $var_EditingMode = $var_EditingMode{'emacs'};
+    $Vi_mode = 0;
+}
+
+=head3 F_Interrupt
+
+(Attempt to) interrupt the current program via I<kill('INT')>
+=cut
+
+sub F_Interrupt
+{
+    local $\ = '';
+    print $term_OUT "\r\n";
+    &ResetTTY;
+    kill ("INT", 0);
+
+    ## We're back.... must not have died.
+    $force_redraw = 1;
+}
+
+##
+## Execute the next character input as a command in a meta keymap.
+##
+sub F_PrefixMeta
+{
+    my($count, $keymap) = ($_[0], "$KeyMap{'name'}_$_[1]");
+    ##print "F_PrefixMeta [$keymap]\n\r";
+    die "<internal error, $_[1]>" unless %$keymap;
+    do_command(*$keymap, $count, ord(&getc_with_pending));
+}
+
+sub F_InsertMode
+{
+    $InsertMode = 1;
+}
+
+sub F_ToggleInsertMode
+{
+    $InsertMode = !$InsertMode;
+}
+
+=head3
+
+(Attempt to) suspend the program via I<kill('TSTP')>
+
+=cut
+
+sub F_Suspend
+{
+    if ($inDOS && length($line)==0) { # EOF sent
+        $AcceptLine = $ReturnEOF = 1 if $lastcommand ne 'F_DeleteChar';
+        return;
+    }
+    local $\ = '';
+    print $term_OUT "\r\n";
+    &ResetTTY;
+    eval { kill ("TSTP", 0) };
+    ## We're back....
+    &SetTTY;
+    $force_redraw = 1;
+}
+
+=head3 F_Ding
+
+Ring the bell.
+
+Should do something with I<$var_PreferVisibleBel>l here, but what?
+=cut
+sub F_Ding {
+    local $\ = '';
+    print $term_OUT "\007";
+    return;    # Undefined return value
+}
+
+=head2 vi Routines
+
+=cut
+
+sub F_ViAcceptLine
+{
+    &F_AcceptLine();
+    &F_ViInput();
+}
+
+=head3 F_ViRepeatLastCommand
+
+Repeat the most recent one of these vi commands:
+
+   a A c C d D i I p P r R s S x X ~
+
+=cut
+sub F_ViRepeatLastCommand {
+    my($count) = @_;
+    return &F_Ding if !$Last_vi_command;
+
+    my @lastcmd = @$Last_vi_command;
+
+    # Multiply @lastcmd's numeric arg by $count.
+    unless ($count == 1) {
+
+        my $n = '';
+        while (@lastcmd and $lastcmd[0] =~ /^\d$/) {
+            $n *= 10;
+            $n += shift(@lastcmd);
+        }
+        $count *= $n unless $n eq '';
+        unshift(@lastcmd, split(//, $count));
+    }
+
+    push(@Pending, @lastcmd);
+}
+
+sub F_ViMoveCursor
+{
+    my($count, $ord) = @_;
+
+    my $new_cursor = &get_position($count, $ord, undef, $Vi_move_patterns);
+    return &F_Ding if !defined $new_cursor;
+
+    $D = $new_cursor;
+}
+
+sub F_ViFindMatchingParens {
+
+    # Move to the first parens at or after $D
+    my $old_d = $D;
+    &forward_scan(1, q/[^[\](){}]*/);
+    my $parens = substr($line, $D, 1);
+
+    my $mate_direction = {
+                    '('  =>  [ ')',  1 ],
+                    '['  =>  [ ']',  1 ],
+                    '{'  =>  [ '}',  1 ],
+                    ')'  =>  [ '(', -1 ],
+                    ']'  =>  [ '[', -1 ],
+                    '}'  =>  [ '{', -1 ],
+
+                }->{$parens};
+
+    return &F_Ding() unless $mate_direction;
+
+    my($mate, $direction) = @$mate_direction;
+
+    my $lvl = 1;
+    while ($lvl) {
+        last if !$D && ($direction < 0);
+        &F_ForwardChar($direction);
+        last if &at_end_of_line;
+        my $c = substr($line, $D, 1);
+        if ($c eq $parens) {
+            $lvl++;
+        }
+        elsif ($c eq $mate) {
+            $lvl--;
+        }
+    }
+
+    if ($lvl) {
+        # We didn't find a match
+        $D = $old_d;
+        return &F_Ding();
+    }
+}
+
+sub F_ViForwardFindChar {
+    &do_findchar(1, 1, @_);
+}
+
+sub F_ViBackwardFindChar {
+    &do_findchar(-1, 0, @_);
+}
+
+sub F_ViForwardToChar {
+    &do_findchar(1, 0, @_);
+}
+
+sub F_ViBackwardToChar {
+    &do_findchar(-1, 1, @_);
+}
+
+sub F_ViMoveCursorTo
+{
+    &do_findchar(1, -1, @_);
+}
+
+sub F_ViMoveCursorFind
+{
+    &do_findchar(1, 0, @_);
+}
+
+
+sub F_ViRepeatFindChar {
+    my($n) = @_;
+    return &F_Ding if !defined $Last_findchar;
+    &findchar(@$Last_findchar, $n);
+}
+
+sub F_ViInverseRepeatFindChar {
+    my($n) = @_;
+    return &F_Ding if !defined $Last_findchar;
+    my($c, $direction, $offset) = @$Last_findchar;
+    &findchar($c, -$direction, $offset, $n);
+}
+
+sub do_findchar {
+    my($direction, $offset, $n) = @_;
+    my $c = &getc_with_pending;
+    $c = &getc_with_pending if $c eq "\cV";
+    return &F_ViCommandMode if $c eq "\e";
+    $Last_findchar = [$c, $direction, $offset];
+    &findchar($c, $direction, $offset, $n);
+}
+
+sub findchar {
+    my($c, $direction, $offset, $n) = @_;
+    my $old_d = $D;
+    while ($n) {
+        last if !$D && ($direction < 0);
+        &F_ForwardChar($direction);
+        last if &at_end_of_line;
+        my $char = substr($line, $D, 1);
+        $n-- if substr($line, $D, 1) eq $c;
+    }
+    if ($n) {
+        # Not found
+        $D = $old_d;
+        return &F_Ding;
+    }
+    &F_ForwardChar($offset);
+}
+
+sub F_ViMoveToColumn {
+    my($n) = @_;
+    $D = 0;
+    my $col = 1;
+    while (!&at_end_of_line and $col < $n) {
+        my $c = substr($line, $D, 1);
+        if ($c eq "\t") {
+            $col += 7;
+            $col -= ($col % 8) - 1;
+        }
+        else {
+            $col++;
+        }
+        $D += &CharSize($D);
+    }
+}
+
+=head3 F_SaveLine
+
+Prepend line with '#', add to history, and clear the input buffer
+(this feature was borrowed from ksh).
+
+=cut
+sub F_SaveLine
+{
+    local $\ = '';
+    $line = '#'.$line;
+    &redisplay();
+    print $term_OUT "\r\n";
+    &add_line_to_history($line, $minlength);
+    $line_for_revert = '';
+    &get_line_from_history(scalar @rl_History);
+    &F_ViInput() if $Vi_mode;
+}
+
+=head3 F_ViNonePosition
+
+Come here if we see a non-positioning keystroke when a positioning
+keystroke is expected.
+=cut
+sub F_ViNonPosition {
+    # Not a positioning command - undefine the cursor to indicate the error
+    #     to get_position().
+    undef $D;
+}
+
+=head3 ViPositionEsc
+
+Comes here if we see I<esc>I<char>, but I<not> an arrow key or other
+mapped sequence, when a positioning keystroke is expected.
+=cut
+
+sub F_ViPositionEsc {
+    my($count, $ord) = @_;
+
+    # We got <esc><char> in vipos mode.  Put <char> back onto the
+    #     input stream and terminate the positioning command.
+    unshift(@Pending, pack('c', $ord));
+    &F_ViNonPosition;
+}
+
+###########################################################################
 sub get_ornaments_selected {
     return if @$rl_term_set >= 6;
     local $^W=0;
@@ -3018,16 +3421,6 @@ sub kill_text
 }
 
 
-###########################################################################
-## Bindable functions... pretty much in the same order as in readline.c ###
-###########################################################################
-
-=head2 Bindable functions
-
-There are pretty much in the same order as in readline.c
-
-=cut
-
 =head3 at_end_of_line
 
 Returns true if $D at the end of the line.
@@ -3037,29 +3430,6 @@ Returns true if $D at the end of the line.
 sub at_end_of_line
 {
     ($D + &CharSize($D)) == (length($line) + 1);
-}
-
-=head3 F_OperateAndGetNext
-
-Accept the current line and fetch from the history the next line
-relative to current line for default.
-
-=cut
-
-sub F_OperateAndGetNext
-{
-    my $count = shift;
-
-    &F_AcceptLine;
-
-    my $remainingEntries = $#rl_History - $rl_HistoryIndex;
-    if ($count > 0 && $remainingEntries >= 0) {  # there is something to repeat
-        if ($remainingEntries > 0) {  # if we are not on last line
-            $rl_HistoryIndex++;       # fetch next one
-            $count = $remainingEntries if $count > $remainingEntries;
-        }
-        $rl_OperateCount = $count;
-    }
 }
 
 ##
@@ -3236,174 +3606,9 @@ sub TextInsert {
   $D += length($text2add);
 }
 
-sub F_YankNthArg {
-   1;
-   ## not implemented yet
-}
-
-###########################################################################
-###########################################################################
-
-
-=head3 F_DoLowercaseVersion
-
-If the character that got us here is upper case,
-do the lower-case equivalent command.
-
-=cut
-
-sub F_DoLowercaseVersion
-{
-    my $c = $_[1];
-    if (isupper($c)) {
-        &do_command(*KeyMap, $_[0], lc($c));
-    } else {
-        &F_Ding;
-    }
-}
-
-=head3 F_DoControlVersion
-
-do the equiv with control key...
-If the character that got us here is upper case,
-do the lower-case equivalent command.
-
-=cut
-
-sub F_DoControlVersion
-{
-    local *KeyMap = $var_EditingMode;
-    my $key = $_[1];
-
-    if ($key == ord('?')) {
-        $key = 0x7F;
-    } else {
-        $key &= ~(0x80 | 0x60);
-    }
-    &do_command(*KeyMap, $_[0], $key);
-}
-
-=head3 F_DoMetaVersion
-
-do the equiv with meta key...
-
-=cut
-
-sub F_DoMetaVersion
-{
-    local *KeyMap = $var_EditingMode;
-    unshift @Pending, chr $_[1];
-
-    &do_command(*KeyMap, $_[0], ord "\e");
-}
-
-=head3 F_DoEscVersion
-
-If the character that got us here is Alt-Char,
-do the Esc Char equiv...
-
-=cut
-
-sub F_DoEscVersion
-{
-    my ($ord, $t) = $_[1];
-    &F_Ding unless $KeyMap{'Esc'};
-    for $t (([ord 'w', '`1234567890-='],
-             [ord ',', 'zxcvbnm,./\\'],
-             [16,      'qwertyuiop[]'],
-             [ord(' ') - 2, 'asdfghjkl;\''])) {
-      next unless $ord >= $t->[0] and $ord < $t->[0] + length($t->[1]);
-      $ord = ord substr $t->[1], $ord - $t->[0], 1;
-      return &do_command($KeyMap{'Esc'}, $_[0], $ord);
-    }
-    &F_Ding;
-}
-
-sub F_EmacsEditingMode
-{
-    $var_EditingMode = $var_EditingMode{'emacs'};
-    $Vi_mode = 0;
-}
-
-###########################################################################
-###########################################################################
-
-
-=head3 F_Interrupt
-
-(Attempt to) interrupt the current program via I<kill('INT')>
-=cut
-
-sub F_Interrupt
-{
-    local $\ = '';
-    print $term_OUT "\r\n";
-    &ResetTTY;
-    kill ("INT", 0);
-
-    ## We're back.... must not have died.
-    $force_redraw = 1;
-}
-
-##
-## Execute the next character input as a command in a meta keymap.
-##
-sub F_PrefixMeta
-{
-    my($count, $keymap) = ($_[0], "$KeyMap{'name'}_$_[1]");
-    ##print "F_PrefixMeta [$keymap]\n\r";
-    die "<internal error, $_[1]>" unless %$keymap;
-    do_command(*$keymap, $count, ord(&getc_with_pending));
-}
-
-sub F_InsertMode
-{
-    $InsertMode = 1;
-}
-
-sub F_ToggleInsertMode
-{
-    $InsertMode = !$InsertMode;
-}
-
-=head3
-
-(Attempt to) suspend the program via I<kill('TSTP')>
-
-=cut
-
-sub F_Suspend
-{
-    if ($inDOS && length($line)==0) { # EOF sent
-        $AcceptLine = $ReturnEOF = 1 if $lastcommand ne 'F_DeleteChar';
-        return;
-    }
-    local $\ = '';
-    print $term_OUT "\r\n";
-    &ResetTTY;
-    eval { kill ("TSTP", 0) };
-    ## We're back....
-    &SetTTY;
-    $force_redraw = 1;
-}
-
-=head3 F_Ding
-
-Ring the bell.
-
-Should do something with I<$var_PreferVisibleBel>l here, but what?
-=cut
-sub F_Ding {
-    local $\ = '';
-    print $term_OUT "\007";
-    return;    # Undefined return value
-}
-
 ##########################################################################
 #### command/file completion  ############################################
 ##########################################################################
-
-=head2 command/file completion routines
 
 ##
 ## The meat of command completion. Patterned closely after GNU's.
@@ -3424,7 +3629,6 @@ sub F_Ding {
 ##     routines can test it.
 ##
 
-=cut
 sub complete_internal
 {
     my $what_to_do = shift;
@@ -3707,180 +3911,6 @@ sub pretty_print_list
     }
 }
 
-=head2 vi Routines
-
-=cut
-
-sub F_ViAcceptLine
-{
-    &F_AcceptLine();
-    &F_ViInput();
-}
-
-=head3 F_ViRepeatLastCommand
-
-Repeat the most recent one of these vi commands:
-
-   a A c C d D i I p P r R s S x X ~
-
-=cut
-sub F_ViRepeatLastCommand {
-    my($count) = @_;
-    return &F_Ding if !$Last_vi_command;
-
-    my @lastcmd = @$Last_vi_command;
-
-    # Multiply @lastcmd's numeric arg by $count.
-    unless ($count == 1) {
-
-        my $n = '';
-        while (@lastcmd and $lastcmd[0] =~ /^\d$/) {
-            $n *= 10;
-            $n += shift(@lastcmd);
-        }
-        $count *= $n unless $n eq '';
-        unshift(@lastcmd, split(//, $count));
-    }
-
-    push(@Pending, @lastcmd);
-}
-
-sub F_ViMoveCursor
-{
-    my($count, $ord) = @_;
-
-    my $new_cursor = &get_position($count, $ord, undef, $Vi_move_patterns);
-    return &F_Ding if !defined $new_cursor;
-
-    $D = $new_cursor;
-}
-
-sub F_ViFindMatchingParens {
-
-    # Move to the first parens at or after $D
-    my $old_d = $D;
-    &forward_scan(1, q/[^[\](){}]*/);
-    my $parens = substr($line, $D, 1);
-
-    my $mate_direction = {
-                    '('  =>  [ ')',  1 ],
-                    '['  =>  [ ']',  1 ],
-                    '{'  =>  [ '}',  1 ],
-                    ')'  =>  [ '(', -1 ],
-                    ']'  =>  [ '[', -1 ],
-                    '}'  =>  [ '{', -1 ],
-
-                }->{$parens};
-
-    return &F_Ding() unless $mate_direction;
-
-    my($mate, $direction) = @$mate_direction;
-
-    my $lvl = 1;
-    while ($lvl) {
-        last if !$D && ($direction < 0);
-        &F_ForwardChar($direction);
-        last if &at_end_of_line;
-        my $c = substr($line, $D, 1);
-        if ($c eq $parens) {
-            $lvl++;
-        }
-        elsif ($c eq $mate) {
-            $lvl--;
-        }
-    }
-
-    if ($lvl) {
-        # We didn't find a match
-        $D = $old_d;
-        return &F_Ding();
-    }
-}
-
-sub F_ViForwardFindChar {
-    &do_findchar(1, 1, @_);
-}
-
-sub F_ViBackwardFindChar {
-    &do_findchar(-1, 0, @_);
-}
-
-sub F_ViForwardToChar {
-    &do_findchar(1, 0, @_);
-}
-
-sub F_ViBackwardToChar {
-    &do_findchar(-1, 1, @_);
-}
-
-sub F_ViMoveCursorTo
-{
-    &do_findchar(1, -1, @_);
-}
-
-sub F_ViMoveCursorFind
-{
-    &do_findchar(1, 0, @_);
-}
-
-
-sub F_ViRepeatFindChar {
-    my($n) = @_;
-    return &F_Ding if !defined $Last_findchar;
-    &findchar(@$Last_findchar, $n);
-}
-
-sub F_ViInverseRepeatFindChar {
-    my($n) = @_;
-    return &F_Ding if !defined $Last_findchar;
-    my($c, $direction, $offset) = @$Last_findchar;
-    &findchar($c, -$direction, $offset, $n);
-}
-
-sub do_findchar {
-    my($direction, $offset, $n) = @_;
-    my $c = &getc_with_pending;
-    $c = &getc_with_pending if $c eq "\cV";
-    return &F_ViCommandMode if $c eq "\e";
-    $Last_findchar = [$c, $direction, $offset];
-    &findchar($c, $direction, $offset, $n);
-}
-
-sub findchar {
-    my($c, $direction, $offset, $n) = @_;
-    my $old_d = $D;
-    while ($n) {
-        last if !$D && ($direction < 0);
-        &F_ForwardChar($direction);
-        last if &at_end_of_line;
-        my $char = substr($line, $D, 1);
-        $n-- if substr($line, $D, 1) eq $c;
-    }
-    if ($n) {
-        # Not found
-        $D = $old_d;
-        return &F_Ding;
-    }
-    &F_ForwardChar($offset);
-}
-
-sub F_ViMoveToColumn {
-    my($n) = @_;
-    $D = 0;
-    my $col = 1;
-    while (!&at_end_of_line and $col < $n) {
-        my $c = substr($line, $D, 1);
-        if ($c eq "\t") {
-            $col += 7;
-            $col -= ($col % 8) - 1;
-        }
-        else {
-            $col++;
-        }
-        $D += &CharSize($D);
-    }
-}
-
 sub start_dot_buf {
     my($count, $ord) = @_;
     $Dot_buf = [pack('c', $ord)];
@@ -3969,50 +3999,6 @@ sub F_ViBackwardDeleteChar {
     $other_end = 0 if $other_end < 0;
     &kill_text($other_end, $D, 1);
     $D = $other_end;
-}
-
-=head3 F_SaveLine
-
-Prepend line with '#', add to history, and clear the input buffer
-(this feature was borrowed from ksh).
-
-=cut
-sub F_SaveLine
-{
-    local $\ = '';
-    $line = '#'.$line;
-    &redisplay();
-    print $term_OUT "\r\n";
-    &add_line_to_history($line, $minlength);
-    $line_for_revert = '';
-    &get_line_from_history(scalar @rl_History);
-    &F_ViInput() if $Vi_mode;
-}
-
-=head3 F_ViNonePosition
-
-Come here if we see a non-positioning keystroke when a positioning
-keystroke is expected.
-=cut
-sub F_ViNonPosition {
-    # Not a positioning command - undefine the cursor to indicate the error
-    #     to get_position().
-    undef $D;
-}
-
-=head3 ViPositionEsc
-
-Comes here if we see I<esc>I<char>, but I<not> an arrow key or other
-mapped sequence, when a positioning keystroke is expected.
-=cut
-
-sub F_ViPositionEsc {
-    my($count, $ord) = @_;
-
-    # We got <esc><char> in vipos mode.  Put <char> back onto the
-    #     input stream and terminate the positioning command.
-    unshift(@Pending, pack('c', $ord));
-    &F_ViNonPosition;
 }
 
 # Interpret vi positioning commands
