@@ -25,7 +25,7 @@ use File::Glob ':glob';
 
 # no critic
 # Version can be below the version given in Term::ReadLine::Perl5
-our $VERSION = '1.36_01';
+our $VERSION = '1.37';
 
 #
 # Separation into my and vars needs more work.
@@ -300,7 +300,7 @@ sub preinit
 
     &InitKeymap(*emacs_keymap, 'SelfInsert', 'emacs_keymap',
                 ($inDOS ? () : ('C-@',  'SetMark') ),
-                'C-a',  'BeginningOfLiane',
+                'C-a',  'BeginningOfLine',
                 'C-b',  'BackwardChar',
                 'C-c',  'Interrupt',
                 'C-d',  'DeleteChar',
