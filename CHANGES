@@ -1,3 +1,10 @@
+1.37: 2014-04-25
+
+- A stray character got into funtion BeginningOfLine. Darn!
+- Fill out demo code better.
+- Fix rl_get which was broken due to namespace change.
+- Improve readline.pm pod and overall pod
+
 1.36: 2014-04-25
 
 - Add Term::ReadLine::Perl5::TermCap to remove cyclic

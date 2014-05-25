@@ -20,7 +20,7 @@ my @commands = sort qw(redisplay tilde_complete rl_filename_list
                        read_an_init_file rl_set
                        SetTTY ResetTTY
                        init preinit
-                       exit);
+                       help exit);
 
 my ($num_cols,$num_rows) =  Term::ReadKey::GetTerminalSize(\*STDOUT);
 
@@ -34,7 +34,7 @@ sub help() {
     print "Commands:\n";
     print Array::Columnize::columnize(\@commands,
 				      {displaywidth => $num_cols,
-				       colsep => ' ',
+				       colsep => '  ',
 				       lineprefix => '  '});
 }
 
