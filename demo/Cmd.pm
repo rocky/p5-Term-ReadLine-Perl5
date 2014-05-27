@@ -2,13 +2,14 @@ use strict; use warnings;
 use Exporter;
 use Array::Columnize;
 
-package DemoHelper;
+package Cmd;
+use Data::Printer;
 
 use rlib '../lib';
 use Term::ReadLine::Perl5;
 
-use vars qw(@EXPORT %commands @commands &cmd_resetTTY &print_features);
-@EXPORT = qw(%commands @commands &cmd_resetTTY &print_features);
+use vars qw(@EXPORT %commands @commands );
+@EXPORT = qw(%commands @commands);
 
 my ($num_cols,$num_rows) =  Term::ReadKey::GetTerminalSize(\*STDOUT);
 
@@ -49,16 +50,48 @@ sub cmd_preinit {
     Term::ReadLine::Perl5::readline::preinit();
 };
 
+sub cmd_read_an_init_file {
+    my @args = @_;
+    my $filename = $args[1];
+    my $result =
+	Term::ReadLine::Perl5::readline::read_an_init_file($filename);
+    if ($result) {
+	print "File $filename read ok\n";
+    } else {
+	print "File $filename did not read ok\n";
+    }
+};
+
 sub cmd_redisplay {
     Term::ReadLine::Perl5::readline::redisplay();
 };
 
 sub cmd_rl_filename_list {
+    my @args = @_;
+    my @matches =
+	Term::ReadLine::Perl5::readline::rl_filename_list($args[1]);
+    p @matches;
 };
 
 sub cmd_rl_set {
+    my @args = @_;
+    if (@args != 3) {
+	printf "Was expecting exactly two args, got %d\n", $#args;
+    } else  {
+	Term::ReadLine::Perl5::readline::rl_set($args[1], $args[2]);
+    }
 };
 sub cmd_tilde_complete {
+    my @args = @_;
+    my $prefix = (@args == 1) ? '~': $args[1];
+    if (substr($prefix, 0, 1) ne '~') {
+	print "Tilde expansion expected to start with ~\n";
+    } else {
+	$prefix = substr($prefix, 1);
+	my @matches =
+	    Term::ReadLine::Perl5::readline::tilde_complete($prefix);
+	p @matches;
+    }
 };
 
 %commands = (
@@ -68,6 +101,7 @@ sub cmd_tilde_complete {
     'help' => \&cmd_help,
     'init' => \&cmd_init,
     'preinit' => \&cmd_preinit,
+    'read_an_init_file' => \&cmd_read_an_init_file,
     'redisplay' => \&cmd_redisplay,
     'rl_filename_list' => \&cmd_rl_filename_list,
     'rl_set' => \&cmd_rl_set,
