@@ -34,6 +34,26 @@ Eval, Print, Loop).
 
 See L<Term/ReadLine/Perl5> for details on the API.
 
+=head2 Demo program
+
+Inside this package is a demo program that does a couple of things.
+
+=over
+
+=item *
+Runs I<Term::ReadLine::Perl5> to let you see what it can do.
+
+=item *
+It allows you to play with the API by setting and showing values and seeing the effects
+
+=item *
+Gives a reasonable-size program for how to use the library including adding custom completion.
+
+=item *
+Shows how to right a command-line program, similar to L<Devel::Trepan>
+
+=back
+
 =head1 INSTALL
 
 To install this module type:

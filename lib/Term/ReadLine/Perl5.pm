@@ -19,10 +19,25 @@ history of previous input.
 This package typically used in command-line interfaces and REPLs (Read,
 Eval, Print, Loop).
 
-With the source code comes a shell program that can be used to
-interactively try and set capabilities of this package. It also gives
-shows an example for how to use interact with the packages as it
-provides, for example some completion routines.
+=head2 Demo program
+
+Inside this package is a demo program that does a couple of things.
+
+=over
+
+=item *
+Runs I<Term::ReadLine::Perl5> to let you see what it can do.
+
+=item *
+It allows you to play with the API by setting and showing values and seeing the effects.
+
+=item *
+Gives a reasonable-size program for how to use the library including adding custom completion.
+
+=item *
+Shows how to right a command-line program, similar to L<Devel::Trepan>.
+
+=back
 
 =head1 SYNOPSIS
 
