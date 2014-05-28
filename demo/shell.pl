@@ -1,8 +1,11 @@
 #!/usr/bin/env perl
+# -*- coding: utf-8 -*-
+# Copyright (C) 2014 Rocky Bernstein <rocky@cpan.org>
 # The intent here is to have something for folks to play with to show
 # off Term::ReadLine::Perl5. Down the line, what would be nice is
 # to have a command-line interface for showing/changing readline
 # functions.
+use Enbugger 'trepan';
 use strict; use warnings;
 use rlib '../lib';
 
@@ -11,17 +14,20 @@ use Term::ReadKey;
 use Data::Printer;
 
 use rlib '.';
-use Cmd qw(@commands %commands);
+use CmdProc;
 
 END{
     print "That's all folks!...\n";
     Term::ReadLine::Perl5::readline::ResetTTY;
 }
 
+my $cmdproc = CmdProc->new();
+my @commands = sort keys %{$cmdproc->{commands}};
+
 sub command_completion($$$) {
   my ($text, $line, $start) = @_;
   return () if $start != 0;
-  grep(/^$text/, @Cmd::commands);
+  grep(/^$text/, @commands);
 }
 
 print "================================================\n";
@@ -59,9 +65,11 @@ while ( defined (my $line = $term->readline($prompt)) )
     if ($command eq 'exit') {
 	last;
     } else {
-	my $fn = $Cmd::commands{$command};
-	if ($fn) {
-	    &$fn(@args);
+	my $cmd = $cmdproc->{commands}{$command};
+	if ($cmd) {
+	    # FIXME: Add
+            # if ($self->ok_for_running($cmd, $command, scalar(@args)-1)) 	    &$fn(@args); {  ... }
+	    $cmd->run(\@args);
 	} else {
 	    print $line, "\n";
 	}
