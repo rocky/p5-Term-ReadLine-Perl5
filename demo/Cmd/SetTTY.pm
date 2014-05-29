@@ -30,7 +30,7 @@ Sets TTY state.
 
 =head2 See also:
 
-C<SetTTY>
+C<ResetTTY>
 =cut
 HELP
 
