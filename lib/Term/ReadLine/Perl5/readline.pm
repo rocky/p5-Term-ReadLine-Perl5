@@ -4655,7 +4655,7 @@ sub do_delete {
 
 =head3 get_position
 
-    get_poition($count, $ord, $fulline_ord, $poshash)
+    get_position($count, $ord, $fulline_ord, $poshash)
 
 Interpret vi positioning commands
 =cut
