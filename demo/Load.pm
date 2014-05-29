@@ -134,7 +134,7 @@ sub setup_command($$)
 {
     my ($self, $name) = @_;
     my $cmd_obj;
-    my $cmd_name = lc $name;
+    my $cmd_name = $name;
     my $new_cmd = "\$cmd_obj=Cmd::${name}" .
         "->new(\$self, \$cmd_name); 1";
     if (eval $new_cmd) {

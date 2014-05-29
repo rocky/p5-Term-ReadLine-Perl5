@@ -35,7 +35,7 @@ It allows you to play with the API by setting and showing values and seeing the 
 Gives a reasonable-size program for how to use the library including adding custom completion.
 
 =item *
-Shows how to right a command-line program, similar to L<Devel::Trepan>.
+Shows how to write a command-line program, similar to L<Devel::Trepan>.
 
 =back
 

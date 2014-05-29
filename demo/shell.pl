@@ -5,7 +5,7 @@
 # off Term::ReadLine::Perl5. Down the line, what would be nice is
 # to have a command-line interface for showing/changing readline
 # functions.
-use Enbugger 'trepan';
+# use Enbugger 'trepan';
 use strict; use warnings;
 use rlib '../lib';
 
@@ -21,7 +21,10 @@ END{
     Term::ReadLine::Perl5::readline::ResetTTY;
 }
 
-my $cmdproc = CmdProc->new();
+my $term = new Term::ReadLine::Perl5 'Term::ReadLine::Perl5 shell';
+my $attribs = $term->Attribs;
+
+my $cmdproc = CmdProc->new($term);
 my @commands = sort keys %{$cmdproc->{commands}};
 
 sub command_completion($$$) {
@@ -34,17 +37,11 @@ print "================================================\n";
 print "Welcome to the Term::ReadLine::Perl5 demo shell!\n";
 print "================================================\n";
 
-my $term = new Term::ReadLine::Perl5 'Term::ReadLine::Perl5 shell';
-my $attribs = $term->Attribs;
-
-Cmd::print_features($term);
-
 # Silence "used only once warnings" inside ReadLine::Term::Perl.
 no warnings 'once';
 $attribs->{completion_function} = \&command_completion;
 
-print "\n"; Cmd::cmd_help();
-print "\nType 'exit' to leave.\n";
+print "\nType 'help' for help, and 'exit' to leave.\n";
 print "Entered lines are echoed and put into history.\n";
 
 my $initfile = '.inputrc';
@@ -54,7 +51,7 @@ if (Term::ReadLine::Perl5::readline::read_an_init_file($initfile)) {
 
 $Term::ReadLine::Perl5::preput = 0;
 
-my $prompt = "shell> ";
+my $prompt = 'shell> ';
 while ( defined (my $line = $term->readline($prompt)) )
 {
     ### FIXME do this in a more general way.
@@ -71,7 +68,7 @@ while ( defined (my $line = $term->readline($prompt)) )
             # if ($self->ok_for_running($cmd, $command, scalar(@args)-1)) 	    &$fn(@args); {  ... }
 	    $cmd->run(\@args);
 	} else {
-	    print $line, "\n";
+	    print "You typed:\n$line\n";
 	}
     }
     no warnings 'once';

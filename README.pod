@@ -50,7 +50,7 @@ It allows you to play with the API by setting and showing values and seeing the 
 Gives a reasonable-size program for how to use the library including adding custom completion.
 
 =item *
-Shows how to right a command-line program, similar to L<Devel::Trepan>
+Shows how to write a command-line program, similar to L<Devel::Trepan>
 
 =back
 
@@ -90,7 +90,7 @@ tracker|https://github.com/rocky/p5-Term-ReadLine-Perl5/issues>.
 
 =head1 LICENSE
 
-Copyright (c) 2013 Rocky Bernstein.
+Copyright (c) 2013-2014 Rocky Bernstein.
 Copyright (c) 1995 Ilya Zakharevich.
 
 This program is distributed WITHOUT ANY WARRANTY, including but not
