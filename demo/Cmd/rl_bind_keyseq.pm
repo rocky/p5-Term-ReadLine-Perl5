@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2014 Rocky Bernstein <rocky@cpan.org>
 use rlib '../../lib';
-package Cmd::rl_bind;
+package Cmd::rl_bind_keyseq;;
 
 use rlib '.';
 use if !@ISA, Cmd;
@@ -24,14 +24,14 @@ our $NAME = set_name();
 our $HELP = <<'HELP';
 =pod
 
-B<rl_bind> I<$keyspec> I<$function>
+B<rl_bind_keyseq> I<$keyspec> I<$function>
 
 Maps  I<$keyspec>, $function in the current KeyMap.
 
 =head2 Examples:
 
-   rl_bind \e[[A  previous-history
-   rl_bind \e[[C  forward-char
+   rl_bind A  previous-history
+   rl_bind B  forward-char
 
 =cut
 HELP

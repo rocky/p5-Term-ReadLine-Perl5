@@ -12,10 +12,11 @@ README.pod			     # General overview
 demo/Cmd/Features.pm
 demo/Cmd/help.pm
 demo/Cmd/preinit.pm
-demo/Cmd/redisplay.pm
 demo/Cmd/ResetTTY.pm
 demo/Cmd/rl_filename_list.pm
-demo/Cmd/rl_bind.pm
+demo/Cmd/rl_bind_keyseq.pm
+demo/Cmd/rl_read_init_file.pm
+demo/Cmd/rl_redisplay.pm
 demo/Cmd/rl_set.pm
 demo/Cmd/SetTTY.pm
 demo/Cmd/tilde_complete.pm

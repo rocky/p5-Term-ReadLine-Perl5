@@ -924,58 +924,62 @@ sub RL_func ($) {
 
 =head2 actually_do_binding
 
-C<actually_do_binding($function1, \@sequence1, ...)>
+B<actually_do_binding>(I<$function1>, I<@sequence1>, ...)
 
-Actually inserts the binding for C<@sequence> to C<$function> into the
-current map. C<@sequence> is an array of character ordinals.
+Actually inserts the binding for I<@sequence> to I<$function> into the
+current map. I<@sequence> is an array of character ordinals.
 
 If C<sequence> is more than one element long, all but the last will
 cause meta maps to be created.
 
-C<$Function> will have an implicit C<F_> prepended to it.
+I<$Function> will have an implicit I<F_> prepended to it.
+
+0 is returned if there is no error.
 
 =cut
 
 sub actually_do_binding
 {
-  while (@_) {
-    my $func = shift;
-    my ($key, @keys) = @{shift()};
-    $key += 0;
-    local(*KeyMap) = *KeyMap;
-    my $map;
-    while (@keys) {
-      if (defined($KeyMap[$key]) && ($KeyMap[$key] ne 'F_PrefixMeta')) {
-        warn "Warning$InputLocMsg: ".
-          "Re-binding char #$key from [$KeyMap[$key]] to meta for [@keys] => $func.\n" if $^W;
-      }
-      $KeyMap[$key] = 'F_PrefixMeta';
-      $map = "$KeyMap{'name'}_$key";
-      InitKeymap(*$map, '', $map) if !(%$map);
-      *KeyMap = *$map;
-      $key = shift @keys;
-      #&actually_do_binding($func, \@keys);
-    }
+    my $bad = 0;
+    while (@_) {
+	my $func = shift;
+	my ($key, @keys) = @{shift()};
+	$key += 0;
+	local(*KeyMap) = *KeyMap;
+	my $map;
+	while (@keys) {
+	    if (defined($KeyMap[$key]) && ($KeyMap[$key] ne 'F_PrefixMeta')) {
+		warn "Warning$InputLocMsg: ".
+		    "Re-binding char #$key from [$KeyMap[$key]] to meta for [@keys] => $func.\n" if $^W;
+	    }
+	    $KeyMap[$key] = 'F_PrefixMeta';
+	    $map = "$KeyMap{'name'}_$key";
+	    InitKeymap(*$map, '', $map) if !(%$map);
+	    *KeyMap = *$map;
+	    $key = shift @keys;
+	    #&actually_do_binding($func, \@keys);
+	}
 
-    my $name = $KeyMap{'name'};
-    if ($key eq 'default') {      # JP: added
-        warn "Warning$InputLocMsg: ".
-          " changing default action to $func in $name key map\n"
-          if $^W && defined $KeyMap{'default'};
+	my $name = $KeyMap{'name'};
+	if ($key eq 'default') {      # JP: added
+	    warn "Warning$InputLocMsg: ".
+		" changing default action to $func in $name key map\n"
+		if $^W && defined $KeyMap{'default'};
 
-        $KeyMap{'default'} = RL_func $func;
+	    $KeyMap{'default'} = RL_func $func;
+	}
+	else {
+	    if (defined($KeyMap[$key]) && $KeyMap[$key] eq 'F_PrefixMeta'
+		&& $func ne 'PrefixMeta')
+	    {
+		warn "Warning$InputLocMsg: ".
+		    " Re-binding char #$key to non-meta ($func) in $name key map\n"
+		    if $^W;
+	    }
+	    $KeyMap[$key] = RL_func $func;
+	}
     }
-    else {
-        if (defined($KeyMap[$key]) && $KeyMap[$key] eq 'F_PrefixMeta'
-            && $func ne 'PrefixMeta')
-          {
-            warn "Warning$InputLocMsg: ".
-              " Re-binding char #$key to non-meta ($func) in $name key map\n"
-              if $^W;
-          }
-        $KeyMap[$key] = RL_func $func;
-    }
-  }
+    return $bad;
 }
 
 =head2 GNU ReadLine-ish Routines
@@ -983,12 +987,15 @@ sub actually_do_binding
 Many of these aren't the the name GNU readline uses, nor do they
 correspond to GNU ReadLine functions. Sigh.
 
-=head3 rl_bind
+=head3 rl_bind_keyseq
 
-Accepts an array as pairs ($keyspec, $function, [$keyspec, $function]...).
-and maps the associated bindings to the current KeyMap.
+B<rl_bind_keyseq>(I<$keyspec>, I<$function>)
 
-C<$keyspec> should be the name of key sequence in one of two forms:
+Bind the key sequence represented by the string I<keyseq> to the
+function function, beginning in the current keymap. This makes new
+keymaps as necessary. The return value is non-zero if keyseq is
+invalid.  I<$keyspec> should be the name of key sequence in one of two
+forms:
 
 Old (GNU readline documented) form:
 
@@ -1040,64 +1047,65 @@ arrow keys:
 
 =cut
 
-sub rl_bind
+sub rl_bind_keyseq($$)
 {
-    my (@keys, $key, $func, $ord, @arr);
+    my ($key, $func) = @_;
+    unless ($func =~ /^[\"\']/) {
+	$func = "\u$func";
+	$func =~ s/-(.)/\u$1/g;
 
-    while (defined($key = shift(@_)) && defined($func = shift(@_)))
-    {
-        ##
-        ## Change the function name from something like
-        ##      backward-kill-line
-        ## to
-        ##      BackwardKillLine
-        ## if not already there.
-        ##
-        unless ($func =~ /^[\"\']/) {
-          $func = "\u$func";
-          $func =~ s/-(.)/\u$1/g;
-
-          # Temporary disabled
-          if (!$autoload_broken and !defined($ {'readline::'}{"F_$func"})) {
+	# Temporary disabled
+	if (!$autoload_broken and !defined($ {'readline::'}{"F_$func"})) {
             warn "Warning$InputLocMsg: bad bind function [$func]\n" if $^W;
             next;
-          }
-        }
-
-        ## print "sequence [$key] func [$func]\n"; ##DEBUG
-
-        @keys = ();
-        ## See if it's a new-style binding.
-        if ($key =~ m/"((?:\\.|[^\\])*)"/s) {
-            @keys = _unescape "$1";
-        } else {
-            ## old-style binding... only one key (or Meta+key)
-            my ($isctrl, $orig) = (0, $key);
-            $isctrl = $key =~ s/\b(C|Control|CTRL)-//i;
-            push(@keys, ord("\e")) if $key =~ s/\b(M|Meta)-//i; ## is meta?
-            ## Isolate key part. This matches GNU's implementation.
-            ## If the key is '-', be careful not to delete it!
-            $key =~ s/.*-(.)/$1/;
-            if    ($key =~ /^(space|spc)$/i)   { $key = ' ';    }
-            elsif ($key =~ /^(rubout|del)$/i)  { $key = "\x7f"; }
-            elsif ($key =~ /^tab$/i)           { $key = "\t";   }
-            elsif ($key =~ /^(return|ret)$/i)  { $key = "\r";   }
-            elsif ($key =~ /^(newline|lfd)$/i) { $key = "\n";   }
-            elsif ($key =~ /^(escape|esc)$/i)  { $key = "\e";   }
-            elsif (length($key) > 1) {
-                warn "Warning$InputLocMsg: strange binding [$orig]\n" if $^W;
-            }
-            $key = ord($key);
-            $key = &ctrl($key) if $isctrl;
-            push(@keys, $key);
-        }
-
-        # Now do the mapping of the sequence represented in @keys
-        printf "rl_bind(%s, (%s)\n", $func, join(', ', @keys) if $DEBUG;
-        push @arr, $func, [@keys];
-        #&actually_do_binding($func, \@keys);
+	}
     }
-    &actually_do_binding(@arr);
+
+    ## print "sequence [$key] func [$func]\n"; ##DEBUG
+
+    my @keys = ();
+    ## See if it's a new-style binding.
+    if ($key =~ m/"((?:\\.|[^\\])*)"/s) {
+	@keys = _unescape "$1";
+    } else {
+	## old-style binding... only one key (or Meta+key)
+	my ($isctrl, $orig) = (0, $key);
+	$isctrl = $key =~ s/\b(C|Control|CTRL)-//i;
+	push(@keys, ord("\e")) if $key =~ s/\b(M|Meta)-//i; ## is meta?
+	## Isolate key part. This matches GNU's implementation.
+	## If the key is '-', be careful not to delete it!
+	$key =~ s/.*-(.)/$1/;
+	if    ($key =~ /^(space|spc)$/i)   { $key = ' ';    }
+	elsif ($key =~ /^(rubout|del)$/i)  { $key = "\x7f"; }
+	elsif ($key =~ /^tab$/i)           { $key = "\t";   }
+	elsif ($key =~ /^(return|ret)$/i)  { $key = "\r";   }
+	elsif ($key =~ /^(newline|lfd)$/i) { $key = "\n";   }
+	elsif ($key =~ /^(escape|esc)$/i)  { $key = "\e";   }
+	elsif (length($key) > 1) {
+	    warn "Warning$InputLocMsg: strange binding [$orig]\n" if $^W;
+	}
+	$key = ord($key);
+	$key = &ctrl($key) if $isctrl;
+	push(@keys, $key);
+    }
+
+    # Now do the mapping of the sequence represented in @keys
+    printf "rl_bind(%s, (%s)\n", $func, join(', ', @keys) if $DEBUG;
+    &actually_do_binding($func, \@keys);
+}
+
+=head3 rl_bind
+
+Accepts an array as pairs ($keyspec, $function, [$keyspec, $function]...).
+and maps the associated bindings to the current KeyMap.
+=cut
+
+sub rl_bind
+{
+    while (defined($key = shift(@_)) && defined($func = shift(@_)))
+    {
+	rl_bind_keyseq($key, $func);
+    }
 }
 
 =head3 rl_set
@@ -1267,7 +1275,7 @@ sub rl_filename_list_deprecated
 }
 
 # Handle one line of an input file. Note we also assume
-# local-bound arrays @action and @level.
+# local-bound arrays I<@action> and I<@level>.
 sub process_init_line($$$)
 {
     $_ = shift;
@@ -1353,11 +1361,22 @@ sub rl_basic_commands
      $rl_completion_function = 'use_basic_commands';
 }
 
-sub rl_getc {
+sub rl_getc() {
     $Term::ReadLine::Perl5::term->Tk_loop
 	if $Term::ReadLine::toloop && defined &Tk::DoOneEvent;
     return Term::ReadKey::ReadKey(0, $term_IN);
 }
+
+=head3 rl_read_init_file
+
+B<rl_read_initfile>(I<$filename>)
+Read keybindings and variable assignments from filename I<$filename>.
+
+=cut
+sub rl_read_init_file($) {
+    read_an_init_file(shift, 0);
+}
+
 
 ###########################################################################
 ## Bindable functions... pretty much in the same order as in readline.c ###
@@ -1643,7 +1662,7 @@ sub F_PrintHistory {
     print $lspace, ". . .\n" if $end < @rl_History;
     print "$hdr\n";
 
-    &force_redisplay();
+    rl_forced_update_display();
 
     &F_ViInput() if $line eq '' && $Vi_mode;
 }
@@ -1729,9 +1748,10 @@ sub F_TabInsert
 
 =head3 F_SelfInsert
 
-C<F_SelfInsert($count, $ord)>
+B<F_SelfInsert>(I<$count>, I<$ord>)
 
-C<$ord> is an ASCII ordinal; inserts C<$count> of them into C<$line>.
+I<$ord> is an ASCII ordinal; inserts I<$count> of them into global
+I<$line>.
 
 Insert yourself.
 
@@ -2021,7 +2041,7 @@ sub F_DigitArgument
             }
         } else {
             local(*KeyMap) = $var_EditingMode;
-            &redisplay();
+            rl_redisplay();
             $doingNumArg = 1;           # Allow NumArg inside NumArg
             &do_command(*KeyMap, $NumericArg . ($sawDigit ? '': 'e0'), $ord);
             return;
@@ -2032,7 +2052,7 @@ sub F_DigitArgument
         } elsif ($NumericArg < -$rl_max_numeric_arg) {
             $NumericArg = -$rl_max_numeric_arg;
         }
-        &redisplay(sprintf("(arg %d) ", $NumericArg));
+        redisplay(sprintf("(arg %d) ", $NumericArg));
     } while defined($in = &getc_with_pending);
 }
 
@@ -2135,7 +2155,7 @@ sub F_ReReadInitFile
         return unless defined $HOME;
         $file = File::Spec->catfile($HOME, '.inputrc');
     }
-    read_an_init_file($file, 0);
+    rl_read_init_file($file);
 }
 
 =head3 F_Abort
@@ -2627,7 +2647,7 @@ sub F_SaveLine
 {
     local $\ = '';
     $line = '#'.$line;
-    &redisplay();
+    rl_redisplay();
     print $term_OUT "\r\n";
     &add_line_to_history($line, $minlength);
     $line_for_revert = '';
@@ -3037,7 +3057,7 @@ sub F_ViComplete {
 
         # Vi likes the cursor one character right of where emacs like it.
         &F_ForwardChar(1);
-        &force_redisplay();
+        rl_forced_update_display();
 
         # Look ahead to the next input keystroke.
         $ch = &getc_with_pending();
@@ -3261,8 +3281,7 @@ sub get_window_size
 	if defined($num_cols) && $num_cols;
     $rl_margin = int($rl_screen_width/3);
     if (defined $redraw) {
-        $force_redraw = 1;
-        &redisplay();
+	rl_forced_update_display();
     }
 
     for my $hook (@winchhooks) {
@@ -3405,7 +3424,7 @@ sub readline
     $line_rl_mark = -1;
 
     ##
-    ## some stuff for &redisplay.
+    ## some stuff for rl_redisplay.
     ##
     $lastredisplay = '';        ## Was no last redisplay for this time.
     $lastlen = length($lastredisplay);
@@ -3467,7 +3486,7 @@ sub readline
                 *F_ViEndInsert = $F_ViEndInsert_Real;
                 &F_ViEndInsert;
                $force_redraw = 1;
-               redisplay();
+               rl_redisplay();
             };
         }
     }
@@ -3475,7 +3494,8 @@ sub readline
     if ($rl_default_selected) {
         redisplay_high();
     } else {
-        &redisplay();          ## Show the line (prompt+default at this point).
+        ## Show the line (prompt+default at this point).
+        rl_redisplay();
     }
 
     # pretend input if we 'Operate' on more than one line
@@ -3514,7 +3534,7 @@ sub readline
         &F_BackwardChar(1) if $Vi_mode and $line ne ''
             and &at_end_of_line and $KeyMap{'name'} eq 'vicmd_keymap';
 
-        &redisplay();
+        rl_redisplay();
         $LastCommandKilledText = $ThisCommandKilledText;
     }
 
@@ -3632,36 +3652,32 @@ sub substr_with_props {
 sub redisplay_high {
   get_ornaments_selected();
   @$rl_term_set[2,3,4,5] = @$rl_term_set[4,5,2,3];
-  &redisplay();                 ## Show the line, default inverted.
+  ## Show the line, default inverted.
+  rl_redisplay();
   @$rl_term_set[2,3,4,5] = @$rl_term_set[4,5,2,3];
   $force_redraw = 1;
 }
 
-=head3 redisplay
+=head3 rl_redisplay
 
-C<redisplay()>
+B<rl_redisplay()>
 
-Updates the screen to reflect the current value if C<$line>.
+Updates the screen to reflect the current value of global C<$line>.
 
-For the purposes of this routine, we prepend the prompt to a local copy of
-C<$line> so that we display the prompt as well.  We then modify it to reflect
-that some characters have different sizes. That is, control-C is represented
-as C<^C>, tabs are expanded, etc.
+For the purposes of this routine, we prepend the prompt to a local
+copy of C<$line> so that we display the prompt as well.  We then
+modify it to reflect that some characters have different sizes. That
+is, control-C is represented as C<^C>, tabs are expanded, etc.
 
 This routine is somewhat complicated by two-byte characters.... must
 make sure never to try do display just half of one.
-
-I<Note>: If an argument is given, it is used instead of the prompt.
 
 This is some nasty code.
 
 =cut
 
-sub redisplay
+sub rl_redisplay()
 {
-    ## local $line has prompt also; take that into account with $D.
-    local($prompt) = defined($_[0]) ? $_[0] : $prompt;
-    $prompt = '' unless defined($prompt);
     my ($thislen, $have_bra);
     my($dline) = $prompt . $line;
     local($D) = $D + length($prompt);
@@ -3862,6 +3878,24 @@ sub redisplay
       = ($thislen, $dline, $delta, length $prompt);
 
     $force_redraw = 0;
+}
+
+=head3 redisplay
+
+B<redisplay>[(I<$prompt>)]
+
+If an argument I<$prompt> is given, it is used instead of the prompt.
+Updates the screen to reflect the current value of global C<$line> via
+L<rl_redisplay>.
+=cut
+
+sub redisplay(;$)
+{
+    ## local $line has prompt also; take that into account with $D.
+    local($prompt) = defined($_[0]) ? $_[0] : $prompt;
+    $prompt = '' unless defined($prompt);
+    rl_redisplay();
+
 }
 
 sub min($$) { $_[0] < $_[1] ? $_[0] : $_[1]; }
@@ -4256,7 +4290,7 @@ sub DoSearch
             $line = $rl_History[$I];
             $D += index($rl_History[$I], $searchstr);
         }
-        &redisplay( '('.($reverse?'reverse-':'') ."i-search) `$searchstr': ");
+        redisplay( '('.($reverse?'reverse-':'') ."i-search) `$searchstr': ");
 
         $c = &getc_with_pending;
         if (($KeyMap[ord($c)] || 0) eq 'F_ReverseSearchHistory') {
@@ -4292,7 +4326,7 @@ sub DoSearch
                 $line = $rl_History[$I];
                 $D = index($rl_History[$I], $searchstr);
             }
-            &redisplay();
+            rl_redisplay();
             last;
         } else {
             ## Add this character to the end of the search string and
@@ -4693,9 +4727,9 @@ sub get_line_from_history($) {
 }
 
 # Redisplay the line, without attempting any optimization
-sub force_redisplay {
+sub rl_forced_update_display() {
     local $force_redraw = 1;
-    &redisplay(@_);
+    redisplay(@_);
 }
 
 ## returns a new $i or -1 if not found.
@@ -4729,12 +4763,12 @@ sub get_vi_search_str($) {
 
     local $prompt = $prompt . $c;
     local ($line, $D) = ('', 0);
-    &redisplay();
+    rl_redisplay();
 
     # Gather a search string in our local $line.
     while ($lastcommand ne 'F_ViEndSearch') {
         &do_command($var_EditingMode{'visearch'}, 1, ord(&getc_with_pending));
-        &redisplay();
+        rl_redisplay();
 
         # We've backspaced past beginning of line
         return undef if !defined $line;
@@ -4781,7 +4815,7 @@ sub clipboard_set($) {
 
 =head3 read_an_init_file
 
-C<read_an_init_file(inputrc_file, [include_depth])>
+B<read_an_init_file>(I<inputrc_file>, [I<include_depth>])
 
 Reads and executes I<inputrc_file> which does things like Sets input
 key bindings in key maps.

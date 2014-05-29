@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2014 Rocky Bernstein <rocky@cpan.org>
-package Cmd::redisplay;
+package Cmd::rl_redisplay;
 use rlib '../../lib';
 
 use rlib '.';
@@ -26,7 +26,8 @@ our $HELP = <<'HELP';
 
 B<redisplay>
 
-Runs Term::ReadLine::Perl5::readline::redisplay()
+Runs L<Term::ReadLine::Perl5::readline::rl_redisplay> which
+Updates the screen to reflect the current value of the line.
 
 =cut
 HELP

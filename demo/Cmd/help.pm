@@ -116,7 +116,9 @@ unless (caller) {
     $proc->{num_cols} = 30;
     my $cmd = __PACKAGE__->new($proc);
     $cmd->run([$NAME]);
+    print '-' x 30, "\n";
     $cmd->run([$NAME, '*']);
+    print '-' x 30, "\n";
     $cmd->run([$NAME, 'help']);
 }
 
