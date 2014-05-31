@@ -145,11 +145,11 @@ sub preinit
     $var_HorizontalScrollMode{'On'} = 1;
     $var_HorizontalScrollMode{'Off'} = 0;
 
-    $var_EditingMode{'emacs'}    = *emacs_keymap;
-    $var_EditingMode{'vi'}       = *vi_keymap;
-    $var_EditingMode{'vicmd'}    = *vicmd_keymap;
-    $var_EditingMode{'vipos'}    = *vipos_keymap;
-    $var_EditingMode{'visearch'} = *visearch_keymap;
+    $var_EditingMode{'emacs'}    = \@emacs_keymap;
+    $var_EditingMode{'vi'}       = \@vi_keymap;
+    $var_EditingMode{'vicmd'}    = \@vicmd_keymap;
+    $var_EditingMode{'vipos'}    = \@vipos_keymap;
+    $var_EditingMode{'visearch'} = \@visearch_keymap;
 
     ## this is an addition. Very nice.
     $var_TcshCompleteMode = 0;
@@ -298,7 +298,7 @@ sub preinit
     $D = 0;
     $InputLocMsg = ' [initialization]';
 
-    &InitKeymap(*emacs_keymap, 'SelfInsert', 'emacs_keymap',
+    &InitKeymap(\@emacs_keymap, 'SelfInsert', 'emacs_keymap',
                 ($inDOS ? () : ('C-@',  'SetMark') ),
                 'C-a',  'BeginningOfLine',
                 'C-b',  'BackwardChar',
@@ -507,7 +507,7 @@ sub preinit
                 )
                );
 
-    *KeyMap = *emacs_keymap;
+    *KeyMap = \@emacs_keymap;
     my @add_bindings = ();
     foreach ('-', '0' .. '9') { push(@add_bindings, "M-$_", 'DigitArgument'); }
     foreach ("A" .. "Z") {
@@ -523,7 +523,7 @@ sub preinit
     &rl_bind(@add_bindings);
 
     # Vi input mode.
-    &InitKeymap(*vi_keymap, 'SelfInsert', 'vi_keymap',
+    &InitKeymap(\@vi_keymap, 'SelfInsert', 'vi_keymap',
 
                 "\e",   'ViEndInsert',
                 'C-c',  'Interrupt',
@@ -537,7 +537,7 @@ sub preinit
                );
 
     # Vi command mode.
-    &InitKeymap(*vicmd_keymap, 'Ding', 'vicmd_keymap',
+    &InitKeymap(\@vicmd_keymap, 'Ding', 'vicmd_keymap',
 
                 'C-c',  'Interrupt',
                 'C-e',  'EmacsEditingMode',
@@ -651,7 +651,7 @@ sub preinit
                );
 
     # Vi positioning commands (suffixed to vi commands like 'd').
-    &InitKeymap(*vipos_keymap, 'ViNonPosition', 'vipos_keymap',
+    &InitKeymap(\@vipos_keymap, 'ViNonPosition', 'vipos_keymap',
 
                 '^',    'ViFirstWord',
                 '0',    'BeginningOfLine',
@@ -704,7 +704,7 @@ sub preinit
                );
 
     # Vi search string input mode for '/' and '?'.
-    &InitKeymap(*visearch_keymap, 'SelfInsert', 'visearch_keymap',
+    &InitKeymap(\@visearch_keymap, 'SelfInsert', 'visearch_keymap',
 
                 "\e",   'Ding',
                 'C-c',  'Interrupt',
