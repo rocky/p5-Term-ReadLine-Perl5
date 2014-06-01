@@ -12,6 +12,7 @@ README.pod			     # General overview
 lib/Term/ReadLine/Perl5.pm
 lib/Term/ReadLine/Perl5/CHANGES	     # What's up?
 lib/Term/ReadLine/Perl5/History.pm
+lib/Term/ReadLine/Perl5/Keymap.pm
 lib/Term/ReadLine/Perl5/TermCap.pm
 lib/Term/ReadLine/Perl5/Tie.pm
 lib/Term/ReadLine/Perl5/readline.pm
