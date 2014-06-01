@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 
-# About the numbering 20.. This should probably go after the
-# unescape test since read_an_input_file() calls unescape(). So if the
-# unescape fails, we probably expect this one to as well.
+# About the numbering 20.. This should probably go after the unescape
+# test since rl_read_input_file() calls unescape(). So if the unescape
+# fails, we probably expect this one to as well.
 
 # Lots of boilerplate here... Put in a helper file?
 use strict;
@@ -20,14 +20,14 @@ $ENV{'LINES'} = 25;
 # stop reading ~/.inputrc
 $ENV{'INPUTRC'} = '/dev/null';
 
-use Term::ReadLine::Perl5::readline;
+use Term::ReadLine::Perl5::readline qw(rl_read_init_file);
 
 # Okay we've read in readline.pm. Now get to work testing
 # read_an_init_file
 
 my $dir = File::Spec->catfile(dirname(__FILE__));
 my $input_file = File::Spec->catfile($dir, qw(data undo.inputrc));
-Term::ReadLine::Perl5::readline::read_an_init_file($input_file);
+Term::ReadLine::Perl5::readline::rl_read_init_file($input_file);
 
 # use Data::Printer;
 # p @{readline::emacs_keymap};
