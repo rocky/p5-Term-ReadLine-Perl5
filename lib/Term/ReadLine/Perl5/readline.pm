@@ -54,7 +54,7 @@ use File::HomeDir;
 use File::Spec;
 use Term::ReadKey;
 
-use rlib '../../..';
+use rlib '.';
 use Term::ReadLine::Perl5::TermCap; # For ornaments
 use Term::ReadLine::Perl5::History;
 
@@ -196,8 +196,11 @@ sub preinit
     @winchhooks = ();
 
     $inDOS = $^O eq 'os2' || defined $ENV{OS2_SHELL} unless defined $inDOS;
-    eval {require "ioctl.pl"}; ## try to get, don't die if not found.
-    eval {require "sgtty.ph"}; ## try to get, don't die if not found.
+
+    # try to get, don't die if not found.
+    eval {require "ioctl.pl"};
+    eval {require "sgtty.ph"};
+
     if ($inDOS and !defined $TIOCGWINSZ) {
 	$TIOCGWINSZ=0;
 	$TIOCGETP=1;
@@ -509,9 +512,12 @@ sub preinit
 
     *KeyMap = \@emacs_keymap;
     my @add_bindings = ();
-    foreach ('-', '0' .. '9') { push(@add_bindings, "M-$_", 'DigitArgument'); }
+    foreach ('-', '0' .. '9') {
+	push(@add_bindings, "M-$_", 'DigitArgument');
+    }
     foreach ("A" .. "Z") {
-      next if  # defined($KeyMap[27]) && defined (%{"$KeyMap{name}_27"}) &&
+	next if
+         # defined($KeyMap[27]) && defined (%{"$KeyMap{name}_27"}) &&
         defined $ {"$KeyMap{name}_27"}[ord $_];
       push(@add_bindings, "M-$_", 'DoLowercaseVersion');
     }
@@ -777,17 +783,8 @@ sub preinit
         ord('E')  =>  q{.\s*\S*(?=\S)|.?\s*(?=\s$)},
     };
 
-    my $default_mode = 'emacs';
-
-    *KeyMap = $var_EditingMode = $var_EditingMode{$default_mode};
-
-##    my $name;
-##    for $name ( keys %{'readline::'} ) {
-##      # Create aliases accessible via tied interface
-##      *{"rl_$1"} = \$ {"var_$1"} if $name =~ /$var_(.*)/;
-##    }
-
-    1;                          # Returning a glob causes a bug in db5.001m
+    *KeyMap = $var_EditingMode = $var_EditingMode{'emacs'};
+    1; # Returning a glob causes a bug in db5.001m
 }
 
 sub init
@@ -1090,7 +1087,7 @@ sub rl_bind_keyseq($$)
     }
 
     # Now do the mapping of the sequence represented in @keys
-    printf "rl_bind(%s, (%s)\n", $func, join(', ', @keys) if $DEBUG;
+    printf "rl_bind(%s, %s)\n", $func, join(', ', @keys) if $DEBUG;
     &actually_do_binding($func, \@keys);
 }
 
@@ -3524,7 +3521,10 @@ sub readline
             $cmd = 'F_BackwardDeleteChar' if $cmd eq 'F_DeleteChar';
         }
         undef $doingNumArg;
-        &$cmd(1, ord($input));                  ## actually execute input
+
+	# Execute input
+        &$cmd(1, ord($input));
+
         $rl_first_char = 0;
         $lastcommand = $cmd;
         *KeyMap = $var_EditingMode;           # JP: added

@@ -1,6 +1,5 @@
 # -*- Perl -*-
 package Term::ReadLine::Perl5;
-
 =encoding utf8
 
 =head1 NAME
@@ -50,6 +49,7 @@ Shows how to write a command-line program, similar to L<Devel::Trepan>.
 =cut
 
 use warnings; use strict;
+use Term::ReadLine::Perl5::readline;
 no warnings 'once';
 
 our $VERSION = '1.37_01';
@@ -194,7 +194,6 @@ sub new {
     $Term::ReadLine::Perl5::readline::term_IN = shift;
     $Term::ReadLine::readline::term_OUT = shift
   }
-  eval {require Term::ReadLine::Perl5::readline}; die $@ if $@;
   # The following is here since it is mostly used for perl input:
   # $readline::rl_basic_word_break_characters .= '-:+/*,[])}';
   $term = bless [$readline::term_IN,$readline::term_OUT];
@@ -204,6 +203,12 @@ sub new {
     $term->ornaments(1);
   }
   $rl_history_length = $rl_max_input_history = 0;
+
+  # FIXME:
+  # Something in preinit seems to set terminal characteristics that wasn't
+  # done initially but now can be done.
+  Term::ReadLine::Perl5::readline::preinit();
+
   return $term;
 }
 
