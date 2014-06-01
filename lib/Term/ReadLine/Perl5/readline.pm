@@ -57,6 +57,7 @@ use File::Spec;
 use Term::ReadKey;
 
 use rlib '.';
+use Term::ReadLine::Perl5::Dumb;
 use Term::ReadLine::Perl5::History;
 use Term::ReadLine::Perl5::Keymap
     qw(KeymapEmacs KeymapVi KeymapVicmd KeymapVipos KeymapVisearch);
@@ -2942,30 +2943,6 @@ sub get_ornaments_selected {
     }
 }
 
-sub get_line {
-  scalar <$term_IN>;
-}
-
-=head3 readline_dumb
-
-A version readline for a dumb terminal, that is one that doesn't have
-many terminal editing capabilities.
-
-=cut
-
-sub readline_dumb
-{
-    local $\ = '';
-    print $term_OUT $prompt;
-    local $/ = "\n";
-    return undef
-        if !defined($line = get_line);
-    chomp($line);
-    $| = $oldbar;
-    select $old;
-    return $line;
-}
-
 =head3 readline
 
     &readline::readline($prompt, $default)>
@@ -2980,7 +2957,7 @@ omitted. The next input line is returned or I<undef> on EOF.
 
 =cut
 
-sub readline
+sub readline($;$)
 {
     no warnings 'once';
     $Term::ReadLine::Perl5::term->register_Tk
@@ -3016,7 +2993,8 @@ sub readline
       if $rl_scroll_nextline;
 
     if ($dumb_term) {
-        return readline_dumb;
+        return Term::ReadLine::Perl5::Dumb::readline($prompt, $term_IN,
+						     $term_OUT);
     }
 
     # test if we resume an 'Operate' command
@@ -3061,7 +3039,8 @@ sub readline
     if (!eval {SetTTY()}) {     ## Put into raw mode.
         warn $@ if $@;
         $dumb_term = 1;
-        return readline_dumb;
+        return Term::ReadLine::Perl5::Dumb::readline($prompt, $term_IN,
+						     $term_OUT);
     }
 
     *KeyMap = $var_EditingMode;
