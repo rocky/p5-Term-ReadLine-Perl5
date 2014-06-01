@@ -32,7 +32,7 @@ history of previous input.
 This package typically used in command-line interfaces and REPLs (Read,
 Eval, Print, Loop).
 
-See L<Term/ReadLine/Perl5> for details on the API.
+See L<Term::ReadLine::Perl5> for details on the API.
 
 =head2 Demo program
 
