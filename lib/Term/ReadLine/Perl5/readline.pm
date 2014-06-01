@@ -3523,7 +3523,7 @@ sub readline
         undef $doingNumArg;
 
 	# Execute input
-        &$cmd(1, ord($input));
+        eval { &$cmd(1, ord($input)); };
 
         $rl_first_char = 0;
         $lastcommand = $cmd;
@@ -3607,8 +3607,13 @@ sub substr_with_props {
 
   if ($from >= $lp) {
     $p = '';
-    $s = substr $s, $from - $lp;
-    $lp = 0;
+    my $start = $from - $lp;
+    if ($start < length($s)) {
+	$s = substr $s, $start;
+	$lp = 0;
+    } else {
+	return '';
+    }
   } else {
     $p = substr $p, $from;
     $lp -= $from;
