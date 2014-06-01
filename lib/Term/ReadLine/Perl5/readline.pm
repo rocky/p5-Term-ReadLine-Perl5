@@ -324,6 +324,8 @@ sub preinit
     }
     &rl_bind(@add_bindings);
 
+    local(*KeyMap);
+
     # Vi input mode.
     KeymapVi(\&InitKeymap, \@vi_keymap);
 
@@ -790,10 +792,10 @@ sub rl_set
 
 =head3 rl_tilde_expand
 
- rl_tilde_expand($prefix) => list of usernames
+    rl_tilde_expand($prefix) => list of usernames
 
 Returns a list of completions that begin with the given prefix,
-I<$prefix>.  This only works if we have getpwwet() available.
+I<$prefix>.  This only works if we have I<getpwent()> available.
 
 =cut
 
@@ -886,7 +888,7 @@ sub rl_filename_list_deprecated
 
 # Handle one line of an input file. Note we also assume
 # local-bound arrays I<@action> and I<@level>.
-sub process_init_line($$$)
+sub parse_and_bind($$$)
 {
     $_ = shift;
     my $file = shift;
@@ -949,6 +951,20 @@ sub process_init_line($$$)
 	chomp;
 	warn "\rWarning$InputLocMsg: Bad line [$_]\n" if $^W;
     }
+}
+
+=head3 rl_parse_and_bind
+
+B<rl_parse_and_bind>(I<$line>)
+
+Parse I<$line> as if it had been read from the inputrc file and
+perform any key bindings and variable assignments found.
+
+=cut
+sub rl_parse_and_bind($)
+{
+    my $line = shift;
+    parse_and_bind($line, '*bogus*',  0);
 }
 
 =head3 rl_basic_commands
@@ -2025,7 +2041,7 @@ sub F_Interrupt
 sub F_PrefixMeta
 {
     my($count, $keymap) = ($_[0], "$KeyMap{'name'}_$_[1]");
-    ##print "F_PrefixMeta [$keymap]\n\r";
+    print "F_PrefixMeta [$keymap]\n\r" if $DEBUG;
     die "<internal error, $_[1]>" unless %$keymap;
     do_command(*$keymap, $count, ord(&getc_with_pending));
 }
@@ -4454,7 +4470,7 @@ sub read_an_init_file($;$)
     local (@level) = ();        ## if, else
 
     local $/ = "\n";
-    process_init_line($_, $file, $include_depth) while <RC>;
+    parse_and_bind($_, $file, $include_depth) while <RC>;
     close(RC);
     return 1;
 }
