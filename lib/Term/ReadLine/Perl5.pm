@@ -94,6 +94,8 @@ sub Attribs {
   \%attribs;
 }
 
+=head1 SUBROUTINES
+
 =head2 Standard Term::ReadLine Methods
 
 These methods are standard methods defined by

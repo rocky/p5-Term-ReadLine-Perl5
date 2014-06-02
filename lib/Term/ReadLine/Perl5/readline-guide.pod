@@ -206,15 +206,17 @@ For tcsh mode, possible selections.
 
 =back
 
-Some internal variables modified by I<&rl_set()>. See comment at I<&rl_set> for
-info about how these set'able variables work.
+Some internal variables modified by I<&rl_set()>. See comment at
+I<&rl_set> for info about how these setable variables work.
 
 =over
 
 =item C<$var_EditingMode>
+
 a keymap typeglob like C<%emacs_keymap> or C<%vi_keymap>
 
 =item C<$var_TcshCompleteMode>
+
 If true, the completion function works
 like in tcsh.  That is, the first time you try to complete something,
 the common prefix is completed for you. Subsequent completion tries
@@ -231,9 +233,11 @@ Some variables used internally, but may be accessed from outside...
 =over
 
 =item C<$VERSION>
+
 Version of this package. It is used up by C<../Makefile.PL>
 
 =item C<$rl_readline_name>
+
 Name of program, possibly C<$0>. Used in F<.initrc> if/endif stuff.
 
 =item C<$rl_NoInitFromFile>
@@ -243,28 +247,36 @@ If defined when package is require'd, F<~/.inputrc> will not be read.
 array of previous lines input.
 n
 =item C<$rl_HistoryIndex>
+
 history pointer (for moving about history array)
 
 =item C<$rl_completion_function>
+
 See L<How Command Completion Works>.
 
 =item C<$rl_basic_word_break_characters>
+
 string of characters that can cause a word break for forward-word, etc.
 
 =item C<$rl_start_default_at_beginning>
+
 Normally, the user's cursor starts at the end of any default text
 passed to readline.  If this variable is true, it starts at the
 beginning.
 
 =item C<$rl_completer_word_break_characters>
+
 like C<$rl_basic_word_break_characters> (and in fact defaults to it),
 but for the completion function.
 
-=item C<$rl_completer_terminator_character> what to insert to separate
-a completed token from the rest.  Reset at beginning of completion to
-C<' '> so completion function can change it.
+=item C<$rl_completer_terminator_character>
+
+what to insert to separate a completed token from the rest.  Reset at
+beginning of completion to C<' '> so completion function can change
+it.
 
 =item  C<$rl_special_prefixes>
+
 characters that are part of this string as well
 as of C<$rl_completer_word_break_characters> cause a word break for the
 completer function, but remain part of the word.  An example: consider
@@ -274,30 +286,37 @@ C<&>, C<@'>, C<%>) part of the C<$text> to be completed. Then set this var
 to C<&@$%> and make sure each of these characters is in $rl_completer_word_break_characters as well.
 
 =item C<$rl_MaxHistorySize>
+
 maximum size that the history array may grow.
 
 =item C<$rl_screen_width>
+
  width readline thinks it can use on the screen.
 
 =item C<$rl_correct_sw>
+
 is substructed from the real width of the terminal
 
 =item C<$rl_margin>
+
 scroll by moving to within this far from a margin.
 
 =item C<$rl_CLEAR>
+
 what to output to clear the screen.
 
 =item C<$rl_max_numeric_arg>
+
 maximum numeric arg allowed.
 
 =item C<$rl_vi_replace_default_on_insert>
+
 Normally, the text you enter is added to any default text passed to
 readline.  If this variable is true, default text will start out
 highlighted (if supported by your terminal) and text entered while the
 default is highlighted (during the _first_ insert mode only) will
 replace the entire default line.  Once you have left insert mode (hit
- escape), everything works as normal.
+escape), everything works as normal.
 
 This behavior similar to many GUI controls' behavior, which select the
 default text so that new text replaces the old.
@@ -321,12 +340,15 @@ Spine-crawlingly scary subroutine redefinitions
 =back
 
 =item C<$rl_mark >
+
 start of the region
 
 =item C<$line_rl_mark>
+
 the line on which $rl_mark is active
 
 =item C<$_rl_japanese_mb>
+
 For character movement suppose Japanese (which?!)
 multi-byte encoding.  (How to make a sane default?)
 

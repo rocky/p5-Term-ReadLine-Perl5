@@ -1053,7 +1053,7 @@ sub F_ForwardChar
     }
 }
 
-=head3 F_BackwaredChar
+=head3 F_BackwardChar
 
 Move backward (left) $count characters.
 
@@ -4454,5 +4454,9 @@ sub read_an_init_file($;$)
     return 1;
 }
 
+=head1 SEE ALSO
 
+L<Term::ReadLine::Perl5>
+
+=cut
 1;
