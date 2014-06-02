@@ -21,12 +21,6 @@ use Exporter;
 use vars qw(@ISA @EXPORT); @ISA = qw(Exporter);
 @EXPORT = qw(KeymapEmacs KeymapVi KeymapVicmd KeymapVipos KeymapVisearch);
 
-=head2 InitKeyMap
-
-C<InitKeymap(*keymap, 'default', 'name', bindings...)>
-
-=cut
-
 sub KeymapEmacs($$$) {
     my ($fn, $keymap, $inDOS) = @_;
     &$fn($keymap, 'SelfInsert', 'emacs_keymap',
@@ -465,5 +459,10 @@ sub KeymapVisearch($$) {
 	 "\r",   'ViEndSearch',
 	);
 }
+
+=head1 SEE ALSO
+
+L<Term::ReadLine::Perl5>
+=cut
 
 1;

@@ -20,23 +20,9 @@ Eval, Print, Loop).
 
 =head2 Demo program
 
-Inside this package is a demo program that does a couple of things.
-
-=over
-
-=item *
-Runs I<Term::ReadLine::Perl5> to let you see what it can do.
-
-=item *
-It allows you to play with the API by setting and showing values and seeing the effects.
-
-=item *
-Gives a reasonable-size program for how to use the library including adding custom completion.
-
-=item *
-Shows how to write a command-line program, similar to L<Devel::Trepan>.
-
-=back
+Another package, L<Term::ReadLine::Perl5::Demo> is available to let
+you run I<Term::ReadLine::Perl5> to experiment with its capabilities
+and show how to use the API.
 
 =head1 SYNOPSIS
 
@@ -47,12 +33,11 @@ Shows how to write a command-line program, similar to L<Devel::Trepan>.
   }
 
 =cut
-
 use warnings; use strict;
 use Term::ReadLine::Perl5::readline;
 no warnings 'once';
 
-our $VERSION = '1.37_01';
+our $VERSION = '1.38';
 
 use Carp;
 use Term::ReadLine::Perl5::History;
@@ -104,16 +89,28 @@ my %features = (
 		 stiflehistory => 1, # we have stifle_history()
       );
 
-sub Features { \%features; }
-
 tie %attribs, 'Term::ReadLine::Perl5::Tie' or die ;
 sub Attribs {
   \%attribs;
 }
 
-=head1 SUBROUTINES
+=head2 Standard Term::ReadLine Methods
 
-=head2 readline
+These methods are standard methods defined by
+L<Term::ReadLine>.
+
+=head3 C<ReadLine>
+
+    Readline() -> 'Term::ReadLine::Perl5
+
+returns the actual package that executes the commands. If this package
+is used, the value is C<Term::ReadLine::Perl5>.
+
+=cut
+sub ReadLine {'Term::ReadLine::Perl5'}
+
+
+=head3 readline
 
    $bool = $term->readline($prompt, $default)
 
@@ -132,29 +129,23 @@ sub readline {
   &Term::ReadLine::Perl5::readline::readline(@_);
 }
 
-=head2 new
+=head3 new
 
-C<Term::ReadLine::Perl-E<gt>new($name, [*IN, [*OUT])>
+B<new>(I<$name>,[I<IN>[,I<OUT>]])
 
-Returns a handle for subsequent calls to readline functions.
+returns the handle for subsequent calls to following functions.
+Argument is the name of the application.  Optionally can be followed
+by two arguments for C<IN> and C<OUT> file handles. These arguments
+should be globs.
 
-C<$name> is the name of the application.
+I<$name> is the name of the application.
 
-Optionally you can add two arguments for input and output
-filehandles. These arguments should be globs.
-
-This routine might also be called via
-C<Term::ReadLine-E<gt>new($term_name)> if other Term::ReadLine packages
-like L<Term::ReadLine::Gnu> is not available or if you have
+This routine may also get called via
+C<Term::ReadLine-E<gt>new($term_name)> if you have
 C<$ENV{PERL_RL}> set to 'Perl5';
-
-I<Note>: Some additional feature via Term::ReadLine::Stub are added
-when a "new" is done
 
 At present, because this code has lots of global state, we currently don't
 support more than one readline instance.
-
-Somebody please volunteer to rewrite this code!
 
 =cut
 sub new {
@@ -212,7 +203,14 @@ sub new {
   return $term;
 }
 
-sub newTTY {
+=head3 newTTY
+
+B<Term::ReadLine::Perl5-E<gt>newTTY>(I<IN>, I<OUT>)
+
+takes two arguments which are input filehandle and output filehandle.
+Switches to use these filehandles.
+=cut
+sub newTTY($$$) {
   my ($self, $in, $out) = @_;
   $Term::ReadLine::Perl5::readline::term_IN   = $self->[0] = $in;
   $Term::ReadLine::Perl5::readline::term_OUT  = $self->[1] = $out;
@@ -221,13 +219,11 @@ sub newTTY {
   select($sel);
 }
 
-sub ReadLine {'Term::ReadLine::Perl5'}
+=head3 Minline
 
-=head2 Minline
+B<MinLine>([I<$minlength>])>
 
-C<MinLine([$minlength])>
-
-If C<$minlength> is given, set C<$readline::minlength> the minimum
+If B<$minlength> is given, set C<$readline::minlength> the minimum
 length a $line for it to go into the readline history.
 
 The previous value is returned.
@@ -238,10 +234,17 @@ sub MinLine($;$) {
     return $old;
 }
 
-=head2 History Subroutines
+#################### History ##########################################
+
+=head3 add_history
+
+B<add_history>(I<$line1>, I<$line2>, ...)
+
+adds the lines, I<$line1>, etc. to the input history list.
+
+I<AddHistory> is an alias for this function.
 
 =cut
-#################### History ##########################################
 
 # GNU ReadLine names
 *add_history            = \&Term::ReadLine::Perl5::History::add_history;
@@ -266,10 +269,12 @@ sub MinLine($;$) {
 
 =head3 stifle_history
 
-   $term->remove_history($max)
+   $term->stifle_history($max)
 
 Stifle or put a cap on the history list, remembering only C<$max>
 number of lines.
+
+I<StifleHistory> is an alias for this function.
 
 =cut
 ### FIXME: stifle_history is still here because it updates $attribs.
@@ -294,6 +299,8 @@ sub stifle_history($$) {
 
 Remove history element C<$which> from the history. The removed
 element is returned.
+
+I<RemoveHistory> is an alias for this function.
 =cut
 
 sub remove_history($$) {
@@ -311,10 +318,68 @@ sub remove_history($$) {
   return $removed;
 }
 
+=head3 Features
+
+B<Features()>
+
+Returns a reference to a hash with keys being features present in
+current implementation. Several optional features are used in the
+minimal interface:
+
+=over
+
+=item *
+I<addHistory> is present if you can add lines to history list via
+the I<addHistory()> method
+
+=item *
+I<appname> is be present if a name, the first argument
+to I<new()> was given
+
+=item *
+I<autohistory> is present if lines are put into history automatically
+subject to the line being longer than I<MinLine>.
+
+=item *
+I<getHistory> is present if we get retrieve history via the I<getHistory()>
+method
+
+=item *
+I<minline> is present if the I<MinLine> method available.
+
+=item *
+I<preput> is present if the second argument to I<readline> method can
+append text to the input to be read subsequently
+
+=item *
+I<readHistory> is present you can read history
+items previosly saved in a file.
+
+=item *
+I<setHistory> is present if we can set history
+
+=item *
+I<stifleHistory> is present you can put a limit of the nubmer of history
+items to save via the I<writeHistory()> method
+
+=item *
+I<tkRunning> is present if a Tk application may run while I<ReadLine> is
+getting input.
+
+=item *
+I<writeHistory> is present you can save history to a file via the
+I<writeHistory()> method
+
+=back
+
+=cut
+
+sub Features { \%features; }
+
 =head1 SEE ALSO
 
 L<Term::ReadLine::Perl5::readline>, L<Term::ReadLine::Perl5::readline-guide>,
-and L<Term::ReadLine::Perl5::History>,
+and L<Term::ReadLine::Perl5::History>, and L<Term::ReadLine>.
 
 =cut
 1;

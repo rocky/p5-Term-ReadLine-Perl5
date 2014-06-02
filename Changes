@@ -1,11 +1,18 @@
-1.37: 2014-04-25
+1.38: 2014-06-01 Marilyn
 
-- A stray character got into funtion BeginningOfLine. Darn!
+- Break out Term::ReadLine::Dumb and Term::ReadLine::Keymap into
+  their own modules
+- Conform better to GNU Readline: add rl_parse_and_bind, rl_bind_keyseq,
+  rl_redisplay, rl_init_file.
+
+1.37: 2014-05-25
+
+- A stray character got into function BeginningOfLine. Darn!
 - Fill out demo code better.
 - Fix rl_get which was broken due to namespace change.
 - Improve readline.pm pod and overall pod
 
-1.36: 2014-04-25
+1.36: 2014-05-25
 
 - Add Term::ReadLine::Perl5::TermCap to remove cyclic
   dependency between Term::ReadLine::Perl5 and Term::ReadLine.
@@ -14,29 +21,29 @@
 - Start to organize and document readline.pm better.
 - Add demo program for interactive test. More should be done here.
 
-1.35:  2014-04-22
+1.35:  2014-05-22
 
 - more work on ~ expand for FreeBSD.
 
-1.34:  2014-04-21
+1.34:  2014-05-21
 
 - Better about resetting via setpwent() for testing.
 
-1.33:  2014-04-19 Henry Frankel
+1.33:  2014-05-19 Henry Frankel
 - Fix up ~ expansion via getpwent. For example. ~ro now may expand
   to ~rocky and~root. More POD in readline.pm
 
-1.32:  2014-04-14
+1.32:  2014-05-14
 - Remove a tilde expand test until BINGOS gets back to me on why
   it fails on his setup
 
-1.31:  2014-04-13
+1.31:  2014-05-13
 
 - Fix tilde expansion test on systems without getpwuid and where
   the initial bsd_glob expansion includes "/";
 - Term::ReadLine::Perl5::readline.pod -> Term::ReadLine::Perl5::readline-guide.pod
 
-1.30:  2014-04-11 Happy Mother's day!
+1.30:  2014-05-11 Happy Mother's day!
 
 - rl_filename_list no longer adds classifier '*', @', '=' suffixes,
   but does include '/' for directories. Term::ReadLine::GNU and GNU

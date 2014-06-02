@@ -22,10 +22,17 @@ sub get_line($) {
     scalar <$term_IN>;
 }
 
+=head1 SUBROUTINES
+
 =head2 readline
 
+B<readline>(I<$prompt>, [I<$in>, [I<$out>]])
+
 A version readline for a dumb terminal, that is one that doesn't have
-many terminal editing capabilities.
+many terminal editing capabilities. I<$prompt> is the prompt to
+display; optional arguments I<$in> and I<$out> specify input and
+output file handles. I<STDIN> and I<STDOUT> are used when the
+corresponding file handles are not given.
 
 =cut
 
@@ -48,5 +55,10 @@ sub readline($;$$)
     chomp($line);
     return $line;
 }
+
+=head1 SEE ALSO
+
+L<Term::ReadLine::Perl5>
+=cut
 
 1;
