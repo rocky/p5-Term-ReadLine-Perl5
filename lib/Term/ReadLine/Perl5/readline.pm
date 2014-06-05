@@ -2751,10 +2751,10 @@ sub F_YankClipboard
       }
     } else {
       my $mess;
-      my $past_fh;
+      my $paste_fh;
       if ($ENV{RL_PASTE_CMD}) {
         $mess = "Reading from pipe `$ENV{RL_PASTE_CMD}'";
-        open($past_fh, "$ENV{RL_PASTE_CMD} |") or warn("$mess: $!"), return;
+        open($paste_fh, "$ENV{RL_PASTE_CMD} |") or warn("$mess: $!"), return;
       } elsif (defined $HOME) {
 	my $cutpastefile = File::Spec($HOME, '.rl_cutandpaste');
         $mess = "Reading from file `$cutpastefile'";

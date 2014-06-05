@@ -4,6 +4,7 @@
 # If argument is '--no-print', do not print the result.
 
 use warnings; use strict;
+use Test::More;
 use rlib './lib';
 
 BEGIN{
@@ -30,9 +31,10 @@ my $non_interactive =
      ($ENV{PERL_MM_USE_DEFAULT} || $ENV{AUTOMATED_TESTING});
 if ($non_interactive) {
     no strict; no warnings;
-    print "1..0 # skip: not interactive; " .
-    "\$ENV{PERL_MM_NONINTERACTIVE}='$ENV{PERL_MM_NONINTERCTIVE}' \$ENV{AUTOMATED_TESTING}='$ENV{AUTOMATED_TESTING}'\n";
-  exit;
+    plan skip_all => "Not interactive: " .
+	"\$ENV{PERL_MM_NONINTERACTIVE}='$ENV{PERL_MM_NONINTERACTIVE}' \$ENV{AUTOMATED_TESTING}='$ENV{AUTOMATED_TESTING}'\n";
+} else {
+    plan;
 }
 
 my ($term, $no_print);
@@ -88,4 +90,5 @@ while ( defined (my $line = $term->readline($prompt, 'exit')) )
     $term->addhistory($line) if $line =~ /\S/ and !$features{autohistory};
     $readline::rl_default_selected = !$readline::rl_default_selected;
 }
-print "ok 1\n";
+ok(1);
+done_testing();
