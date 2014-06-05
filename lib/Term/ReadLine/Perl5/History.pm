@@ -173,22 +173,27 @@ sub history_is_stifled {
   $history_stifled ? 1 : 0;
 }
 
-# read_history() and write_history() follow GNU Readline's
-# C convention of returning 0 for success and 1 for failure.
-#
-# ReadHistory and WriteHstory follow Perl's convention of returning 1
-# for success and 0 for failure.
-# It is a little bit whacky, but this is in fact how Term::ReadLine::Gnu
-# works.
+=head2 read_history
+
+B<read_history>(I<$filename>)
+
+Add the contents of I<$filename> to the history list, a line at a time. If
+filename is undef, then read from `~/.history'. Returns 0 if
+successful, or I<$!> if not.
+
+=cut
 
 sub read_history {
     my @history;
     my $self = shift;
     my $filename = shift;
-    open(HISTORY, '<', $filename ) or return 1;
-    while (<HISTORY>) { chomp; push @history, $_} ;
+    open(my $fh, '<:encoding(utf-8)', $filename ) or return $!;
+    while (my $hist= <$fh>) {
+	chomp($hist);
+	push @history, $hist;
+    };
     SetHistory($self, @history);
-    close HISTORY;
+    close $fh;
     return 0;
 }
 
@@ -201,7 +206,7 @@ element is returned.
 
 =cut
 
-sub remove_history {
+sub remove_history($$) {
     my ($which, $history_length) = @_;
     return undef if
 	$which < 0 || $which >= $rl_history_length ||
@@ -215,12 +220,25 @@ sub remove_history {
     return $removed;
 }
 
+=head2 write_history
+B<write_history>(I<$filename>)
+
+Write the current history to filename, overwriting filename if
+necessary. If filename is NULL, then write the history list to
+`~/.history'. Returns 0 on success, or errno on a read or write error.
+
+I<read_history()> and I<write_history()> follow GNU Readline's C
+convention of returning 0 for success and 1 for failure.
+
+=cut
 sub write_history {
     shift;
     my $filename = shift;
-    open(HISTORY, '>', $filename ) or return 1;
-    for (@rl_History) { print HISTORY $_, "\n"; }
-    close HISTORY;
+    open(my $fh, '>:encoding(utf-8)', $filename ) or return $!;
+    for my $hist (@rl_History) {
+        print $fh $hist . "\n";
+    }
+    close $fh;
     return 0;
 }
 

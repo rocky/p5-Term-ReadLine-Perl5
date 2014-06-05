@@ -172,13 +172,13 @@ sub new {
       my ($IN,$OUT) = Term::ReadLine->findConsole();
       # Old Term::ReadLine did not have a workaround for a bug in Win devdriver
       $IN = 'CONIN$' if $^O eq 'MSWin32' and "\U$IN" eq 'CON';
-      open IN,
-	# A workaround for another bug in Win device driver
-	(($IN eq 'CONIN$' and $^O eq 'MSWin32') ? "+< $IN" : "< $IN")
+      open(my $in_fh,
+	   # A workaround for another bug in Win device driver
+	   (($IN eq 'CONIN$' and $^O eq 'MSWin32') ? "+< $IN" : "< $IN"))
 	  or croak "Cannot open $IN for read";
-      open(OUT,">$OUT") || croak "Cannot open $OUT for write";
-      $Term::ReadLine::Perl5::readline::term_IN = \*IN;
-      $Term::ReadLine::Perl5::readline::term_OUT = \*OUT;
+      open(my $out_fh, ">$OUT") || croak "Cannot open $OUT for write: $!";
+      $Term::ReadLine::Perl5::readline::term_IN  = $in_fh;
+      $Term::ReadLine::Perl5::readline::term_OUT = $out_fh;
     }
   } else {
     if (defined $term and ($term->IN ne $_[0] or $term->OUT ne $_[1]) ) {

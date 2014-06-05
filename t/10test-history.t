@@ -289,7 +289,7 @@ $t->SetHistory(@list_write);
 $t->SetHistory();		# clear history list
 # read_history()
 ! $t->read_history($hfile) || warn "error at read_history: $!\n";
-is_deeply(\@list_write, [$t->GetHistory]);
+is_deeply(\@list_write, [$t->GetHistory], 'GetHistory alias');
 
 done_testing();
 
