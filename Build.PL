@@ -38,17 +38,15 @@ my $builder = Module::Build->new(
         'rlib'                    => '0.02',
         'File::HomeDir'           => $min_file_homedir_version,
 	'File::Spec'              => 0,
-	'Term::ReadKey'           => 0,
+	'Term::ReadKey'           => '2.3',
 	'Term::Cap'               => 0,
     },
     configure_requires => {
-        'rlib'                    => '0.02',
 	'Module::Build'           => '0.4004',  # Min "test_requires"
 	'perl'                    => $min_perl_version,
     },
     test_requires => {
-        'File::HomeDir'           => $min_file_homedir_version,
-        'rlib'                    => '0.02',
+	"Test::More"              => "0.98",
     },
     requires => {
         'perl'                    => $min_perl_version,
@@ -56,7 +54,14 @@ my $builder = Module::Build->new(
         'version'                 => 0,
         'File::HomeDir'           => $min_file_homedir_version,
 	'File::Spec'              => 0,
-        'Term::ReadKey'           => 0,
+        'Term::ReadKey'           => 2.3,
+	# For Caroline
+	"Class::Accessor::Lite"   => '0.05',
+	'IO::Handle'              => '0',
+	'POSIX'                   => '0',
+	'Text::VisualWidth::PP'   => '0',
+	'Unicode::EastAsianWidth::Detect' => '0.03',
+
     },
     sign                => ($ENV{PERL_MB_NOSIGN} ? 0 : 1),
     );
