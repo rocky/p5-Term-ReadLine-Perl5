@@ -274,7 +274,7 @@ $t->SetHistory();		# clear history list
 ok(!$t->GetHistory );
 
 $t->ReadHistory($hfile) || warn "error at read_history: $!\n";
-is_deeply(\@list_write, [$t->GetHistory]);
+is_deeply(\@list_write, [$t->GetHistory], 'GetHistory alias');
 
 @list_write = qw(0 1 2 3 4);
 $t->SetHistory(@list_write);

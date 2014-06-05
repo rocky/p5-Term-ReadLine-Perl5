@@ -2751,18 +2751,20 @@ sub F_YankClipboard
       }
     } else {
       my $mess;
+      my $past_fh;
       if ($ENV{RL_PASTE_CMD}) {
         $mess = "Reading from pipe `$ENV{RL_PASTE_CMD}'";
-        open PASTE, "$ENV{RL_PASTE_CMD} |" or warn("$mess: $!"), return;
+        open($past_fh, "$ENV{RL_PASTE_CMD} |") or warn("$mess: $!"), return;
       } elsif (defined $HOME) {
 	my $cutpastefile = File::Spec($HOME, '.rl_cutandpaste');
         $mess = "Reading from file `$cutpastefile'";
-        open PASTE, "< $cutpastefile" or warn("$mess: $!"), return;
+        open($paste_fh, '<:encoding(utf-8)', $cutpastefile)
+	    or warn("$mess: $!"), return;
       }
       if ($mess) {
         local $/;
-        $in = <PASTE>;
-        close PASTE or warn("$mess, closing: $!");
+        $in = <$paste_fh>;
+        close $paste_fh or warn("$mess, closing: $!");
       }
     }
     if (defined $in) {

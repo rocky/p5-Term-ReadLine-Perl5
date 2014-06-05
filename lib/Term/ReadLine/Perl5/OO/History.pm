@@ -85,18 +85,17 @@ sub add_history($) {
 
 =head2 read_history
 
-B<read_history>(I<$filename>)
+#B<read_history>(I<$filename>)
 
 Add the contents of I<$filename> to the history list, a line at a time. If
 filename is undef, then read from `~/.history'. Returns 0 if
-successful, or errno if not.
+successful, or I<$!> if not.
 
 =cut
 
-sub read_history {
-    my $self = shift;
+sub read_history($$) {
+    my ($self, $filename) = @_;
     my @history;
-    my $filename = shift;
     open(my $fh, '<:encoding(utf-8)', $filename ) or return $!;
     while (my $hist= <$fh>) {
 	chomp($hist);
@@ -272,7 +271,7 @@ I<read_history()> is an alias of I<read_history_range()>.
 =cut
 
 sub ReadHistory {
-    my ($self) = @_;
+    my $self = shift;
     ! $self->read_history(@_);
 }
 
@@ -290,7 +289,7 @@ F<~/.history>.  Returns true if successful, or false if not.
 =cut
 
 sub WriteHistory {
-    my ($self) = @_;
+    my $self = shift;
     ! $self->write_history(@_);
 }
 =head1 AUTHOR
