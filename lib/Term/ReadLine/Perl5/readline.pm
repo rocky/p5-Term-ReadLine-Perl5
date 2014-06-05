@@ -2751,7 +2751,7 @@ sub F_YankClipboard
       }
     } else {
       my $mess;
-      my $past_fh;
+      my $paste_fh;
       if ($ENV{RL_PASTE_CMD}) {
         $mess = "Reading from pipe `$ENV{RL_PASTE_CMD}'";
         open($past_fh, "$ENV{RL_PASTE_CMD} |") or warn("$mess: $!"), return;
