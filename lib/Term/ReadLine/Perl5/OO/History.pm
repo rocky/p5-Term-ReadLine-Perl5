@@ -65,7 +65,7 @@ history is stifled, or there are already too many items.
 
 =cut
 
-sub add_history($) {
+sub add_history {
     my $self = shift;
     if ($self->{history_stifled} &&
 	($self->{rl_history_length} ==

@@ -42,6 +42,7 @@ our $VERSION = '1.38';
 use Carp;
 use rlib '.';
 use Term::ReadLine::Perl5::History;
+use Term::ReadLine::Perl5::OO;
 use Term::ReadLine::Perl5::OO::History;
 use Term::ReadLine::Perl5::Tie;
 use Term::ReadLine::Perl5::readline;
@@ -157,25 +158,31 @@ sub new {
     $features{tkRunning} = Term::ReadLine::Stub->Features->{'tkRunning'};
     $features{ornaments} = Term::ReadLine::Stub->Features->{'ornaments'};
     if (defined $term) {
+	# warn "Cannot create second readline interface\n";
+	# warn "Using experimental OO interface based on Caroline\n";
+	# return Term::ReadLine::Perl5::OO->new(@_);
 	warn "Cannot create second readline interface, falling back to dumb.\n";
 	return Term::ReadLine::Stub::new(@_);
     }
     shift; # Package name
     if (@_) {
 	if ($term) {
-	    warn "Ignoring name of second readline interface.\n" if defined $term;
+	    warn "Ignoring name of second readline interface.\n"
+		if defined $term;
 	    shift;
 	} else {
-	    $Term::ReadLine::Perl5::readline::rl_readline_name = shift; # Name
+            # Set Name
+	    $Term::ReadLine::Perl5::readline::rl_readline_name = shift;
 	}
     }
     if (!@_) {
 	if (!defined $term) {
 	    my ($IN,$OUT) = Term::ReadLine->findConsole();
-	    # Old Term::ReadLine did not have a workaround for a bug in Win devdriver
+	    # Old Term::ReadLine did not have a workaround for a bug
+	    # in Win devdriver
 	    $IN = 'CONIN$' if $^O eq 'MSWin32' and "\U$IN" eq 'CON';
 	    open(my $in_fh,
-	    # A workaround for another bug in Win device driver
+		 # A workaround for another bug in Win device driver
 		 (($IN eq 'CONIN$' and $^O eq 'MSWin32') ? "+< $IN" : "< $IN"))
 		or croak "Cannot open $IN for read";
 	    open(my $out_fh, ">$OUT") || croak "Cannot open $OUT for write: $!";

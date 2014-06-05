@@ -1,7 +1,6 @@
 package Term::ReadLine::Perl5::OO;
 use 5.008005;
-use strict;
-use warnings;
+use strict; use warnings;
 use POSIX qw(termios_h);
 use Storable;
 use Text::VisualWidth::PP 0.03 qw(vwidth);
@@ -11,6 +10,8 @@ use IO::Handle;
 
 use rlib '.';
 use Term::ReadLine::Perl5::OO::History;
+use Term::ReadLine::Perl5::OO::State;
+use Term::ReadLine::Perl5::readline;
 
 our $VERSION = "0.20";
 
@@ -23,7 +24,7 @@ my $IS_WIN32 = $^O eq 'MSWin32';
 require Win32::Console::ANSI if $IS_WIN32;
 
 use Class::Accessor::Lite 0.05 (
-    rw => [qw(completion_callback history_max_len)],
+    rw => [qw(completion_callback rl_MaxHistorySize)],
 );
 
 use constant {
@@ -51,12 +52,17 @@ use constant {
     ESC => 27,
 };
 
+no warnings 'once';
+*read_history           = \&Term::ReadLine::Perl5::OO::History::read_history;
+*write_history          = \&Term::ReadLine::Perl5::OO::History::write_history;
+use warnings 'once';
+
 sub new {
     my $class = shift;
     my %args = @_==1? %{$_[0]} : @_;
     my $self = bless {
 
-        rl_History => (),
+        rl_History => [],
 	rl_MaxHistorySize    => 100,
 	rl_HistoryIndex      => 0,  # Is set on use
 	rl_history_length    => 0,  # is set on use
@@ -66,7 +72,6 @@ sub new {
 
         debug => !!$ENV{CAROLINE_DEBUG},
         multi_line => 1,
-        history_max_len => 100,
         %args
     }, $class;
     return $self;
@@ -87,15 +92,14 @@ sub debug {
 sub history { shift->{rl_History} }
 
 sub history_len {
-    my $self = shift;
-    0+@{$self->{rl_History}};
+    shift->{rl_history_length};
 }
 
 ########################################
 
 sub DESTROY {
-    my $self = shift;
-    $self->disable_raw_mode();
+    shift->disable_raw_mode();
+    Term::ReadLine::Perl5::readline::ResetTTY;
 }
 
 sub readline {
@@ -209,22 +213,12 @@ sub disable_raw_mode {
     return undef;
 }
 
-sub history_add {
-    my ($self, $line) = @_;
-    if (@{$self->{rl_History}}+1 > $self->history_max_len) {
-        shift @{$self->{rl_History}};
-    }
-    push @{$self->{rl_History}}, $line;
-}
-
 sub edit {
     my ($self, $prompt) = @_;
     print STDOUT $prompt;
     STDOUT->flush;
 
-    $self->history_add('');
-
-    my $state = Term::ReadLine::OO::State->new;
+    my $state = Term::ReadLine::Perl5::OO::State->new;
     $state->{prompt} = $prompt;
     $state->cols($self->get_columns);
     $self->debug("Columns: $state->{cols}\n");
@@ -244,7 +238,8 @@ sub edit {
         }
 
         if ($cc == ENTER) { # enter
-            pop @{$self->{rl_History}};
+	    Term::ReadLine::Perl5::OO::History::add_history($self,
+							    $state->buf);
             return $state->buf;
         } elsif ($cc==CTRL_C) { # ctrl-c
             $self->{sigint}++;
@@ -276,9 +271,9 @@ sub edit {
         } elsif ($cc == CTRL_F) { # ctrl-f
             $self->edit_move_right($state);
         } elsif ($cc == CTRL_P) { # ctrl-p
-            $self->edit_history_next($state, $HISTORY_PREV);
+            $self->edit_previous_history($state);
         } elsif ($cc == CTRL_N) { # ctrl-n
-            $self->edit_history_next($state, $HISTORY_NEXT);
+            $self->edit_next_history($state);
         } elsif ($cc == 27) { # escape sequence
             # Read the next two bytes representing the escape sequence
             my $buf = $self->readkey or return undef;
@@ -289,9 +284,9 @@ sub edit {
             } elsif ($buf eq "[C") { # right arrow
                 $self->edit_move_right($state);
             } elsif ($buf eq "[A") { # up arrow
-                $self->edit_history_next($state, $HISTORY_PREV);
+                $self->edit_previous_history($state, $HISTORY_PREV);
             } elsif ($buf eq "[B") { # down arrow
-                $self->edit_history_next($state, $HISTORY_NEXT);
+                $self->edit_previous_history($state, $HISTORY_NEXT);
             } elsif ($buf eq "[1") { # home
                 $buf = $self->readkey or return undef;
                 if ($buf eq '~') {
@@ -467,22 +462,33 @@ sub edit_delete_prev_word {
     $self->refresh_line($state);
 }
 
-sub edit_history_next {
+sub edit_history($$$) {
     my ($self, $state, $dir) = @_;
-    if ($self->history_len > 1) {
-        $self->history->[$self->history_len-1-$state->{history_index}] = $state->buf;
+    my $hist_len = $self->history_len;
+    if ( $hist_len > 1) {
+        $self->history->[$hist_len-1-$state->{history_index}] = $state->buf;
         $state->{history_index} += ( ($dir == $HISTORY_PREV) ? 1 : -1 );
         if ($state->{history_index} < 0) {
             $state->{history_index} = 0;
             return;
-        } elsif ($state->{history_index} >= $self->history_len) {
-            $state->{history_index} = $self->history_len-1;
+        } elsif ($state->{history_index} >= $hist_len) {
+            $state->{history_index} = $hist_len-1;
             return;
         }
-        $state->{buf} = $self->history->[$self->history_len - 1 - $state->{history_index}];
+        $state->{buf} = $self->history->[$hist_len - 1 -
+					 $state->{history_index}];
         $state->{pos} = $state->len;
         $self->refresh_line($state);
     }
+}
+
+sub edit_previous_history($$) {
+    my ($self, $state) = @_;
+    $self->edit_history($state, $HISTORY_PREV);
+}
+sub edit_next_history($$) {
+    my ($self, $state) = @_;
+    $self->edit_history($state, $HISTORY_PREV);
 }
 
 sub edit_backspace {
@@ -663,40 +669,16 @@ sub is_supported {
     return 1;
 }
 
-package Term::ReadLine::Perl5::OO::State;
-
-use Class::Accessor::Lite 0.05 (
-    rw => [qw(buf pos cols prompt oldpos maxrows query)],
-);
-
-sub new {
-    my $class = shift;
-    bless {
-        buf => '',
-        pos => 0,
-        history_index => 0,
-        oldpos => 0,
-        maxrows => 0,
-    }, $class;
+unless (caller()) {
+    my $c = __PACKAGE__->new;
+    if (@ARGV) {
+	while (defined(my $line = $c->readline($ARGV[0] .'> '))) {
+	    if ($line =~ /\S/) {
+		print eval $line, "\n";
+	    }
+	}
+    }
 }
-use Text::VisualWidth::PP 0.03 qw(vwidth);
-
-sub len { length(shift->buf) }
-sub plen { length(shift->prompt) }
-
-sub vpos {
-    my $self = shift;
-    vwidth(substr($self->buf, 0, $self->pos));
-}
-
-sub width {
-    my $self = shift;
-    vwidth($self->prompt . $self->buf);
-}
-
-no warnings 'once';
-*read_history           = \&Term::ReadLine::Perl5::OO::History::read_history;
-*write_history          = \&Term::ReadLine::Perl5::OO::History::write_history;
 
 1;
 __END__
@@ -754,10 +736,6 @@ Options are:
 
 =over 4
 
-=item history_max_len : Str
-
-Set the limitation for max history size.
-
 =item completion_callback : CodeRef
 
 You can write completion callback function like this:
@@ -787,10 +765,6 @@ You can write completion callback function like this:
 Read line with C<$prompt>.
 
 Trailing newline is removed. Returns undef on EOF.
-
-=item C<< $caroline->history_add($line) >>
-
-Add $line to the history.
 
 =item C<< $caroline->history() >>
 
