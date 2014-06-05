@@ -1,7 +1,7 @@
 language: perl
 
 env:
-  - AUTOMATED_TESTING=1 PREREQS="rlib File::HomeDir File::Spec Term::ReadKey Module::Build Test::VisualWidth::PP Unicode::EastAsianWidth::Detect"
+  - AUTOMATED_TESTING=1 PREREQS="rlib File::HomeDir File::Spec Term::ReadKey Module::Build Text::VisualWidth::PP Unicode::EastAsianWidth::Detect"
 
 install:
   # Prerequisites
