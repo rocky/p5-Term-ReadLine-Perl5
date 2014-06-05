@@ -81,9 +81,10 @@ my @list_set;
 @list_set = qw(one two two three);
 show_indices;
 
+# use Enbugger 'trepan'; Enbugger->stop();
 $t->SetHistory(@list_set);
 is_deeply(\@list_set, [$t->GetHistory],
-	  "GetHistory gives what SetHistory initially[ set");
+	  "GetHistory gives what SetHistory initially set");
 show_indices;
 
 $t->add_history('four');
@@ -101,7 +102,7 @@ show_indices;
 $t->replace_history_entry(3, 'daarn');
 splice(@list_set, 3, 1, 'daarn');
 is_deeply(\@list_set, [$t->GetHistory],
-	  'replace_history can replace an item');
+	  'replace_history_entry can replace an item');
 show_indices;
 
 # stifle_history
@@ -134,13 +135,6 @@ show_indices;
 # history_is_stifled()
 $t->addhistory('six');  # Use older compatible form of addhistory
 is($t->history_is_stifled, 0);
-is($attribs->{history_length}, 4,
-   "unstifling history add adding increases history length");
-show_indices;
-
-$t->clear_history;
-is($attribs->{history_length}, 0,
-    "clear_history() clears history");
 show_indices;
 
 ########################################################################

@@ -10,7 +10,7 @@ use File::Basename;
 use File::Spec;
 
 my $min_file_homedir_version = '0.81';
-my $min_perl_version         = '5.006002';
+my $min_perl_version         = '5.008005';
 
 my $lib = File::Spec->catfile(dirname(__FILE__), 'lib');
 unshift @INC, $lib;
