@@ -14,10 +14,13 @@ lib/Term/ReadLine/Perl5/CHANGES	     # What's up?
 lib/Term/ReadLine/Perl5/Dumb.pm
 lib/Term/ReadLine/Perl5/History.pm
 lib/Term/ReadLine/Perl5/Keymap.pm
+lib/Term/ReadLine/Perl5/OO.pm
+lib/Term/ReadLine/Perl5/OO/History.pm
+lib/Term/ReadLine/Perl5/OO/State.pm
 lib/Term/ReadLine/Perl5/TermCap.pm
 lib/Term/ReadLine/Perl5/Tie.pm
-lib/Term/ReadLine/Perl5/readline.pm
 lib/Term/ReadLine/Perl5/readline-guide.pod
+lib/Term/ReadLine/Perl5/readline.pm
 t/00test-pod.t				# Make sure POD is Kosher
 t/10test-basic.t
 t/10test-changecase.t
