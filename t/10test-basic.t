@@ -1,6 +1,5 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
+use strict; use warnings;
 use rlib '../lib';
 
 use Test::More;

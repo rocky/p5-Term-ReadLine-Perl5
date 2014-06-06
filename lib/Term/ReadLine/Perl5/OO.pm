@@ -7,6 +7,7 @@ use Text::VisualWidth::PP 0.03 qw(vwidth);
 use Unicode::EastAsianWidth::Detect qw(is_cjk_lang);
 use Term::ReadKey qw(GetTerminalSize ReadLine ReadKey ReadMode);
 use IO::Handle;
+use English;
 
 use rlib '.';
 use Term::ReadLine::Perl5::OO::History;
@@ -17,8 +18,8 @@ our $VERSION = "0.20";
 
 our @EXPORT = qw( caroline );
 
-my $HISTORY_NEXT = 0;
-my $HISTORY_PREV = 1;
+use constant HISTORY_NEXT => +1;
+use constant HISTORY_PREV => -1;
 
 my $IS_WIN32 = $^O eq 'MSWin32';
 require Win32::Console::ANSI if $IS_WIN32;
@@ -53,8 +54,9 @@ use constant {
 };
 
 no warnings 'once';
-*read_history           = \&Term::ReadLine::Perl5::OO::History::read_history;
-*write_history          = \&Term::ReadLine::Perl5::OO::History::write_history;
+*add_history     = \&Term::ReadLine::Perl5::OO::History::add_history;
+*read_history    = \&Term::ReadLine::Perl5::OO::History::read_history;
+*write_history   = \&Term::ReadLine::Perl5::OO::History::write_history;
 use warnings 'once';
 
 sub new {
@@ -89,9 +91,9 @@ sub debug {
 }
 
 #### FIXME redo this history stuff:
-sub history { shift->{rl_History} }
+sub history($) { shift->{rl_History} }
 
-sub history_len {
+sub history_len($) {
     shift->{rl_history_length};
 }
 
@@ -284,9 +286,9 @@ sub edit {
             } elsif ($buf eq "[C") { # right arrow
                 $self->edit_move_right($state);
             } elsif ($buf eq "[A") { # up arrow
-                $self->edit_previous_history($state, $HISTORY_PREV);
+                $self->edit_previous_history($state);
             } elsif ($buf eq "[B") { # down arrow
-                $self->edit_previous_history($state, $HISTORY_NEXT);
+                $self->edit_next_history($state);
             } elsif ($buf eq "[1") { # home
                 $buf = $self->readkey or return undef;
                 if ($buf eq '~') {
@@ -386,7 +388,7 @@ sub search {
                 next LOOP;
             }
         }
-        $self->beep();
+        $self->F_Ding();
         $self->refresh_line($state);
     }
 }
@@ -396,7 +398,7 @@ sub complete_line {
 
     my @ret = grep { defined $_ } $self->{completion_callback}->($state->buf);
     unless (@ret) {
-        $self->beep;
+        $self->F_Ding();
         return "\0";
     }
 
@@ -421,7 +423,7 @@ sub complete_line {
         if ($cc == TAB) { # tab
             $i = ($i+1) % (1+@ret);
             if ($i==@ret) {
-                $self->beep();
+                $self->F_Ding();
             }
         } elsif ($cc == ESC) { # escape
             # Re-show original buffer
@@ -440,9 +442,10 @@ sub complete_line {
     }
 }
 
-sub beep {
+sub F_Ding {
     my $self = shift;
-    $self->debug("Beep!\n");
+    local $OUTPUT_RECORD_SEPARATOR = '';
+    $self->debug("F_Ding!\n");
     print STDERR "\x7";
     STDERR->flush;
 }
@@ -464,31 +467,33 @@ sub edit_delete_prev_word {
 
 sub edit_history($$$) {
     my ($self, $state, $dir) = @_;
-    my $hist_len = $self->history_len;
-    if ( $hist_len > 1) {
-        $self->history->[$hist_len-1-$state->{history_index}] = $state->buf;
-        $state->{history_index} += ( ($dir == $HISTORY_PREV) ? 1 : -1 );
-        if ($state->{history_index} < 0) {
-            $state->{history_index} = 0;
+    my $hist_len = $self->{rl_history_length};
+    if ($hist_len > 0) {
+        $self->{rl_HistoryIndex} += $dir ;
+        if ($self->{rl_HistoryIndex} <= 0) {
+	    $self->F_Ding();
+            $self->{rl_HistoryIndex} = 1;
             return;
-        } elsif ($state->{history_index} >= $hist_len) {
-            $state->{history_index} = $hist_len-1;
+        } elsif ($self->{rl_HistoryIndex} > $hist_len) {
+	    $self->F_Ding();
+            $self->{rl_HistoryIndex} = $hist_len;
             return;
         }
-        $state->{buf} = $self->history->[$hist_len - 1 -
-					 $state->{history_index}];
+        $state->{buf} = $self->{rl_History}->[$self->{rl_HistoryIndex}-1];
         $state->{pos} = $state->len;
         $self->refresh_line($state);
     }
 }
 
 sub edit_previous_history($$) {
+    # use Enbugger 'trepan'; Enbugger->stop;
     my ($self, $state) = @_;
-    $self->edit_history($state, $HISTORY_PREV);
+    $self->edit_history($state, HISTORY_PREV);
 }
 sub edit_next_history($$) {
+    # use Enbugger 'trepan'; Enbugger->stop;
     my ($self, $state) = @_;
-    $self->edit_history($state, $HISTORY_PREV);
+    $self->edit_history($state, HISTORY_NEXT);
 }
 
 sub edit_backspace {

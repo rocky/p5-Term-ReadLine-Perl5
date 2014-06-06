@@ -9,7 +9,6 @@ sub new {
     bless {
         buf => '',
         pos => 0,
-        history_index => 0,
         oldpos => 0,
         maxrows => 0,
     }, $class;
