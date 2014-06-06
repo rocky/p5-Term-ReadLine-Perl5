@@ -158,11 +158,9 @@ sub new {
     $features{tkRunning} = Term::ReadLine::Stub->Features->{'tkRunning'};
     $features{ornaments} = Term::ReadLine::Stub->Features->{'ornaments'};
     if (defined $term) {
-	# warn "Cannot create second readline interface\n";
-	# warn "Using experimental OO interface based on Caroline\n";
-	# return Term::ReadLine::Perl5::OO->new(@_);
-	warn "Cannot create second readline interface, falling back to dumb.\n";
-	return Term::ReadLine::Stub::new(@_);
+	warn "Cannot create second readline interface\n";
+	warn "Using experimental OO interface based on Caroline\n";
+	return Term::ReadLine::Perl5::OO->new(@_);
     }
     shift; # Package name
     if (@_) {

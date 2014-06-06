@@ -15,6 +15,8 @@ use strict;
 use warnings;
 use rlib '../lib';
 
+{ package Term::ReadLine::Stub; }
+
 use Test::More;
 
 BEGIN {

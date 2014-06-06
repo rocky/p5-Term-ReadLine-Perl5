@@ -5,6 +5,8 @@ use warnings;
 use Test::More;
 use rlib '../lib';
 
+{ package Term::ReadLine::Stub; }
+
 BEGIN {
   $ENV{PERL_RL} = 'Perl5';	# force to use Term::ReadLine::Perl5
   $ENV{LANG} = 'C';

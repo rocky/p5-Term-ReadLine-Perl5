@@ -9,6 +9,8 @@
 
 use strict; use warnings;
 
+{ package Term::ReadLine::Stub; }
+
 # Note: we don't use Helper here. Should we?
 use rlib '../lib';
 use Test::More;

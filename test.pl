@@ -7,6 +7,8 @@ use warnings; use strict;
 use Test::More;
 use rlib './lib';
 
+{ package Term::ReadLine::Stub; }
+
 BEGIN{
     # Do not test TR::Gnu !
     $ENV{PERL_RL} = 'Perl5';
@@ -20,6 +22,7 @@ BEGIN{
 #       Term::ReadLine::Perl5 ?
 
 use Term::ReadLine::Perl5;
+
 
 use Carp;
 $SIG{__WARN__} = sub { warn Carp::longmess(@_) };

@@ -4,6 +4,8 @@ use rlib '../lib';
 
 use Test::More;
 
+{ package Term::ReadLine::Stub; }
+
 BEGIN {
   # stop reading ~/.inputrc
   $ENV{'INPUTRC'} = '/dev/null';
