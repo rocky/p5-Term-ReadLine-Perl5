@@ -14,6 +14,7 @@ lib/Term/ReadLine/Perl5/CHANGES	     # What's up?
 lib/Term/ReadLine/Perl5/Dumb.pm
 lib/Term/ReadLine/Perl5/History.pm
 lib/Term/ReadLine/Perl5/Keymap.pm
+lib/Term/ReadLine/Perl5/Common.pm
 lib/Term/ReadLine/Perl5/OO.pm
 lib/Term/ReadLine/Perl5/OO/History.pm
 lib/Term/ReadLine/Perl5/OO/State.pm

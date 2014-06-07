@@ -15,8 +15,6 @@ use strict;
 use warnings;
 use rlib '../lib';
 
-{ package Term::ReadLine::Stub; }
-
 use Test::More;
 
 BEGIN {
@@ -83,15 +81,14 @@ my @list_set;
 @list_set = qw(one two two three);
 show_indices;
 
-# use Enbugger 'trepan'; Enbugger->stop();
 $t->SetHistory(@list_set);
-is_deeply(\@list_set, [$t->GetHistory],
+is_deeply([$t->GetHistory], \@list_set,
 	  "GetHistory gives what SetHistory initially set");
 show_indices;
 
 $t->add_history('four');
 push(@list_set, 'four');
-is_deeply(\@list_set, [$t->GetHistory],
+is_deeply([$t->GetHistory], \@list_set,
 	  "add_history() can push an item");
 show_indices;
 
@@ -101,6 +98,7 @@ is_deeply(\@list_set, [$t->GetHistory],
 	  "remove_history() can remove an item");
 show_indices;
 
+# use Enbugger 'trepan'; Enbugger->stop();
 $t->replace_history_entry(3, 'daarn');
 splice(@list_set, 3, 1, 'daarn');
 is_deeply(\@list_set, [$t->GetHistory],

@@ -75,11 +75,9 @@ sub add_history {
 	return if $self->{rl_max_input_history} == 0;
 	shift @{$self->{rl_History}};
     }
-    my @rl_History = @{$self->{rl_History}};
-    push @rl_History, @_;
-    $self->{rl_HistoryIndex}   = scalar(@rl_History) + scalar(@_);
-    $self->{rl_history_length} = scalar @rl_History;
-    $self->{rl_History} = \@rl_History;
+    push @{$self->{rl_History}}, @_;
+    $self->{rl_HistoryIndex}   += scalar @_;
+    $self->{rl_history_length} = scalar @{$self->{rl_History}};
 }
 
 

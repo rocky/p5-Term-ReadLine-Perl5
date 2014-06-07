@@ -2082,12 +2082,10 @@ sub F_Suspend
 
 Ring the bell.
 
-Should do something with I<$var_PreferVisibleBel>l here, but what?
+Should do something with I<$var_PreferVisibleBel> here, but what?
 =cut
 sub F_Ding {
-    local $\ = '';
-    print $term_OUT "\007";
-    return;    # Undefined return value
+    Term::ReadLine::Perl5::Common::F_Ding($term_OUT)
 }
 
 =head2 vi Routines

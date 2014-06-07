@@ -158,9 +158,16 @@ sub new {
     $features{tkRunning} = Term::ReadLine::Stub->Features->{'tkRunning'};
     $features{ornaments} = Term::ReadLine::Stub->Features->{'ornaments'};
     if (defined $term) {
-	warn "Cannot create second readline interface\n";
-	warn "Using experimental OO interface based on Caroline\n";
-	return Term::ReadLine::Perl5::OO->new(@_);
+	my $stderr = $Term::ReadLine::Perl5::readline::term_OUT;
+	print $stderr "Cannot create second readline interface\n";
+	print "Using experimental OO interface based on Caroline\n";
+	my ($name, $in, $out) = @_;
+	my $opts = {
+	    name => $name,
+	    in   => $in,
+	    out  => $out,
+	};
+	return Term::ReadLine::Perl5::OO->new($opts);
     }
     shift; # Package name
     if (@_) {
@@ -259,7 +266,7 @@ sub MinLine($;$) {
 
 =head3 add_history
 
-B<add_history>(I<$line1>, I<$line2>, ...)
+#B<add_history>(I<$line1>, I<$line2>, ...)
 
 adds the lines, I<$line1>, etc. to the input history list.
 
@@ -267,10 +274,18 @@ I<AddHistory> is an alias for this function.
 
 =cut
 
-# GNU ReadLine names
-*add_history            = \&Term::ReadLine::Perl5::OO::History::add_history;
-*remove_history         = \&Term::ReadLine::Perl5::OO::History::remove_history;
-*clear_history          = \&Term::ReadLine::Perl5::OO::History::clear_history;
+sub add_history {
+    shift;
+    Term::ReadLine::Perl5::History::add_history(@_);
+}
+
+sub remove_history($) {
+    my ($self, $which) = @_;
+    Term::ReadLine::Perl5::History::remove_history($which);
+}
+
+## FIXME do as above...
+*clear_history          = \&Term::ReadLine::Perl5::History::clear_history;
 *history_list           = \&Term::ReadLine::Perl5::OO::History::history_list;
 *history_is_stifled     = \&Term::ReadLine::Perl5::OO::History::history_is_stifled;
 *read_history           = \&Term::ReadLine::Perl5::OO::History::read_history;
@@ -279,14 +294,22 @@ I<AddHistory> is an alias for this function.
 *write_history          = \&Term::ReadLine::Perl5::OO::History::write_history;
 
 # Some Term::ReadLine::Gnu names
-*AddHistory             = \&Term::ReadLine::Perl5::OO::History::AddHistory;
-*GetHistory             = \&Term::ReadLine::Perl5::OO::History::GetHistory;
+*AddHistory             = \&add_history;
 *ReadHistory            = \&Term::ReadLine::Perl5::OO::History::ReadHistory;
-*SetHistory             = \&Term::ReadLine::Perl5::OO::History::SetHistory;
 *WriteHistory           = \&Term::ReadLine::Perl5::OO::History::WriteHistory;
 
+sub GetHistory($) {
+    shift;
+    Term::ReadLine::Perl5::History::GetHistory();
+}
+
+sub SetHistory() {
+    shift;
+    Term::ReadLine::Perl5::History::SetHistory(@_);
+}
+
 # Backward compatibility:
-*addhistory = \&Term::ReadLine::Perl5::add_history;
+*addhistory = \&add_history;
 *StifleHistory = \&stifle_history;
 
 =head3 stifle_history

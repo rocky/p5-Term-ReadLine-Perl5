@@ -61,19 +61,74 @@ not same as last entry
 
 =cut
 
-sub add_line_to_history($$)
-{
-    my ($line, $minlength) = @_;
-    # Fake up a needed object using global state
-
-    my $self = {
+# Fake up a needed object using global state
+sub _fake_self() {
+    {
 	rl_History => \@rl_History,
 	rl_MaxHistorySize => $rl_MaxHistorySize,
 	rl_HistoryIndex   => $rl_HistoryIndex,
+	rl_history_length => $rl_history_length,
     };
+}
 
+
+# FIXME: DRY this adding a common routine to fake $self.
+sub add_line_to_history($$)
+{
+    my ($line, $minlength) = @_;
+
+    my $self = _fake_self();
     Term::ReadLine::Perl5::OO::History::add_line_to_history(
 	$self, $line, $minlength);
+}
+
+
+sub add_history
+{
+    my $self = _fake_self();
+    Term::ReadLine::Perl5::OO::History::add_history($self, @_);
+    $rl_MaxHistorySize = $self->{rl_MaxHistorySize};
+    $rl_HistoryIndex   = $self->{rl_HistoryIndex};
+}
+
+
+sub remove_history($)
+{
+    my ($which) = @_;
+    my $self = _fake_self();
+    Term::ReadLine::Perl5::OO::History::remove_history($self, $which);
+    @rl_History = @{$self->{rl_History}};
+    $rl_MaxHistorySize = $self->{rl_MaxHistorySize};
+    $rl_HistoryIndex   = $self->{rl_HistoryIndex};
+    $rl_history_length = $self->{rl_history_length};
+}
+
+sub clear_history()
+{
+    my $self = _fake_self();
+    Term::ReadLine::Perl5::OO::History::clear_history($self);
+    @rl_History = @{$self->{rl_History}};
+    $rl_MaxHistorySize = $self->{rl_MaxHistorySize};
+    $rl_HistoryIndex   = $self->{rl_HistoryIndex};
+    $rl_history_length = $self->{rl_history_length};
+}
+
+sub GetHistory()
+{
+    Term::ReadLine::Perl5::OO::History::GetHistory(_fake_self());
+}
+
+
+sub SetHistory
+{
+    # Fake up a needed object using global state
+
+    my $self = _fake_self();
+    Term::ReadLine::Perl5::OO::History::SetHistory($self, @_);
+    @rl_History = @{$self->{rl_History}};
+    $rl_MaxHistorySize = $self->{rl_MaxHistorySize};
+    $rl_HistoryIndex   = $self->{rl_HistoryIndex};
+    $rl_history_length = $self->{rl_history_length};
 }
 
 

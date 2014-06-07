@@ -7,8 +7,6 @@ use rlib '../lib';
 use Test::More;
 use English;
 
-{ package Term::ReadLine::Stub; }
-
 BEGIN {
     $ENV{PERL_RL} = 'Perl5';	# force to use Term::ReadLine::Perl5
     $ENV{LANG} = 'C';

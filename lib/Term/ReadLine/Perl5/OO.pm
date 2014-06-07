@@ -1,3 +1,5 @@
+{ package Term::ReadLine::Stub; }
+
 package Term::ReadLine::Perl5::OO;
 use 5.008005;
 use strict; use warnings;
@@ -12,6 +14,7 @@ use English;
 use rlib '.';
 use Term::ReadLine::Perl5::OO::History;
 use Term::ReadLine::Perl5::OO::State;
+use Term::ReadLine::Perl5::Common;
 use Term::ReadLine::Perl5::readline;
 
 our $VERSION = "0.20";
@@ -59,15 +62,53 @@ no warnings 'once';
 *write_history   = \&Term::ReadLine::Perl5::OO::History::write_history;
 use warnings 'once';
 
+my %attribs = (
+    stiflehistory => 1,
+    getHistory    => 1,
+    addHistory    => 1,
+    attribs       => 1,
+    appname       => 1,
+    autohistory   => 1,
+    readHistory   => 1,
+    setHistory    => 1
+    );
+
+my %features = (
+    appname => 1,       # "new" is recognized
+    minline => 1,       # we have a working MinLine()
+    autohistory => 1,   # lines are put into history automatically,
+		                     # subject to MinLine()
+    getHistory => 1,    # we have a working getHistory()
+    setHistory => 1,    # we have a working setHistory()
+    addHistory => 1,    # we have a working add_history(), addhistory(),
+                                     # or addHistory()
+    attribs => 1,
+    stiflehistory => 1, # we have stifle_history()
+    );
+
+
+sub Attribs  { \%attribs; }
+sub Features { \%features; }
+
+=head3 new
+
+B<new>(I<%options>]])
+
+returns the handle for subsequent calls to following functions.
+Argument is the name of the application.
+
+=cut
 sub new {
     my $class = shift;
     my %args = @_==1? %{$_[0]} : @_;
+    print "OO called!\n";
     my $self = bless {
 
         rl_History => [],
 	rl_MaxHistorySize    => 100,
 	rl_HistoryIndex      => 0,  # Is set on use
 	rl_history_length    => 0,  # is set on use
+	minlength            => 1,
 	rl_max_input_history => 0,
 	history_stifled      => 0,
 	history_base         => 0,
@@ -444,10 +485,7 @@ sub complete_line {
 
 sub F_Ding {
     my $self = shift;
-    local $OUTPUT_RECORD_SEPARATOR = '';
-    $self->debug("F_Ding!\n");
-    print STDERR "\x7";
-    STDERR->flush;
+    Term::ReadLine::Perl5::Common::F_Ding(*STDERR)
 }
 
 sub edit_delete_prev_word {
@@ -486,12 +524,10 @@ sub edit_history($$$) {
 }
 
 sub edit_previous_history($$) {
-    # use Enbugger 'trepan'; Enbugger->stop;
     my ($self, $state) = @_;
     $self->edit_history($state, HISTORY_PREV);
 }
 sub edit_next_history($$) {
-    # use Enbugger 'trepan'; Enbugger->stop;
     my ($self, $state) = @_;
     $self->edit_history($state, HISTORY_NEXT);
 }
@@ -683,6 +719,13 @@ unless (caller()) {
 	    }
 	}
     }
+}
+
+sub MinLine($;$) {
+    my $self = $_[0];
+    my $old = $self->{minlength};
+    $self->{minlength} = $_[1] if @_ == 2;
+    return $old;
 }
 
 1;
