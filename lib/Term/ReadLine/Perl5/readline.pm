@@ -58,6 +58,7 @@ use File::Spec;
 use Term::ReadKey;
 
 use rlib '.';
+use Term::ReadLine::Perl5::Common;
 use Term::ReadLine::Perl5::Dumb;
 use Term::ReadLine::Perl5::History;
 use Term::ReadLine::Perl5::Keymap
@@ -700,7 +701,7 @@ sub rl_bind_keyseq($$)
 	    warn "Warning$InputLocMsg: strange binding [$orig]\n" if $^W;
 	}
 	$key = ord($key);
-	$key = &ctrl($key) if $isctrl;
+	$key = ctrl($key) if $isctrl;
 	push(@keys, $key);
     }
 
@@ -3157,23 +3158,6 @@ sub readline($;$)
     #print STDOUT "|al=`$AcceptLine'";
     $AcceptLine; ## return the line accepted.
 }
-
-=head3 ctrl
-
-C<ctrl($ord)>
-
-Returns the ordinal number for the corresponding control code.
-
-For example I<ctrl(ord('a'))> returns the ordinal for I<Ctrl-A>
-or 1. I<ctrl(ord('A'))> does the same thing.
-
-=cut
-
-sub ctrl {
-    $_[0] ^ (($_[0]>=ord('a') && $_[0]<=ord('z')) ? 0x60 : 0x40);
-}
-
-
 
 sub SetTTY {
     return if $dumb_term || $stdin_not_tty;

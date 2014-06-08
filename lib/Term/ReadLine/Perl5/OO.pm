@@ -88,6 +88,8 @@ my %features = (
 sub Attribs  { \%attribs; }
 sub Features { \%features; }
 
+our @EmacsKeymap = ();
+
 =head3 new
 
 B<new>(I<%options>]])
