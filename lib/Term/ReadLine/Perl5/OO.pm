@@ -288,7 +288,7 @@ sub edit {
             $self->{sigtstp}++;
             return $state->buf;
         } elsif ($cc == BACKSPACE || $cc == CTRL_H) { # backspace or ctrl-h
-            $self->edit_backspace($state);
+            $self->F_BackwardDeleteChar($state);
         } elsif ($cc == CTRL_D) { # ctrl-d
             if (length($state->buf) > 0) {
                 $self->edit_delete($state);
@@ -296,37 +296,28 @@ sub edit {
                 return undef;
             }
         } elsif ($cc == CTRL_T) { # ctrl-t
-            # swaps current character with prvious
-            if ($state->pos > 0 && $state->pos < $state->len) {
-                my $aux = substr($state->buf, $state->pos-1, 1);
-                substr($state->{buf}, $state->pos-1, 1) = substr($state->{buf}, $state->pos, 1);
-                substr($state->{buf}, $state->pos, 1) = $aux;
-                if ($state->pos != $state->len -1) {
-                    $state->{pos}++;
-                }
-            }
-            $self->refresh_line($state);
+	    $self->F_TransposeChars($state);
         } elsif ($cc == CTRL_B) { # ctrl-b
-            $self->edit_move_left($state);
+            $self->F_BackwardChar($state);
         } elsif ($cc == CTRL_F) { # ctrl-f
-            $self->edit_move_right($state);
+            $self->F_ForwardChar($state);
         } elsif ($cc == CTRL_P) { # ctrl-p
-            $self->edit_previous_history($state);
+            $self->F_PreviousHistory($state);
         } elsif ($cc == CTRL_N) { # ctrl-n
-            $self->edit_next_history($state);
+            $self->F_NextHistory($state);
         } elsif ($cc == 27) { # escape sequence
             # Read the next two bytes representing the escape sequence
             my $buf = $self->readkey or return undef;
             $buf .= $self->readkey or return undef;
 
             if ($buf eq "[D") { # left arrow
-                $self->edit_move_left($state);
+                $self->F_BackwardChar($state);
             } elsif ($buf eq "[C") { # right arrow
-                $self->edit_move_right($state);
+                $self->F_ForwardChar($state);
             } elsif ($buf eq "[A") { # up arrow
-                $self->edit_previous_history($state);
+                $self->F_PreviousHistory($state);
             } elsif ($buf eq "[B") { # down arrow
-                $self->edit_next_history($state);
+                $self->F_NextHistory($state);
             } elsif ($buf eq "[1") { # home
                 $buf = $self->readkey or return undef;
                 if ($buf eq '~') {
@@ -364,7 +355,7 @@ sub edit {
             $state->{pos} = length($state->buf);
             $self->refresh_line($state);
         } elsif ($cc == CTRL_L) { # ctrl-l
-            $self->clear_screen();
+            $self->F_ClearScreen();
             $self->refresh_line($state);
         } elsif ($cc == CTRL_R) { # ctrl-r
             $self->search($state);
@@ -520,16 +511,16 @@ sub edit_history($$$) {
     }
 }
 
-sub edit_previous_history($$) {
+sub F_PreviousHistory($$) {
     my ($self, $state) = @_;
     $self->edit_history($state, HISTORY_PREV);
 }
-sub edit_next_history($$) {
+sub F_NextHistory($$) {
     my ($self, $state) = @_;
     $self->edit_history($state, HISTORY_NEXT);
 }
 
-sub edit_backspace {
+sub F_BackwardDeleteChar {
     my ($self, $state) = @_;
     if ($state->pos > 0 && length($state->buf) > 0) {
         substr($state->{buf}, $state->pos-1, 1) = '';
@@ -538,7 +529,7 @@ sub edit_backspace {
     }
 }
 
-sub clear_screen {
+sub F_ClearScreen {
     my ($self) = @_;
     print STDOUT "\x1b[H\x1b[2J";
 }
@@ -669,7 +660,7 @@ sub refresh_single_line {
     );
 }
 
-sub edit_move_right {
+sub F_ForwardChar {
     my ($self, $state) = @_;
     if ($state->pos != length($state->buf)) {
         $state->{pos}++;
@@ -677,12 +668,27 @@ sub edit_move_right {
     }
 }
 
-sub edit_move_left {
+sub F_BackwardChar {
     my ($self, $state) = @_;
     if ($state->pos > 0) {
         $state->{pos}--;
         $self->refresh_line($state);
     }
+}
+
+
+# swaps current character with previous
+sub F_TransposeChars {
+    my ($self, $state) = @_;
+    if ($state->pos > 0 && $state->pos < $state->len) {
+	my $aux = substr($state->buf, $state->pos-1, 1);
+	substr($state->{buf}, $state->pos-1, 1) = substr($state->{buf}, $state->pos, 1);
+	substr($state->{buf}, $state->pos, 1) = $aux;
+	if ($state->pos != $state->len -1) {
+	    $state->{pos}++;
+	}
+    }
+    $self->refresh_line($state);
 }
 
 
