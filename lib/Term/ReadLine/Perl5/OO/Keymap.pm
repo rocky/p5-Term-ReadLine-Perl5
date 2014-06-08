@@ -204,6 +204,29 @@ sub bind_keys
     }
 }
 
+sub classify($) {
+    my $ord = shift;
+    return 'C-' . chr($ord+96) if $ord <= 26;
+    return chr($ord) if $ord >= 33 && $ord < 127;
+    return 'DEL' if $ord == 127;
+    return "' '" if $ord == 32;
+    return "ESC" if $ord == 27;
+    return $ord;
+}
+
+sub inspect($) {
+    my ($self, $prefix) = @_;
+    my @results = ();
+    my @continue = ();
+    for (my $i=0; $i<=127; $i++) {
+	my $action = $self->{function}[$i][0];
+	next unless defined($action);
+	push @results, sprintf("%s%s:\t%s\n", $prefix,
+			       classify($i), $action);
+	push @continue, $i if $action eq 'F_PrefixMeta';
+    }
+    return (\@results, \@continue);
+}
 unless (caller) {
     my $keymap = rl_make_bare_keymap();
     $keymap->bind_keys(
@@ -211,6 +234,10 @@ unless (caller) {
 	'C-b',  'BackwardChar',
 	'C-c',  'Interrupt',
 	);
+    my ($results, $continue) = $keymap->inspect('');
+    foreach my $line (@{$results}) {
+	print $line;
+    }
 }
 
 1;
