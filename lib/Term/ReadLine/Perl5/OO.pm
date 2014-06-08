@@ -17,9 +17,7 @@ use Term::ReadLine::Perl5::OO::State;
 use Term::ReadLine::Perl5::Common;
 use Term::ReadLine::Perl5::readline;
 
-our $VERSION = "0.20";
-
-our @EXPORT = qw( caroline );
+our $VERSION = "0.21";
 
 use constant HISTORY_NEXT => +1;
 use constant HISTORY_PREV => -1;
@@ -101,7 +99,6 @@ Argument is the name of the application.
 sub new {
     my $class = shift;
     my %args = @_==1? %{$_[0]} : @_;
-    print "OO called!\n";
     my $self = bless {
 
         rl_History => [],
