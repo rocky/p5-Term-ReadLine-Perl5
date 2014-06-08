@@ -79,9 +79,9 @@ print $OUT <<EOP;
 
 EOP
 
-while ( defined (my $line = $term->readline($prompt, 'exit1')) )
+while ( defined (my $line = $term->readline($prompt, 'exit')) )
 {
-    last if $line eq 'exit1';
+    last if $line eq 'exit';
     my $res = eval($line);
     warn $@ if $@;
     if (!defined $res) {
@@ -92,14 +92,17 @@ while ( defined (my $line = $term->readline($prompt, 'exit1')) )
     $term->add_history($line) if $line =~ /\S/;
     $readline::rl_default_selected = !$readline::rl_default_selected;
 }
-my $term2 = Term::ReadLine::Perl5->new('caroline test');
-while ( defined (my $line = $term2->readline($prompt, 'exit2')) )
-{
-    last if $line eq 'exit2';
-    my $res = eval($line);
-    print $OUT $res, "\n" unless $@ or $no_print;
-    $term2->add_history($line) if $line =~ /\S/;
-    $readline::rl_default_selected = !$readline::rl_default_selected;
+
+if (@ARGV) {
+    my $term2 = Term::ReadLine::Perl5->new('caroline test');
+    while ( defined (my $line = $term2->readline($prompt, 'exit2')) )
+    {
+	last if $line eq 'exit2';
+	my $res = eval($line);
+	print $OUT $res, "\n" unless $@ or $no_print;
+	$term2->add_history($line) if $line =~ /\S/;
+	$readline::rl_default_selected = !$readline::rl_default_selected;
+    };
 };
 ok(1);
 done_testing();

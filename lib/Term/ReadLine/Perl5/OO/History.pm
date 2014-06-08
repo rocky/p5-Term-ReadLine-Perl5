@@ -37,6 +37,9 @@ not same as last entry
 
 =cut
 
+use File::HomeDir; use File::Spec;
+my $HOME = File::HomeDir->my_home;
+
 sub add_line_to_history($$$)
 {
     my ($self, $line, $minlength) = @_;
@@ -91,29 +94,31 @@ successful, or I<$!> if not.
 
 =cut
 
-sub read_history($$) {
+sub read_history($;$) {
     my ($self, $filename) = @_;
+    $filename = File::Spec->catfile($HOME, '.history') unless $filename;
     my @history;
     open(my $fh, '<:encoding(utf-8)', $filename ) or return $!;
-    while (my $hist= <$fh>) {
+    while (my $hist = <$fh>) {
 	chomp($hist);
 	push @history, $hist;
     };
-    $self->SetHistory(@history);
+    # Use non OO form since this can be called in a non-OO way.
+    SetHistory($self, @history);
     close $fh;
     return 0;
 }
 
 =head2 remove_history
 
-#B<remove_history>(I<$which>)
+#B<remove_history>(I<unused>, I<$which>)
 
 Remove history element C<$which> from the history. The removed
 element is returned.
 
 =cut
 
-sub remove_history {
+sub remove_history($$) {
     my ($self, $which) = @_;
     return undef if
 	$which < 0 || $which >= $self->{rl_history_length};
@@ -254,8 +259,7 @@ sub write_history($$) {
 
 #B<ReadHistory>([I<$filename> [,I<$from> [,I<$to>]]])
 
-	$i = read_history('~/.history')
-	$i = read_history_range('~/.history')
+	$i = ReadHistory('~/.history')
 
 Adds the contents of I<$filename> to the history list, a line at a
 time.  If $<filename> is false, then read from F<~/.history>.  Start
@@ -264,31 +268,35 @@ zero, start at the beginning.  If I<$to> is omitted or less than
 I<$from>, then read until the end of the file.  Returns true if
 successful, or false if not.
 
-I<read_history()> is an alias of I<read_history_range()>.
+I<Note:> the return code is the negation of
+L<read_history>. Otherwise, it's the same.
 
 =cut
 
 sub ReadHistory {
-    my $self = shift;
-    ! $self->read_history(@_);
+    my ($self, $filename) = @_;
+    # Use non-OO form since this can be called in a non-OO way
+    ! read_history($self, $filename);
 }
 
 =head2 WriteHistory
 
-B<WriteHistory>([I<$filename>])
+#B<WriteHistory>([I<$filename>])
 
-	$i = write_history('~/.history')
+	$i = WriteHistory('~/.history')
 
-Writes the current history to I<$filename>, overwriting I<$filename> if
-necessary.  If I<$filename> is false, then write the history list to
-F<~/.history>.  Returns true if successful, or false if not.
-
+Writes the current history to I<$filename>, overwriting I<$filename>
+if necessary.  If I<$filename> is false, then write the history list
+to F<~/.history>.  Returns true if successful, or false if
+not. I<Note:> the return code is the negation of
+L<write_history>. Otherwise, it's the same.
 
 =cut
 
 sub WriteHistory {
-    my $self = shift;
-    ! $self->write_history(@_);
+    # Use non-OO form since this can be called in a non-OO way
+    my ($self, $filename) = @_;
+    ! write_history($self, $filename);
 }
 =head1 AUTHOR
 

@@ -200,23 +200,16 @@ sub new {
 	}
 	$Term::ReadLine::Perl5::readline::term_IN = shift;
 	$Term::ReadLine::readline::term_OUT = shift
-  }
+    }
     # The following is here since it is mostly used for perl input:
     # $readline::rl_basic_word_break_characters .= '-:+/*,[])}';
     $term = bless [$readline::term_IN,$readline::term_OUT];
     my $self = {
 	'IN'  => $readline::term_IN,
 	'OUT' => $readline::term_OUT,
-	rl_MaxHistorySize    => 100,
-	rl_History           => [],
-	rl_HistoryIndex      => 0,  # Is set on use
-	rl_history_length    => 0,  # is set on use
-	rl_max_input_history => 0,
-	history_stifled      => 0,
-	history_base         => 0,
     };
-
     bless $self, $class;
+
     unless ($ENV{PERL_RL} and $ENV{PERL_RL} =~ /\bo\w*=0/) {
 	local $Term::ReadLine::termcap_nowarn = 1; # With newer Perls
 	local $SIG{__WARN__} = sub {}; # With older Perls
@@ -274,39 +267,30 @@ I<AddHistory> is an alias for this function.
 
 =cut
 
-sub add_history {
-    shift;
-    Term::ReadLine::Perl5::History::add_history(@_);
-}
+# GNU ReadLine names
+*add_history            = \&Term::ReadLine::Perl5::History::add_history;
+*remove_history         = \&Term::ReadLine::Perl5::History::remove_history;
+*replace_history_entry  = \&Term::ReadLine::Perl5::History::replace_history_entry;
 
-sub remove_history($) {
-    my ($self, $which) = @_;
-    Term::ReadLine::Perl5::History::remove_history($which);
-}
-
-## FIXME do as above...
 *clear_history          = \&Term::ReadLine::Perl5::History::clear_history;
-*history_list           = \&Term::ReadLine::Perl5::OO::History::history_list;
-*history_is_stifled     = \&Term::ReadLine::Perl5::OO::History::history_is_stifled;
-*read_history           = \&Term::ReadLine::Perl5::OO::History::read_history;
-*replace_history_entry  = \&Term::ReadLine::Perl5::OO::History::replace_history_entry;
-*unstifle_history       = \&Term::ReadLine::Perl5::OO::History::unstifle_history;
-*write_history          = \&Term::ReadLine::Perl5::OO::History::write_history;
+
+*history_is_stifled     = \&Term::ReadLine::Perl5::History::history_is_stifled;
+*read_history           = \&Term::ReadLine::Perl5::History::read_history;
+*unstifle_history       = \&Term::ReadLine::Perl5::History::unstifle_history;
+*write_history          = \&Term::ReadLine::Perl5::History::write_history;
+
+# Not sure about the difference between history_list and GetHistory.
+*history_list           = \&Term::ReadLine::Perl5::OO::GetHistory;
+
+*rl_History            = *Term::ReadLine::Perl5::rl_History;
+
 
 # Some Term::ReadLine::Gnu names
 *AddHistory             = \&add_history;
-*ReadHistory            = \&Term::ReadLine::Perl5::OO::History::ReadHistory;
-*WriteHistory           = \&Term::ReadLine::Perl5::OO::History::WriteHistory;
-
-sub GetHistory($) {
-    shift;
-    Term::ReadLine::Perl5::History::GetHistory();
-}
-
-sub SetHistory() {
-    shift;
-    Term::ReadLine::Perl5::History::SetHistory(@_);
-}
+*GetHistory             = \&Term::ReadLine::Perl5::History::GetHistory;
+*SetHistory             = \&Term::ReadLine::Perl5::History::SetHistory;
+*ReadHistory            = \&Term::ReadLine::Perl5::History::ReadHistory;
+*WriteHistory           = \&Term::ReadLine::Perl5::History::WriteHistory;
 
 # Backward compatibility:
 *addhistory = \&add_history;
@@ -328,12 +312,12 @@ sub stifle_history($$) {
     my ($self, $max) = @_;
     $max = 0 if !defined($max) || $max < 0;
 
-    if (scalar @{$self->{rl_History}} > $max) {
-	splice @{$self->{rl_History}}, $max;
-	$attribs{history_length} = scalar @{$self->{rl_History}};
+    if (scalar @rl_History > $max) {
+	splice @rl_History, $max;
+	$attribs{history_length} = scalar @rl_History;
     }
 
-    $self->{history_stifled} = 1;
+    $Term::ReadLine::Perl5::History::history_stifled = 1;
     $attribs{max_input_history} = $self->{rl_max_input_history} = $max;
 }
 

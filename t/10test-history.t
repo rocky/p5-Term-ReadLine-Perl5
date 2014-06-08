@@ -94,14 +94,14 @@ show_indices;
 
 $t->remove_history(2);
 splice(@list_set, 2, 1);
-is_deeply(\@list_set, [$t->GetHistory],
+is_deeply([$t->GetHistory], \@list_set,
 	  "remove_history() can remove an item");
 show_indices;
 
 # use Enbugger 'trepan'; Enbugger->stop();
 $t->replace_history_entry(3, 'daarn');
 splice(@list_set, 3, 1, 'daarn');
-is_deeply(\@list_set, [$t->GetHistory],
+is_deeply([$t->GetHistory], \@list_set,
 	  'replace_history_entry can replace an item');
 show_indices;
 
@@ -118,6 +118,7 @@ is($attribs->{max_input_history}, 3,
    "max_input_history value should be 3");
 show_indices;
 
+# use Enbugger 'trepan'; Enbugger->stop;
 $t->add_history('five');
 is($t->history_is_stifled, 1,
    "history is still stifled");
@@ -274,7 +275,7 @@ $t->SetHistory();		# clear history list
 ok(!$t->GetHistory );
 
 $t->ReadHistory($hfile) || warn "error at read_history: $!\n";
-is_deeply(\@list_write, [$t->GetHistory], 'GetHistory alias');
+is_deeply([$t->GetHistory], \@list_write, 'ReadHistory alias');
 
 @list_write = qw(0 1 2 3 4);
 $t->SetHistory(@list_write);
@@ -283,7 +284,7 @@ $t->SetHistory(@list_write);
 $t->SetHistory();		# clear history list
 # read_history()
 ! $t->read_history($hfile) || warn "error at read_history: $!\n";
-is_deeply(\@list_write, [$t->GetHistory]);
+is_deeply([$t->GetHistory], \@list_write);
 
 done_testing();
 

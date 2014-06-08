@@ -36,6 +36,7 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $rl_completer_word_break_characters $rl_special_prefixes
           $rl_max_numeric_arg $rl_OperateCount
           $rl_completion_suppress_append
+          $history_stifled
           $KillBuffer $dumb_term $stdin_not_tty $InsertMode
           $mode $winsz $force_redraw
           $have_getpwent
@@ -76,6 +77,7 @@ BEGIN {                 # Some old systems have ioctl "unsupported"
 
 $rl_getc = \&rl_getc;
 $minlength = 1;
+$history_stifled = 0;
 
 &preinit;
 &init;
@@ -4441,16 +4443,18 @@ sub read_an_init_file($;$)
 {
     my $file = shift;
     my $include_depth = shift or 0;
-    local *RC;
+    my $rc;
 
     $file = File::Spec->catfile($HOME, $file) unless -f $file;
-    return 0 unless open RC, "< $file";
+    return 0 unless open $rc, "< $file";
     local (@action) = ('exec'); ## exec, skip, ignore (until appropriate endnif)
     local (@level) = ();        ## if, else
 
     local $/ = "\n";
-    parse_and_bind($_, $file, $include_depth) while <RC>;
-    close(RC);
+    while (my $line = <$rc>) {
+	parse_and_bind($line, $file, $include_depth);
+    }
+    close($rc);
     return 1;
 }
 
