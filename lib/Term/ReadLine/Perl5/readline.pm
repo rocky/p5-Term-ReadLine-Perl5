@@ -666,16 +666,7 @@ arrow keys:
 sub rl_bind_keyseq($$)
 {
     my ($key, $func) = @_;
-    unless ($func =~ /^[\"\']/) {
-	$func = "\u$func";
-	$func =~ s/-(.)/\u$1/g;
-
-	# Temporary disabled
-	if (!$autoload_broken and !defined($ {'readline::'}{"F_$func"})) {
-            warn "Warning$InputLocMsg: bad bind function [$func]\n" if $^W;
-            next;
-	}
-    }
+    $func = canonic_command_function($func);
 
     ## print "sequence [$key] func [$func]\n"; ##DEBUG
 
@@ -1416,7 +1407,7 @@ sub F_TransposeChars
     } elsif ($D >= 1) {
         substr($line,$D-1,2) = substr($line,$D,1)  .substr($line,$D-1,1);
     } else {
-        &F_Ding;
+        F_Ding();
     }
 }
 
@@ -1537,7 +1528,7 @@ Kill line from cursor to beginning of line.
 
 sub F_UnixLineDiscard
 {
-    return &F_Ding if $D == 0;
+    return F_Ding() if $D == 0;
     kill_text(0, $D, 1);
 }
 
@@ -1581,7 +1572,7 @@ Kill to previous whitespace.
 
 sub F_UnixWordRubout
 {
-    return &F_Ding if $D == 0;
+    return F_Ding() if $D == 0;
     (my $oldD, local $rl_basic_word_break_characters) = ($D, "\t ");
                              # JP:  Fixed a bug here - both were 'my'
     F_BackwardWord(1);
@@ -1595,7 +1586,7 @@ unbound.
 
 =cut
 sub F_KillRegion {
-    return F_Ding unless $line_rl_mark == $rl_HistoryIndex;
+    return F_Ding() unless $line_rl_mark == $rl_HistoryIndex;
     $rl_mark = length $line if $rl_mark > length $line;
     kill_text($rl_mark, $D, 1);
     $line_rl_mark = -1;         # Disable mark
@@ -1607,7 +1598,7 @@ Copy the text in the region to the kill buffer, so it can be yanked right away. 
 
 =cut
 sub F_CopyRegionAsKill {
-    return F_Ding unless $line_rl_mark == $rl_HistoryIndex;
+    return F_Ding() unless $line_rl_mark == $rl_HistoryIndex;
     $rl_mark = length $line if $rl_mark > length $line;
     my ($s, $e) = ($rl_mark, $D);
     ($s, $e) = ($e, $s) if $s > $e;
@@ -1796,7 +1787,7 @@ Abort the current editing command and ring the terminal's bell
 =cut
 sub F_Abort
 {
-    &F_Ding;
+    F_Ding();
 }
 
 
@@ -1812,7 +1803,7 @@ sub F_Undo
     if (@undo) {
         &getstate(pop(@undo));
     } else {
-        &F_Ding;
+        F_Ding();
     }
 }
 
@@ -1872,12 +1863,12 @@ sub F_TildeExpand {
 
     my @matches = tilde_complete($text);
     if (@matches == 0) {
-        return &F_Ding;
+        return F_Ding();
     }
     my $replacement = shift(@matches);
     $replacement .= $rl_completer_terminator_character
 	if @matches == 1 && !$rl_completion_suppress_append;
-    &F_Ding if @matches != 1;
+    F_Ding() if @matches != 1;
     if ($var_TcshCompleteMode) {
 	@tcsh_complete_selections = (@matches, $text);
 	$tcsh_complete_start = $point;
@@ -2110,7 +2101,7 @@ Repeat the most recent one of these vi commands:
 =cut
 sub F_ViRepeatLastCommand {
     my($count) = @_;
-    return &F_Ding if !$Last_vi_command;
+    return F_Ding() if !$Last_vi_command;
 
     my @lastcmd = @$Last_vi_command;
 
@@ -2134,7 +2125,7 @@ sub F_ViMoveCursor
     my($count, $ord) = @_;
 
     my $new_cursor = &get_position($count, $ord, undef, $Vi_move_patterns);
-    return &F_Ding if !defined $new_cursor;
+    return F_Ding() if !defined $new_cursor;
 
     $D = $new_cursor;
 }

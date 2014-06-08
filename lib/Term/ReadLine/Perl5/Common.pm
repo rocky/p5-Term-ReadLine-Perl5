@@ -16,7 +16,7 @@ L<Term::ReadLine::Common>
 use Exporter;
 use vars qw(@EXPORT @ISA);
 @ISA     = qw(Exporter);
-@EXPORT  = qw(ctrl unescape);
+@EXPORT  = qw(ctrl unescape canonic_command_function);
 
 =head1 SUBROUTINES
 
@@ -54,9 +54,9 @@ sub ctrl {
     $_[0] ^ (($_[0]>=ord('a') && $_[0]<=ord('z')) ? 0x60 : 0x40);
 }
 
-=head2 _unescape
+=head2 unescape
 
-    _unescape($string) -> List of keys
+    unescape($string) -> List of keys
 
 This internal function that takes I<$string> possibly containing
 escape sequences, and converts to a series of octal keys.
@@ -121,6 +121,32 @@ sub unescape($) {
   @keys
 }
 
+# Canonicalize command function names according to these rules:
+#
+# * names have start with an uppercase letter
+# * a dash followed by a letter gets turned into the uppercase letter with
+#   the dash removed.
+#
+# Examples:
+#   yank              => Yank
+#   beginning-of-line => BeginningOfLine
+sub canonic_command_function($) {
+    my $function_name = shift;
+    $function_name = "\u$function_name";
+    $function_name =~ s/-(.)/\u$1/g;
+    $function_name;
+}
 
+unless (caller) {
+    foreach my $word (qw(yank BeginningOfLine beginning-of-line)) {
+	printf("'%s' canonicalizes to '%s'\n",
+	       $word, canonic_command_function($word));
+    }
+
+    foreach my $word (qw(\C-w \C-\M-a \M-e \x10 \007 \010 \d \b)) {
+	my @unescaped = unescape($word);
+	print "unescape($word) is ", join(', ', @unescaped), "\n";
+    }
+}
 
 1;
