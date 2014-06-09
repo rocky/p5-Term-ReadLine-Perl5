@@ -99,7 +99,7 @@ if (@ARGV) {
     {
 	last if $line eq 'exit2';
 	my $res = eval($line);
-	print $OUT $res, "\n" unless $@ or $no_print;
+	print $OUT "$res\n" unless $@ or $no_print;
 	$term2->add_history($line) if $line =~ /\S/;
 	$readline::rl_default_selected = !$readline::rl_default_selected;
     };

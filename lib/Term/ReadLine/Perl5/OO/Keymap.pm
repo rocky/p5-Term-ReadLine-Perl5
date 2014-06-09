@@ -214,26 +214,57 @@ sub classify($) {
     return $ord;
 }
 
+# Turn command function names into their GNU Readline equivalet according to
+# these rules:
+#
+# * names start with a lowercase letter
+# * a lowercase followed by an Uppercase letter gets turned into lower-case - lower-case
+#
+# Examples:
+#   Yank              => yank
+#   BeginningOfLine   => beginning-of-line
+sub gnu_command_function($) {
+    my $function_name = shift;
+    $function_name = "\l$function_name";
+    $function_name =~ s/([a-z])([A-Z])/$1-\l$2/g;
+    $function_name;
+}
+
 sub inspect($) {
     my ($self, $prefix) = @_;
     my @results = ();
     my @continue = ();
     for (my $i=0; $i<=127; $i++) {
-	my $action = $self->{function}[$i][0];
-	next unless defined($action);
-	push @results, sprintf("%s%s:\t%s\n", $prefix,
-			       classify($i), $action);
-	push @continue, $i if $action eq 'F_PrefixMeta';
+	my $command_name = $self->{function}[$i][0];
+	next unless defined($command_name);
+	push @results, sprintf("%s%s\t%s\n", $prefix,
+			       classify($i),
+			       gnu_command_function($command_name));
+	push @continue, $i if $command_name eq 'F_PrefixMeta';
     }
     return (\@results, \@continue);
 }
-unless (caller) {
+
+sub EmacsKeymap() {
     my $keymap = rl_make_bare_keymap();
     $keymap->bind_keys(
-	'C-a',  'BeginningOfLine',
+	# 'C-a',  'beginning-of-line',
 	'C-b',  'BackwardChar',
-	'C-c',  'Interrupt',
+	# 'C-c',  'Interrupt',
+	'C-f',  'forward-char',
+	'C-h',  'backward-delete-char',
+	'C-j',  'accept-line',
+	'C-l',  'clear-screen',
+	'C-m',  'accept-line',
+	'C-n',  'next-history',
+	'C-p',  'previous-history',
+	'C-t',  'transpose-chars',
 	);
+    return $keymap
+}
+
+unless (caller) {
+    my $keymap = EmacsKeymap();
     my ($results, $continue) = $keymap->inspect('');
     foreach my $line (@{$results}) {
 	print $line;

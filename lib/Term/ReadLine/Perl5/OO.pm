@@ -130,11 +130,273 @@ sub debug {
     close $fh;
 }
 
+sub is_supported($) {
+    my $self = shift;
+    return 1 if $IS_WIN32;
+    my $term = $ENV{'TERM'};
+    return 0 unless defined $term;
+    return 0 if $term eq 'dumb';
+    return 0 if $term eq 'cons25';
+    return 1;
+}
+
 #### FIXME redo this history stuff:
 sub history($) { shift->{rl_History} }
 
 sub history_len($) {
     shift->{rl_history_length};
+}
+
+sub refresh_line {
+    my ($self, $state) = @_;
+    if ($self->{multi_line}) {
+        $self->refresh_multi_line($state);
+    } else {
+        $self->refresh_single_line($state);
+    }
+}
+
+sub refresh_multi_line {
+    my ($self, $state) = @_;
+
+    my $plen = vwidth($state->prompt);
+    $self->debug($state->buf.  "\n");
+
+    # rows used by current buf
+    my $rows = int(($plen + vwidth($state->buf) + $state->cols -1) / $state->cols);
+    if (defined $state->query) {
+        $rows++;
+    }
+
+    # cursor relative row
+    my $rpos = int(($plen + $state->oldpos + $state->cols) / $state->cols);
+
+    my $old_rows = $state->maxrows;
+
+    # update maxrows if needed.
+    if ($rows > $state->maxrows) {
+        $state->maxrows($rows);
+    }
+
+    $self->debug(sprintf "[%d %d %d] p: %d, rows: %d, rpos: %d, max: %d, oldmax: %d",
+                $state->len, $state->pos, $state->oldpos, $plen, $rows, $rpos, $state->maxrows, $old_rows);
+
+    # First step: clear all the lines used before. To do start by going to the last row.
+    if ($old_rows - $rpos > 0) {
+        $self->debug(sprintf ", go down %d", $old_rows-$rpos);
+        printf STDOUT "\x1b[%dB", $old_rows-$rpos;
+    }
+
+    # Now for every row clear it, go up.
+    my $j;
+    for ($j=0; $j < ($old_rows-1); ++$j) {
+        $self->debug(sprintf ", clear+up %d %d", $old_rows-1, $j);
+        print("\x1b[0G\x1b[0K\x1b[1A");
+    }
+
+    # Clean the top line
+    $self->debug(", clear");
+    print("\x1b[0G\x1b[0K");
+
+    # Write the prompt and the current buffer content
+    print $state->prompt;
+    print $state->buf;
+    if (defined $state->query) {
+        print "\015\nSearch: " . $state->query;
+    }
+
+    # If we are at the very end of the screen with our prompt, we need to
+    # emit a newline and move the prompt to the first column
+    if ($state->pos && $state->pos == $state->len && ($state->pos + $plen) % $state->cols == 0) {
+        $self->debug("<newline>");
+        print "\n";
+        print "\x1b[0G";
+        $rows++;
+        if ($rows > $state->maxrows) {
+            $state->maxrows(int $rows);
+        }
+    }
+
+    # Move cursor to right position
+    my $rpos2 = int(($plen + $state->vpos + $state->cols) / $state->cols); # current cursor relative row
+    $self->debug(sprintf ", rpos2 %d", $rpos2);
+    # Go up till we reach the expected position
+    if ($rows - $rpos2 > 0) {
+        # cursor up
+        printf "\x1b[%dA", $rows-$rpos2;
+    }
+
+    # Set column
+    my $col;
+    {
+        $col = 1;
+        my $buf = $state->prompt . substr($state->buf, 0, $state->pos);
+        for (split //, $buf) {
+            $col += vwidth($_);
+            if ($col > $state->cols) {
+                $col -= $state->cols;
+            }
+        }
+    }
+    $self->debug(sprintf ", set col %d", $col);
+    printf "\x1b[%dG", $col;
+
+    $state->oldpos($state->pos);
+
+    $self->debug("\n");
+}
+
+sub refresh_single_line {
+    my ($self, $state) = @_;
+
+    my $buf = $state->buf;
+    my $len = $state->len;
+    my $pos = $state->pos;
+    while ((vwidth($state->prompt)+$pos) >= $state->cols) {
+        substr($buf, 0, 1) = '';
+        $len--;
+        $pos--;
+    }
+    while (vwidth($state->prompt) + vwidth($buf) > $state->cols) {
+        $len--;
+    }
+
+    print STDOUT "\x1b[0G"; # cursor to left edge
+    print STDOUT $state->{prompt};
+    print STDOUT $buf;
+    print STDOUT "\x1b[0K"; # erase to right
+
+    # Move cursor to original position
+    printf "\x1b[0G\x1b[%dC", (
+        length($state->{prompt})
+        + vwidth(substr($buf, 0, $pos))
+    );
+}
+
+sub edit_insert {
+    my ($self, $state, $c) = @_;
+    if (length($state->buf) == $state->pos) {
+        $state->{buf} .= $c;
+    } else {
+        substr($state->{buf}, $state->{pos}, 0) = $c;
+    }
+    $state->{pos}++;
+    $self->refresh_line($state);
+}
+
+sub edit_delete_prev_word {
+    my ($self, $state) = @_;
+
+    my $old_pos = $state->pos;
+    while ($state->pos > 0 && substr($state->buf, $state->pos-1, 1) eq ' ') {
+        $state->{pos}--;
+    }
+    while ($state->pos > 0 && substr($state->buf, $state->pos-1, 1) ne ' ') {
+        $state->{pos}--;
+    }
+    my $diff = $old_pos - $state->pos;
+    substr($state->{buf}, $state->pos, $diff) = '';
+    $self->refresh_line($state);
+}
+
+sub edit_history($$$) {
+    my ($self, $state, $dir) = @_;
+    my $hist_len = $self->{rl_history_length};
+    if ($hist_len > 0) {
+        $self->{rl_HistoryIndex} += $dir ;
+        if ($self->{rl_HistoryIndex} <= 0) {
+	    $self->F_Ding();
+            $self->{rl_HistoryIndex} = 1;
+            return;
+        } elsif ($self->{rl_HistoryIndex} > $hist_len) {
+	    $self->F_Ding();
+            $self->{rl_HistoryIndex} = $hist_len;
+            return;
+        }
+        $state->{buf} = $self->{rl_History}->[$self->{rl_HistoryIndex}-1];
+        $state->{pos} = $state->len;
+        $self->refresh_line($state);
+    }
+}
+
+########################################
+
+sub F_AcceptLine($) {
+    my $self = shift;
+    my $buf = $self->{state}->buf;
+    Term::ReadLine::Perl5::OO::History::add_history($self, $buf);
+    return $buf;
+}
+
+sub F_BackwardChar($) {
+    my $self = shift;
+    my $state = $self->{state};
+    if ($state->pos > 0) {
+        $state->{pos}--;
+        $self->refresh_line($state);
+    }
+}
+
+sub F_BackwardDeleteChar($) {
+    my $self = shift;
+    my $state = $self->{state};
+    if ($state->pos > 0 && length($state->buf) > 0) {
+        substr($state->{buf}, $state->pos-1, 1) = '';
+        $state->{pos}--;
+        $self->refresh_line($state);
+    }
+}
+
+sub F_ClearScreen($) {
+    my $self = shift;
+    print STDOUT "\x1b[H\x1b[2J";
+}
+
+sub F_Ding($) {
+    my $self = shift;
+    Term::ReadLine::Perl5::Common::F_Ding(*STDERR)
+}
+
+sub F_ForwardChar($) {
+    my $self = shift;
+    my $state = $self->{state};
+    if ($state->pos != length($state->buf)) {
+        $state->{pos}++;
+        $self->refresh_line($state);
+    }
+}
+
+sub F_Interrupt() {
+    my $self = shift;
+    $self->{sigint}++;
+    return undef;
+}
+
+sub F_NextHistory($) {
+    my $self  = shift;
+    my $state = $self->{state};
+    $self->edit_history($state, HISTORY_NEXT);
+}
+
+sub F_PreviousHistory($) {
+    my $self  = shift;
+    my $state = $self->{state};
+    $self->edit_history($state, HISTORY_PREV);
+}
+
+# swaps current character with previous
+sub F_TransposeChars($) {
+    my $self = shift;
+    my $state = $self->{state};
+    if ($state->pos > 0 && $state->pos < $state->len) {
+	my $aux = substr($state->buf, $state->pos-1, 1);
+	substr($state->{buf}, $state->pos-1, 1) = substr($state->{buf}, $state->pos, 1);
+	substr($state->{buf}, $state->pos, 1) = $aux;
+	if ($state->pos != $state->len -1) {
+	    $state->{pos}++;
+	}
+    }
+    $self->refresh_line($state);
 }
 
 ########################################
@@ -264,6 +526,7 @@ sub edit {
     $state->{prompt} = $prompt;
     $state->cols($self->get_columns);
     $self->debug("Columns: $state->{cols}\n");
+    $self->{state} = $state;
 
     while (1) {
         my $c = $self->readkey;
@@ -279,18 +542,17 @@ sub edit {
             next if $cc == 0;
         }
 
+	# FIXME: When doing keymap lookup, I need a way to note that
+	# we want a return rather than to continue editing.
         if ($cc == ENTER) { # enter
-	    Term::ReadLine::Perl5::OO::History::add_history($self,
-							    $state->buf);
-            return $state->buf;
+	    return $self->F_AcceptLine();
         } elsif ($cc==CTRL_C) { # ctrl-c
-            $self->{sigint}++;
-            return undef;
+            return $self->F_Interrupt();
         } elsif ($cc==CTRL_Z) { # ctrl-z
             $self->{sigtstp}++;
             return $state->buf;
         } elsif ($cc == BACKSPACE || $cc == CTRL_H) { # backspace or ctrl-h
-            $self->F_BackwardDeleteChar($state);
+            $self->F_BackwardDeleteChar();
         } elsif ($cc == CTRL_D) { # ctrl-d
             if (length($state->buf) > 0) {
                 $self->edit_delete($state);
@@ -298,15 +560,15 @@ sub edit {
                 return undef;
             }
         } elsif ($cc == CTRL_T) { # ctrl-t
-	    $self->F_TransposeChars($state);
+	    $self->F_TransposeChars();
         } elsif ($cc == CTRL_B) { # ctrl-b
-            $self->F_BackwardChar($state);
+            $self->F_BackwardChar();
         } elsif ($cc == CTRL_F) { # ctrl-f
-            $self->F_ForwardChar($state);
+            $self->F_ForwardChar();
         } elsif ($cc == CTRL_P) { # ctrl-p
-            $self->F_PreviousHistory($state);
+            $self->F_PreviousHistory();
         } elsif ($cc == CTRL_N) { # ctrl-n
-            $self->F_NextHistory($state);
+            $self->F_NextHistory();
         } elsif ($cc == 27) { # escape sequence
             # Read the next two bytes representing the escape sequence
             my $buf = $self->readkey or return undef;
@@ -471,248 +733,6 @@ sub complete_line {
             return $c;
         }
     }
-}
-
-sub F_Ding {
-    my $self = shift;
-    Term::ReadLine::Perl5::Common::F_Ding(*STDERR)
-}
-
-sub edit_delete_prev_word {
-    my ($self, $state) = @_;
-
-    my $old_pos = $state->pos;
-    while ($state->pos > 0 && substr($state->buf, $state->pos-1, 1) eq ' ') {
-        $state->{pos}--;
-    }
-    while ($state->pos > 0 && substr($state->buf, $state->pos-1, 1) ne ' ') {
-        $state->{pos}--;
-    }
-    my $diff = $old_pos - $state->pos;
-    substr($state->{buf}, $state->pos, $diff) = '';
-    $self->refresh_line($state);
-}
-
-sub edit_history($$$) {
-    my ($self, $state, $dir) = @_;
-    my $hist_len = $self->{rl_history_length};
-    if ($hist_len > 0) {
-        $self->{rl_HistoryIndex} += $dir ;
-        if ($self->{rl_HistoryIndex} <= 0) {
-	    $self->F_Ding();
-            $self->{rl_HistoryIndex} = 1;
-            return;
-        } elsif ($self->{rl_HistoryIndex} > $hist_len) {
-	    $self->F_Ding();
-            $self->{rl_HistoryIndex} = $hist_len;
-            return;
-        }
-        $state->{buf} = $self->{rl_History}->[$self->{rl_HistoryIndex}-1];
-        $state->{pos} = $state->len;
-        $self->refresh_line($state);
-    }
-}
-
-sub F_PreviousHistory($$) {
-    my ($self, $state) = @_;
-    $self->edit_history($state, HISTORY_PREV);
-}
-sub F_NextHistory($$) {
-    my ($self, $state) = @_;
-    $self->edit_history($state, HISTORY_NEXT);
-}
-
-sub F_BackwardDeleteChar {
-    my ($self, $state) = @_;
-    if ($state->pos > 0 && length($state->buf) > 0) {
-        substr($state->{buf}, $state->pos-1, 1) = '';
-        $state->{pos}--;
-        $self->refresh_line($state);
-    }
-}
-
-sub F_ClearScreen {
-    my ($self) = @_;
-    print STDOUT "\x1b[H\x1b[2J";
-}
-
-sub refresh_line {
-    my ($self, $state) = @_;
-    if ($self->{multi_line}) {
-        $self->refresh_multi_line($state);
-    } else {
-        $self->refresh_single_line($state);
-    }
-}
-
-sub refresh_multi_line {
-    my ($self, $state) = @_;
-
-    my $plen = vwidth($state->prompt);
-    $self->debug($state->buf.  "\n");
-
-    # rows used by current buf
-    my $rows = int(($plen + vwidth($state->buf) + $state->cols -1) / $state->cols);
-    if (defined $state->query) {
-        $rows++;
-    }
-
-    # cursor relative row
-    my $rpos = int(($plen + $state->oldpos + $state->cols) / $state->cols);
-
-    my $old_rows = $state->maxrows;
-
-    # update maxrows if needed.
-    if ($rows > $state->maxrows) {
-        $state->maxrows($rows);
-    }
-
-    $self->debug(sprintf "[%d %d %d] p: %d, rows: %d, rpos: %d, max: %d, oldmax: %d",
-                $state->len, $state->pos, $state->oldpos, $plen, $rows, $rpos, $state->maxrows, $old_rows);
-
-    # First step: clear all the lines used before. To do start by going to the last row.
-    if ($old_rows - $rpos > 0) {
-        $self->debug(sprintf ", go down %d", $old_rows-$rpos);
-        printf STDOUT "\x1b[%dB", $old_rows-$rpos;
-    }
-
-    # Now for every row clear it, go up.
-    my $j;
-    for ($j=0; $j < ($old_rows-1); ++$j) {
-        $self->debug(sprintf ", clear+up %d %d", $old_rows-1, $j);
-        print("\x1b[0G\x1b[0K\x1b[1A");
-    }
-
-    # Clean the top line
-    $self->debug(", clear");
-    print("\x1b[0G\x1b[0K");
-
-    # Write the prompt and the current buffer content
-    print $state->prompt;
-    print $state->buf;
-    if (defined $state->query) {
-        print "\015\nSearch: " . $state->query;
-    }
-
-    # If we are at the very end of the screen with our prompt, we need to
-    # emit a newline and move the prompt to the first column
-    if ($state->pos && $state->pos == $state->len && ($state->pos + $plen) % $state->cols == 0) {
-        $self->debug("<newline>");
-        print "\n";
-        print "\x1b[0G";
-        $rows++;
-        if ($rows > $state->maxrows) {
-            $state->maxrows(int $rows);
-        }
-    }
-
-    # Move cursor to right position
-    my $rpos2 = int(($plen + $state->vpos + $state->cols) / $state->cols); # current cursor relative row
-    $self->debug(sprintf ", rpos2 %d", $rpos2);
-    # Go up till we reach the expected position
-    if ($rows - $rpos2 > 0) {
-        # cursor up
-        printf "\x1b[%dA", $rows-$rpos2;
-    }
-
-    # Set column
-    my $col;
-    {
-        $col = 1;
-        my $buf = $state->prompt . substr($state->buf, 0, $state->pos);
-        for (split //, $buf) {
-            $col += vwidth($_);
-            if ($col > $state->cols) {
-                $col -= $state->cols;
-            }
-        }
-    }
-    $self->debug(sprintf ", set col %d", $col);
-    printf "\x1b[%dG", $col;
-
-    $state->oldpos($state->pos);
-
-    $self->debug("\n");
-}
-
-sub refresh_single_line {
-    my ($self, $state) = @_;
-
-    my $buf = $state->buf;
-    my $len = $state->len;
-    my $pos = $state->pos;
-    while ((vwidth($state->prompt)+$pos) >= $state->cols) {
-        substr($buf, 0, 1) = '';
-        $len--;
-        $pos--;
-    }
-    while (vwidth($state->prompt) + vwidth($buf) > $state->cols) {
-        $len--;
-    }
-
-    print STDOUT "\x1b[0G"; # cursor to left edge
-    print STDOUT $state->{prompt};
-    print STDOUT $buf;
-    print STDOUT "\x1b[0K"; # erase to right
-
-    # Move cursor to original position
-    printf "\x1b[0G\x1b[%dC", (
-        length($state->{prompt})
-        + vwidth(substr($buf, 0, $pos))
-    );
-}
-
-sub F_ForwardChar {
-    my ($self, $state) = @_;
-    if ($state->pos != length($state->buf)) {
-        $state->{pos}++;
-        $self->refresh_line($state);
-    }
-}
-
-sub F_BackwardChar {
-    my ($self, $state) = @_;
-    if ($state->pos > 0) {
-        $state->{pos}--;
-        $self->refresh_line($state);
-    }
-}
-
-
-# swaps current character with previous
-sub F_TransposeChars {
-    my ($self, $state) = @_;
-    if ($state->pos > 0 && $state->pos < $state->len) {
-	my $aux = substr($state->buf, $state->pos-1, 1);
-	substr($state->{buf}, $state->pos-1, 1) = substr($state->{buf}, $state->pos, 1);
-	substr($state->{buf}, $state->pos, 1) = $aux;
-	if ($state->pos != $state->len -1) {
-	    $state->{pos}++;
-	}
-    }
-    $self->refresh_line($state);
-}
-
-
-sub edit_insert {
-    my ($self, $state, $c) = @_;
-    if (length($state->buf) == $state->pos) {
-        $state->{buf} .= $c;
-    } else {
-        substr($state->{buf}, $state->{pos}, 0) = $c;
-    }
-    $state->{pos}++;
-    $self->refresh_line($state);
-}
-
-sub is_supported {
-    my ($self) = @_;
-    return 1 if $IS_WIN32;
-    my $term = $ENV{'TERM'};
-    return 0 unless defined $term;
-    return 0 if $term eq 'dumb';
-    return 0 if $term eq 'cons25';
-    return 1;
 }
 
 unless (caller()) {
