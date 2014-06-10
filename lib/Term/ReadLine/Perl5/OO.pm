@@ -13,6 +13,7 @@ use English;
 
 use rlib '.';
 use Term::ReadLine::Perl5::OO::History;
+use Term::ReadLine::Perl5::OO::Keymap;
 use Term::ReadLine::Perl5::OO::State;
 use Term::ReadLine::Perl5::Common;
 use Term::ReadLine::Perl5::readline;
@@ -114,6 +115,7 @@ sub new {
 
         debug => !!$ENV{CAROLINE_DEBUG},
         multi_line => 1,
+	current_keymap       => Term::ReadLine::Perl5::OO::Keymap::EmacsKeymap(),
         %args
     }, $class;
     return $self;
@@ -325,7 +327,7 @@ sub F_AcceptLine($) {
     my $self = shift;
     my $buf = $self->{state}->buf;
     Term::ReadLine::Perl5::OO::History::add_history($self, $buf);
-    return $buf;
+    return (1, "$buf");
 }
 
 sub F_BackwardChar($) {
@@ -335,6 +337,7 @@ sub F_BackwardChar($) {
         $state->{pos}--;
         $self->refresh_line($state);
     }
+    return undef, undef;
 }
 
 sub F_BackwardDeleteChar($) {
@@ -345,16 +348,19 @@ sub F_BackwardDeleteChar($) {
         $state->{pos}--;
         $self->refresh_line($state);
     }
+    return undef, undef;
 }
 
 sub F_ClearScreen($) {
     my $self = shift;
     print STDOUT "\x1b[H\x1b[2J";
+    return undef, undef;
 }
 
 sub F_Ding($) {
     my $self = shift;
-    Term::ReadLine::Perl5::Common::F_Ding(*STDERR)
+    Term::ReadLine::Perl5::Common::F_Ding(*STDERR);
+    return undef, undef;
 }
 
 sub F_ForwardChar($) {
@@ -364,24 +370,27 @@ sub F_ForwardChar($) {
         $state->{pos}++;
         $self->refresh_line($state);
     }
+    return undef, undef;
 }
 
 sub F_Interrupt() {
     my $self = shift;
     $self->{sigint}++;
-    return undef;
+    return undef, undef;
 }
 
 sub F_NextHistory($) {
     my $self  = shift;
     my $state = $self->{state};
     $self->edit_history($state, HISTORY_NEXT);
+    return undef, undef;
 }
 
 sub F_PreviousHistory($) {
     my $self  = shift;
     my $state = $self->{state};
     $self->edit_history($state, HISTORY_PREV);
+    return undef, undef;
 }
 
 # swaps current character with previous
@@ -397,6 +406,7 @@ sub F_TransposeChars($) {
 	}
     }
     $self->refresh_line($state);
+    return undef, undef;
 }
 
 ########################################
@@ -542,33 +552,29 @@ sub edit {
             next if $cc == 0;
         }
 
+	my $tuple = $self->{current_keymap}{function}->[$cc];
+	if ($tuple) {
+	    my $fn = "F_${\$tuple->[0]}()";
+	    # print $fn, "\n";
+	    my($done, $retval);
+	    my $cmd = "(\$done, \$retval) = \$self->$fn";
+	    # print $cmd, "\n";
+	    eval($cmd);
+	    return $retval if $done;
+	    next;
+	}
+
 	# FIXME: When doing keymap lookup, I need a way to note that
 	# we want a return rather than to continue editing.
-        if ($cc == ENTER) { # enter
-	    return $self->F_AcceptLine();
-        } elsif ($cc==CTRL_C) { # ctrl-c
-            return $self->F_Interrupt();
-        } elsif ($cc==CTRL_Z) { # ctrl-z
+        if ($cc==CTRL_Z) { # ctrl-z
             $self->{sigtstp}++;
             return $state->buf;
-        } elsif ($cc == BACKSPACE || $cc == CTRL_H) { # backspace or ctrl-h
-            $self->F_BackwardDeleteChar();
         } elsif ($cc == CTRL_D) { # ctrl-d
             if (length($state->buf) > 0) {
                 $self->edit_delete($state);
             } else {
                 return undef;
             }
-        } elsif ($cc == CTRL_T) { # ctrl-t
-	    $self->F_TransposeChars();
-        } elsif ($cc == CTRL_B) { # ctrl-b
-            $self->F_BackwardChar();
-        } elsif ($cc == CTRL_F) { # ctrl-f
-            $self->F_ForwardChar();
-        } elsif ($cc == CTRL_P) { # ctrl-p
-            $self->F_PreviousHistory();
-        } elsif ($cc == CTRL_N) { # ctrl-n
-            $self->F_NextHistory();
         } elsif ($cc == 27) { # escape sequence
             # Read the next two bytes representing the escape sequence
             my $buf = $self->readkey or return undef;

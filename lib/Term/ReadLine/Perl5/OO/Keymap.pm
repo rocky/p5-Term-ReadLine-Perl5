@@ -22,6 +22,11 @@ sub rl_make_bare_keymap() {
     __PACKAGE__->new();
 }
 
+sub lookup_key($$) {
+    my ($self, $key) = @_;
+    return $self->{function};
+}
+
 =head2 bind_parsed_keyseq
 
 #B<bind_parsed_keyseq>(I<$keyseq_list> I<$function>, I<$keyseq_str>)
@@ -249,8 +254,8 @@ sub EmacsKeymap() {
     my $keymap = rl_make_bare_keymap();
     $keymap->bind_keys(
 	# 'C-a',  'beginning-of-line',
-	'C-b',  'BackwardChar',
-	# 'C-c',  'Interrupt',
+	'C-b',  'backward-char',
+	'C-c',  'Interrupt',
 	'C-f',  'forward-char',
 	'C-h',  'backward-delete-char',
 	'C-j',  'accept-line',
@@ -259,6 +264,7 @@ sub EmacsKeymap() {
 	'C-n',  'next-history',
 	'C-p',  'previous-history',
 	'C-t',  'transpose-chars',
+	'DEL',  'backward-delete-char',
 	);
     return $keymap
 }

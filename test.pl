@@ -54,6 +54,8 @@ if (!@ARGV) {
   $term = new Term::ReadLine::Perl5 'Simple Perl calc', \*STDIN, \*STDOUT;
   $no_print = $ARGV[0] eq '--no-print';
 }
+
+# use Enbugger 'trepan'; Enbugger->stop;
 my $prompt = "Enter arithmetic or Perl expression: ";
 if ((my $l = $ENV{PERL_RL_TEST_PROMPT_MINLEN} || 0) > length $prompt) {
   $prompt =~ s/(?=:)/ ' ' x ($l - length $prompt)/e;
