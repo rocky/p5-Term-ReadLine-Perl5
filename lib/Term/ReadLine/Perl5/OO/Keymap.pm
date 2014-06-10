@@ -252,8 +252,7 @@ sub inspect($) {
 
 # GNU Emacs Key binding
 sub EmacsKeymap() {
-    my $keymap = rl_make_bare_keymap();
-    # FIXME: name 'Emacs', default: SelfInsert
+    my $keymap = __PACKAGE__->new('Emacs', 'self-insert');
     $keymap->bind_keys(
 	'C-a',  'beginning-of-line',
 	'C-b',  'backward-char',
@@ -280,8 +279,7 @@ sub EmacsKeymap() {
 
 # Vi input mode key bindings.
 sub ViKeymap() {
-    my $keymap = rl_make_bare_keymap();
-    # FIXME: name 'Vi', default: SelfInsert
+    my $keymap = __PACKAGE__->new('vi', 'self-insert');
     $keymap->bind_keys(
 	# "\e",   'ViEndInsert',
 	'C-c',  'interrupt',
@@ -295,8 +293,6 @@ sub ViKeymap() {
 	);
     return $keymap;
 };
-
-
 
 unless (caller) {
     foreach my $keymap (EmacsKeymap(), ViKeymap()) {
