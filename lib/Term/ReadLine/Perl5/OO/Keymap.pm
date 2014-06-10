@@ -253,17 +253,24 @@ sub inspect($) {
 sub EmacsKeymap() {
     my $keymap = rl_make_bare_keymap();
     $keymap->bind_keys(
-	# 'C-a',  'beginning-of-line',
+	'C-a',  'beginning-of-line', # try
 	'C-b',  'backward-char',
-	'C-c',  'Interrupt',
+	'C-c',  'interrupt',
+	'C-d',  'delete-char',  # try
+	'C-e',  'end-of-line',  # try
 	'C-f',  'forward-char',
 	'C-h',  'backward-delete-char',
 	'C-j',  'accept-line',
+	'C-k',  'kill-line',    # try
 	'C-l',  'clear-screen',
 	'C-m',  'accept-line',
 	'C-n',  'next-history',
 	'C-p',  'previous-history',
+	'C-r',  'reverse-search-history', # try
 	'C-t',  'transpose-chars',
+	'C-u',  'unix-line-discard', # try
+	'C-w',  'unix-word-rubout', # try
+	'C-z',  'suspend',     # try
 	'DEL',  'backward-delete-char',
 	);
     return $keymap

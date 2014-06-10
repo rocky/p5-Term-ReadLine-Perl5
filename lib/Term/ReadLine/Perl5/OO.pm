@@ -104,6 +104,7 @@ sub new {
     my %args = @_==1? %{$_[0]} : @_;
     my $self = bless {
 
+	char                 => undef, # last character
         rl_History => [],
 	rl_MaxHistorySize    => 100,
 	rl_HistoryIndex      => 0,  # Is set on use
@@ -112,7 +113,7 @@ sub new {
 	rl_max_input_history => 0,
 	history_stifled      => 0,
 	history_base         => 0,
-
+	state                => undef, # line buffer and its state
         debug => !!$ENV{CAROLINE_DEBUG},
         multi_line => 1,
 	current_keymap       => Term::ReadLine::Perl5::OO::Keymap::EmacsKeymap(),
@@ -327,7 +328,7 @@ sub F_AcceptLine($) {
     my $self = shift;
     my $buf = $self->{state}->buf;
     Term::ReadLine::Perl5::OO::History::add_history($self, $buf);
-    return (1, "$buf");
+    return (1, $buf);
 }
 
 sub F_BackwardChar($) {
@@ -351,9 +352,38 @@ sub F_BackwardDeleteChar($) {
     return undef, undef;
 }
 
+sub F_BeginningOfLine($)
+{
+    my $self  = shift;
+    my $state = $self->{state};
+    $state->{pos} = 0;
+    $self->refresh_line($state);
+    return undef, undef;
+}
+
 sub F_ClearScreen($) {
     my $self = shift;
+    my $state = $self->{state};
     print STDOUT "\x1b[H\x1b[2J";
+    return undef, undef;
+    $self->refresh_line($state);
+}
+
+sub F_DeleteChar($) {
+    my $self  = shift;
+    my $state = $self->{state};
+    if (length($state->buf) > 0) {
+	$self->edit_delete($state);
+    }
+    return undef, undef;
+}
+
+sub F_EndOfLine($)
+{
+    my $self  = shift;
+    my $state = $self->{state};
+    $state->{pos} = length($state->buf);
+    $self->refresh_line($state);
     return undef, undef;
 }
 
@@ -379,6 +409,15 @@ sub F_Interrupt() {
     return undef, undef;
 }
 
+sub F_KillLine($)
+{
+    my $self  = shift;
+    my $state = $self->{state};
+    substr($state->{buf}, $state->{pos}) = '';
+    $self->refresh_line($state);
+    return undef, undef;
+}
+
 sub F_NextHistory($) {
     my $self  = shift;
     my $state = $self->{state};
@@ -391,6 +430,31 @@ sub F_PreviousHistory($) {
     my $state = $self->{state};
     $self->edit_history($state, HISTORY_PREV);
     return undef, undef;
+}
+
+sub F_ReverseSearchHistory($) {
+    my $self  = shift;
+    my $state = $self->{state};
+    $self->search($state);
+    return undef, undef;
+}
+
+sub F_SelfInsert($)
+{
+    my $self  = shift;
+    my $state = $self->{state};
+    my $c     = $self->{char};
+    $self->debug("inserting ord($c)\n");
+    $self->edit_insert($state, $c);
+    return undef, undef;
+}
+
+sub F_Suspend($)
+{
+    my $self  = shift;
+    my $state = $self->{state};
+    $self->{sigtstp}++;
+    return 1, $state->buf;
 }
 
 # swaps current character with previous
@@ -406,6 +470,24 @@ sub F_TransposeChars($) {
 	}
     }
     $self->refresh_line($state);
+    return undef, undef;
+}
+
+sub F_UnixLineDiscard($)
+{
+    my $self      = shift;
+    my $state     = $self->{state};
+    $state->{buf} = '';
+    $state->{pos} = 0;
+    $self->refresh_line($state);
+    return undef, undef;
+}
+
+sub F_UnixRubout($)
+{
+    my $self      = shift;
+    my $state     = $self->{state};
+    $self->edit_delete_prev_word($state);
     return undef, undef;
 }
 
@@ -552,6 +634,7 @@ sub edit {
             next if $cc == 0;
         }
 
+	$self->{char} = $c;
 	my $tuple = $self->{current_keymap}{function}->[$cc];
 	if ($tuple) {
 	    my $fn = "F_${\$tuple->[0]}()";
@@ -566,16 +649,7 @@ sub edit {
 
 	# FIXME: When doing keymap lookup, I need a way to note that
 	# we want a return rather than to continue editing.
-        if ($cc==CTRL_Z) { # ctrl-z
-            $self->{sigtstp}++;
-            return $state->buf;
-        } elsif ($cc == CTRL_D) { # ctrl-d
-            if (length($state->buf) > 0) {
-                $self->edit_delete($state);
-            } else {
-                return undef;
-            }
-        } elsif ($cc == 27) { # escape sequence
+        if ($cc == 27) { # escape sequence
             # Read the next two bytes representing the escape sequence
             my $buf = $self->readkey or return undef;
             $buf .= $self->readkey or return undef;
@@ -610,30 +684,8 @@ sub edit {
 #                   linenoiseEditDelete(&l);
 #               }
 #           }
-        } elsif ($cc == CTRL_U) { # ctrl-u
-            # delete the whole line.
-            $state->{buf} = '';
-            $state->{pos} = 0;
-            $self->refresh_line($state);
-        } elsif ($cc == CTRL_K) { # ctrl-k
-            substr($state->{buf}, $state->{pos}) = '';
-            $self->refresh_line($state);
-        } elsif ($cc == CTRL_A) { # ctrl-a
-            $state->{pos} = 0;
-            $self->refresh_line($state);
-        } elsif ($cc == CTRL_E) { # ctrl-e
-            $state->{pos} = length($state->buf);
-            $self->refresh_line($state);
-        } elsif ($cc == CTRL_L) { # ctrl-l
-            $self->F_ClearScreen();
-            $self->refresh_line($state);
-        } elsif ($cc == CTRL_R) { # ctrl-r
-            $self->search($state);
-        } elsif ($cc == CTRL_W) { # ctrl-w
-            $self->edit_delete_prev_word($state);
         } else {
-            $self->debug("inserting $cc\n");
-            $self->edit_insert($state, $c);
+            $self->F_SelfInsert;
         }
     }
     return $state->buf;
@@ -768,13 +820,13 @@ __END__
 
 =head1 NAME
 
-Caroline - Yet another line editing library
+Term::ReadLine::Perl5::OO - OO version of L<Term::ReadLine::Perl5>
 
 =head1 SYNOPSIS
 
-    use Caroline;
+    use Term::ReadLine::Perl5::OO;
 
-    my $c = Caroline->new;
+    my $c = Term::ReadLine::Perl5::OO->new;
     while (defined(my $line = $c->readline('> '))) {
         if ($line =~ /\S/) {
             print eval $line;
@@ -783,33 +835,30 @@ Caroline - Yet another line editing library
 
 =head1 DESCRIPTION
 
-Caroline is yet another line editing library like L<Term::ReadLine::Gnu>.
+An Object-Oriented GNU Readline line editing library like
+L<Term::ReadLine::Perl5>.
 
-This module supports
+This module
 
 =over 4
 
-=item History handling
+=item has History handling
 
-=item Complition
+=item has programmable command Completion
 
-=item Portable
+=item is Portable
 
-=item No C library dependency
+=item has no C library dependency
 
 =back
-
-=head1 PROJECT GOALS
-
-Provides portable line editing library for Perl5 community.
 
 =head1 METHODS
 
 =over 4
 
-=item my $caroline = Caroline->new();
+=item my $term = Term::ReadLine::Perl5::OO->new();
 
-Create new Caroline instance.
+Create new Term::ReadLine::Perl5::OO instance.
 
 Options are:
 
@@ -819,8 +868,8 @@ Options are:
 
 You can write completion callback function like this:
 
-    use Caroline;
-    my $c = Caroline->new(
+    use Term::ReadLine::Perl5::OO;
+    my $c = Term::ReadLine::Perl5::OO->new(
         completion_callback => sub {
             my ($line) = @_;
             if ($line eq 'h') {
@@ -839,21 +888,21 @@ You can write completion callback function like this:
 
 =back
 
-=item C<< my $line = $caroline->read($prompt); >>
+=item C<< my $line = $term->read($prompt); >>
 
 Read line with C<$prompt>.
 
 Trailing newline is removed. Returns undef on EOF.
 
-=item C<< $caroline->history() >>
+=item C<< $term->history() >>
 
 Get the current history data in C< ArrayRef[Str] >.
 
-=item C<< $caroline->write_history($filename) >>
+=item C<< $term->write_history($filename) >>
 
 Write history data to the file.
 
-=item C<< $caroline->read_history($filename) >>
+=item C<< $term->read_history($filename) >>
 
 Read history data from history file.
 
@@ -877,6 +926,8 @@ User need to set locale correctly. For more details, please read L<Unicode::East
 =head1 LICENSE
 
 Copyright (C) tokuhirom.
+Copyright (C) Rocky Bernstein.
+
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
@@ -890,5 +941,8 @@ L<https://github.com/antirez/linenoise/blob/master/linenoise.c>
 tokuhirom E<lt>tokuhirom@gmail.comE<gt>
 
 mattn
+
+Extended and rewritten to make more compatible with GNU ReadLine and
+I<Term::ReadLine::Perl5> by Rocky Bernstein
 
 =cut
