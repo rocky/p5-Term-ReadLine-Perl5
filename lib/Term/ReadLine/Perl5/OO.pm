@@ -31,23 +31,10 @@ use Class::Accessor::Lite 0.05 (
 );
 
 use constant {
-    CTRL_A => 1,
     CTRL_B => 2,
     CTRL_C => 3,
-    CTRL_D => 4,
-    CTRL_E => 5,
     CTRL_F => 6,
     CTRL_H => 8,
-    CTRL_I => 9,
-    CTRL_K => 11,
-    CTRL_L => 12,
-    CTRL_M => 13,
-    CTRL_N => 14,
-    CTRL_P => 16,
-    CTRL_R => 18,
-    CTRL_T => 20,
-    CTRL_U => 21,
-    CTRL_W => 23,
     CTRL_Z => 26,
     BACKSPACE => 127,
     ENTER => 13,
@@ -163,7 +150,7 @@ sub refresh_multi_line {
     my ($self, $state) = @_;
 
     my $plen = vwidth($state->prompt);
-    $self->debug($state->buf.  "\n");
+    $self->debug($state->buf . "\n");
 
     # rows used by current buf
     my $rows = int(($plen + vwidth($state->buf) + $state->cols -1) / $state->cols);
