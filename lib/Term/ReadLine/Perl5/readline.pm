@@ -406,7 +406,14 @@ sub preinit
     1; # Returning a glob causes a bug in db5.001m
 }
 
-sub init
+# FIXME: something in here causes terminal attributes like bold and
+# underline to work.
+sub rl_term_set()
+{
+    $rl_term_set = \@Term::ReadLine::TermCap::rl_term_set;
+}
+
+sub init()
 {
     if ($ENV{'TERM'} and ($ENV{'TERM'} eq 'emacs' || $ENV{'TERM'} eq 'dumb')) {
         $dumb_term = 1;

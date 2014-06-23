@@ -17,6 +17,7 @@ use Term::ReadLine::Perl5::OO::Keymap;
 use Term::ReadLine::Perl5::OO::State;
 use Term::ReadLine::Perl5::Common;
 use Term::ReadLine::Perl5::readline;
+use Term::ReadLine::Perl5::TermCap;
 
 our $VERSION = "0.21";
 
@@ -92,18 +93,19 @@ sub new {
     my $self = bless {
 
 	char                 => undef, # last character
-        rl_History => [],
-	rl_MaxHistorySize    => 100,
-	rl_HistoryIndex      => 0,  # Is set on use
-	rl_history_length    => 0,  # is set on use
-	minlength            => 1,
-	rl_max_input_history => 0,
-	history_stifled      => 0,
-	history_base         => 0,
-	state                => undef, # line buffer and its state
-        debug => !!$ENV{CAROLINE_DEBUG},
-        multi_line => 1,
 	current_keymap       => Term::ReadLine::Perl5::OO::Keymap::EmacsKeymap(),
+	debug                => !!$ENV{CAROLINE_DEBUG},
+	history_base         => 0,
+	history_stifled      => 0,
+	minlength            => 1,
+	multi_line           => 1,
+	rl_HistoryIndex      => 0,  # Is set on use
+	rl_MaxHistorySize    => 100,
+	rl_history_length    => 0,  # is set on use
+	rl_max_input_history => 0,
+	state                => undef, # line buffer and its state
+        rl_History           => [],
+	rl_term_set          => \@Term::ReadLine::TermCap::rl_term_set,
         %args
     }, $class;
     return $self;
@@ -236,7 +238,23 @@ sub refresh_multi_line {
     $self->debug("\n");
 }
 
-sub refresh_single_line {
+
+# Show the line, default inverted.
+sub redisplay_inverted($$) {
+    my ($self, $line) = @_;
+
+    # FIXME: fixup from readline::redisplay_high
+    # get_ornaments_selected();
+    # @$rl_term_set[2,3,4,5] = @$rl_term_set[4,5,2,3];
+
+    # Show the line, default inverted.
+    print STDOUT $line;
+
+    # FIXME: fixup from readline::redisplay_high
+    # @$rl_term_set[2,3,4,5] = @$rl_term_set[4,5,2,3];
+}
+
+sub refresh_single_line($$) {
     my ($self, $state) = @_;
 
     my $buf = $state->buf;
@@ -252,7 +270,7 @@ sub refresh_single_line {
     }
 
     print STDOUT "\x1b[0G"; # cursor to left edge
-    print STDOUT $state->{prompt};
+    $self->redisplay_high($self->{prompt});
     print STDOUT $buf;
     print STDOUT "\x1b[0K"; # erase to right
 

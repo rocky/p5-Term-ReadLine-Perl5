@@ -216,10 +216,9 @@ sub new {
 	$term->ornaments(1);
     }
 
-    # FIXME:
-    # Something in preinit seems to set terminal characteristics that wasn't
-    # done initially but now can be done.
-    Term::ReadLine::Perl5::readline::preinit();
+    # FIXME: something rl_term_set in here causes terminal attributes
+    # like bold and underline to work.
+    Term::ReadLine::Perl5::readline::rl_term_set();
 
     return $self;
 }
