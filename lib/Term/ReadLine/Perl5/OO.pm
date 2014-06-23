@@ -412,6 +412,17 @@ sub F_NextHistory($) {
     return undef, undef;
 }
 
+##
+## Execute the next character input as a command in a meta keymap.
+##
+sub F_PrefixMeta
+{
+    my $self  = shift;
+    my $cc    = ord($self->{char});
+    print "HHHHH!\n";
+    $self->{current_keymap} = $self->{function}[$cc]->[1];
+}
+
 sub F_PreviousHistory($) {
     my $self  = shift;
     my $state = $self->{state};
@@ -926,7 +937,6 @@ L<https://github.com/antirez/linenoise/blob/master/linenoise.c>
 =head1 AUTHOR
 
 tokuhirom E<lt>tokuhirom@gmail.comE<gt>
-
 mattn
 
 Extended and rewritten to make more compatible with GNU ReadLine and

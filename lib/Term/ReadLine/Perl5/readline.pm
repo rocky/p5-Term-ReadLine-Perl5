@@ -538,9 +538,9 @@ sub RL_func ($) {
   }
 }
 
-=head2 actually_do_binding
+=head2 bind_parsed_keyseq
 
-B<actually_do_binding>(I<$function1>, I<@sequence1>, ...)
+B<bind_parsed_keyseq>(I<$function1>, I<@sequence1>, ...)
 
 Actually inserts the binding for I<@sequence> to I<$function> into the
 current map. I<@sequence> is an array of character ordinals.
@@ -554,7 +554,7 @@ I<$Function> will have an implicit I<F_> prepended to it.
 
 =cut
 
-sub actually_do_binding
+sub bind_parsed_keyseq
 {
     my $bad = 0;
     while (@_) {
@@ -573,7 +573,7 @@ sub actually_do_binding
 	    InitKeymap(*$map, '', $map) if !(%$map);
 	    *KeyMap = *$map;
 	    $key = shift @keys;
-	    #&actually_do_binding($func, \@keys);
+	    #&bind_parsed_keyseq($func, \@keys);
 	}
 
 	my $name = $KeyMap{'name'};
@@ -698,7 +698,7 @@ sub rl_bind_keyseq($$)
 
     # Now do the mapping of the sequence represented in @keys
     printf "rl_bind(%s, %s)\n", $func, join(', ', @keys) if $DEBUG;
-    &actually_do_binding($func, \@keys);
+    &bind_parsed_keyseq($func, \@keys);
 }
 
 =head3 rl_bind
@@ -3117,7 +3117,7 @@ sub readline($;$)
         my $cmd = get_command($var_EditingMode, ord($input));
         if ( $rl_first_char && $cmd =~ /^F_(SelfInsert$|Yank)/
              && length $line && $rl_default_selected ) {
-          # (Backward)?DeleteChar specialcased in the code
+	    # (Backward)?DeleteChar special-cased in the code.
             $line = '';
             $D = 0;
             $cmd = 'F_BackwardDeleteChar' if $cmd eq 'F_DeleteChar';

@@ -55,7 +55,7 @@ my $builder = Module::Build->new(
         'File::HomeDir'           => $min_file_homedir_version,
 	'File::Spec'              => 0,
         'Term::ReadKey'           => 2.3,
-	# For Caroline
+	# For OO Readline (formerly Caroline)
 	"Class::Accessor::Lite"   => '0.05',
 	'IO::Handle'              => '0',
 	'POSIX'                   => '0',

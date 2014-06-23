@@ -272,6 +272,7 @@ sub EmacsKeymap() {
 	'C-u',  'unix-line-discard',
 	'C-w',  'unix-word-rubout',
 	'C-z',  'suspend',
+	# 'ESC' ,  'prefix-meta',
 	'DEL',  'backward-delete-char',
 	);
     return $keymap
