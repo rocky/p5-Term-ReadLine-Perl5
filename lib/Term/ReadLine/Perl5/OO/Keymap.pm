@@ -10,7 +10,7 @@ sub new {
     my ($class, $name, $default) = @_;
     my $self = {
 	name     => $name,
-	default  => $default,
+	default  => canonic_command_function($default),
 	function => [],
     };
     bless $self, $class;
@@ -272,8 +272,10 @@ sub EmacsKeymap() {
 	'C-u',  'unix-line-discard',
 	'C-w',  'unix-word-rubout',
 	'C-z',  'suspend',
-	# 'ESC' ,  'prefix-meta',
+	#'ESC',  'prefix-meta',
 	'DEL',  'backward-delete-char',
+	# 'ESC-b', 'backward-char',
+
 	);
     return $keymap
 }

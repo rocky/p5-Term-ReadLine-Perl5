@@ -94,6 +94,7 @@ sub new {
 
 	char                 => undef, # last character
 	current_keymap       => Term::ReadLine::Perl5::OO::Keymap::EmacsKeymap(),
+	toplevel_keymap      => Term::ReadLine::Perl5::OO::Keymap::EmacsKeymap(),
 	debug                => !!$ENV{CAROLINE_DEBUG},
 	history_base         => 0,
 	history_stifled      => 0,
@@ -437,8 +438,8 @@ sub F_PrefixMeta
 {
     my $self  = shift;
     my $cc    = ord($self->{char});
-    print "HHHHH!\n";
     $self->{current_keymap} = $self->{function}[$cc]->[1];
+    return undef, undef;
 }
 
 sub F_PreviousHistory($) {
@@ -462,7 +463,8 @@ sub F_SelfInsert($)
     my $c     = $self->{char};
     $self->debug("inserting ord($c)\n");
     $self->edit_insert($state, $c);
-    return undef, undef;
+    # tuple[0] == '' signals not to eval function again
+    return '', undef;
 }
 
 sub F_Suspend($)
@@ -625,6 +627,21 @@ sub disable_raw_mode {
     return undef;
 }
 
+sub lookup_key($)
+{
+    my ($self, $cc) = @_;
+    my $tuple = $self->{current_keymap}{function}->[$cc];
+    return $tuple if $tuple && defined($tuple->[0]);
+    my $fn_raw = $self->{current_keymap}{default};
+    my $fn = "F_${fn_raw}()";
+    print "+++", $fn, "\n";
+    my($done, $retval);
+    my $cmd = "(\$done, \$retval) = \$self->$fn";
+    # print $cmd, "\n";
+    eval($cmd);
+    return [$done, $retval];
+}
+
 sub edit {
     my ($self, $prompt) = @_;
     print STDOUT $prompt;
@@ -651,15 +668,18 @@ sub edit {
         }
 
 	$self->{char} = $c;
-	my $tuple = $self->{current_keymap}{function}->[$cc];
-	if ($tuple) {
-	    my $fn = "F_${\$tuple->[0]}()";
-	    # print $fn, "\n";
+	my $tuple = $self->lookup_key($cc);
+	# use Data::Printer;
+	# p $tuple;
+	if ($tuple && $tuple->[0] ) {
+	    my $fn = sprintf "F_%s()", $tuple->[0];
 	    my($done, $retval);
 	    my $cmd = "(\$done, \$retval) = \$self->$fn";
-	    # print $cmd, "\n";
 	    eval($cmd);
 	    return $retval if $done;
+	    $self->{current_keymap} = $self->{toplevel_keymap} unless
+		$fn eq 'F_PrefixMeta';
+	    # p $self->{current_keymap};
 	    next;
 	}
 
@@ -700,8 +720,6 @@ sub edit {
 #                   linenoiseEditDelete(&l);
 #               }
 #           }
-        } else {
-            $self->F_SelfInsert;
         }
     }
     return $state->buf;
