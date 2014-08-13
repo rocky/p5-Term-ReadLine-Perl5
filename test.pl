@@ -7,6 +7,8 @@ use warnings; use strict;
 use Test::More;
 use rlib './lib';
 
+{ package Term::ReadLine::Stub; }
+
 BEGIN{
     # Do not test TR::Gnu !
     $ENV{PERL_RL} = 'Perl5';
@@ -14,13 +16,13 @@ BEGIN{
     $ENV{'COLUMNS'} = '80';
     $ENV{'LINES'}   = '25';
 };
-use lib './lib';
 
 # FIXME:
 # Until Term::ReadLine has Perl5 defined use
 #       Term::ReadLine::Perl5 ?
 
 use Term::ReadLine::Perl5;
+
 
 use Carp;
 $SIG{__WARN__} = sub { warn Carp::longmess(@_) };
@@ -52,19 +54,20 @@ if (!@ARGV) {
   $term = new Term::ReadLine::Perl5 'Simple Perl calc', \*STDIN, \*STDOUT;
   $no_print = $ARGV[0] eq '--no-print';
 }
+
+# use Enbugger 'trepan'; Enbugger->stop;
 my $prompt = "Enter arithmetic or Perl expression: ";
 if ((my $l = $ENV{PERL_RL_TEST_PROMPT_MINLEN} || 0) > length $prompt) {
   $prompt =~ s/(?=:)/ ' ' x ($l - length $prompt)/e;
 }
-print "1..1\n";
 no strict;
-my $OUT = $term->OUT || \*STDOUT;
+my $OUT = $term->{OUT} || \*STDOUT;
 use strict;
 my %features = %{ $term->Features };
 if (%features) {
   my @f = %features;
   print $OUT "Features present: @f\n";
-  #$term->ornaments(1) if $features{ornaments};
+  $term->ornaments(1) if $features{ornaments};
 } else {
   print $OUT "No additional features present.\n";
 }
@@ -77,6 +80,7 @@ print $OUT <<EOP;
 	this word should be already entered.)
 
 EOP
+
 while ( defined (my $line = $term->readline($prompt, 'exit')) )
 {
     last if $line eq 'exit';
@@ -87,8 +91,19 @@ while ( defined (my $line = $term->readline($prompt, 'exit')) )
 	next;
     }
     print $OUT $res, "\n" unless $@ or $no_print;
-    $term->addhistory($line) if $line =~ /\S/ and !$features{autohistory};
+    $term->add_history($line) if $line =~ /\S/;
     $readline::rl_default_selected = !$readline::rl_default_selected;
 }
+if (@ARGV) {
+    my $term2 = Term::ReadLine::Perl5->new('caroline test');
+    while ( defined (my $line = $term2->readline($prompt, 'exit2')) )
+    {
+	last if $line eq 'exit2';
+	my $res = eval($line) || '';
+	print $OUT "$res\n" unless $@ or $no_print;
+	$term2->add_history($line) if $line =~ /\S/;
+	$readline::rl_default_selected = !$readline::rl_default_selected;
+    };
+};
 ok(1);
 done_testing();

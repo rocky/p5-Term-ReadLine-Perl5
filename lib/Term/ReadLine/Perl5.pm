@@ -40,7 +40,10 @@ no warnings 'once';
 our $VERSION = '1.38';
 
 use Carp;
+use rlib '.';
 use Term::ReadLine::Perl5::History;
+use Term::ReadLine::Perl5::OO;
+use Term::ReadLine::Perl5::OO::History;
 use Term::ReadLine::Perl5::Tie;
 use Term::ReadLine::Perl5::readline;
 
@@ -66,7 +69,6 @@ Example:
 	completion_suppress_append (bool)
 	history_base               (int)
 	history_stifled            (int)
-        history_length             (int)
         max_input_history          (int)
 	outstream                  (file handle)
 
@@ -151,58 +153,74 @@ support more than one readline instance.
 
 =cut
 sub new {
-  require Term::ReadLine;
-  $features{tkRunning} = Term::ReadLine::Stub->Features->{'tkRunning'};
-  $features{ornaments} = Term::ReadLine::Stub->Features->{'ornaments'};
-  if (defined $term) {
-    warn "Cannot create second readline interface, falling back to dumb.\n";
-    return Term::ReadLine::Stub::new(@_);
-  }
-  shift; # Package name
-  if (@_) {
-    if ($term) {
-      warn "Ignoring name of second readline interface.\n" if defined $term;
-      shift;
+    my $class = shift;
+    require Term::ReadLine;
+    $features{tkRunning} = Term::ReadLine::Stub->Features->{'tkRunning'};
+    $features{ornaments} = Term::ReadLine::Stub->Features->{'ornaments'};
+    if (defined $term) {
+	my $stderr = $Term::ReadLine::Perl5::readline::term_OUT;
+	print $stderr "Cannot create second readline interface\n";
+	print "Using experimental OO interface based on Caroline\n";
+	my ($name, $in, $out) = @_;
+	my $opts = {
+	    name => $name,
+	    in   => $in,
+	    out  => $out,
+	};
+	return Term::ReadLine::Perl5::OO->new($opts);
+    }
+    shift; # Package name
+    if (@_) {
+	if ($term) {
+	    warn "Ignoring name of second readline interface.\n"
+		if defined $term;
+	    shift;
+	} else {
+            # Set Name
+	    $Term::ReadLine::Perl5::readline::rl_readline_name = shift;
+	}
+    }
+    if (!@_) {
+	if (!defined $term) {
+	    my ($IN,$OUT) = Term::ReadLine->findConsole();
+	    # Old Term::ReadLine did not have a workaround for a bug
+	    # in Win devdriver
+	    $IN = 'CONIN$' if $^O eq 'MSWin32' and "\U$IN" eq 'CON';
+	    open(my $in_fh,
+		 # A workaround for another bug in Win device driver
+		 (($IN eq 'CONIN$' and $^O eq 'MSWin32') ? "+< $IN" : "< $IN"))
+		or croak "Cannot open $IN for read";
+	    open(my $out_fh, ">$OUT") || croak "Cannot open $OUT for write: $!";
+	    $Term::ReadLine::Perl5::readline::term_IN  = $in_fh;
+	    $Term::ReadLine::Perl5::readline::term_OUT = $out_fh;
+	}
     } else {
-      $Term::ReadLine::Perl5::readline::rl_readline_name = shift; # Name
+	if (defined $term and ($term->IN ne $_[0] or $term->OUT ne $_[1]) ) {
+	    croak "Request for a second readline interface with different terminal";
+	}
+	$Term::ReadLine::Perl5::readline::term_IN = shift;
+	$Term::ReadLine::readline::term_OUT = shift
     }
-  }
-  if (!@_) {
-    if (!defined $term) {
-      my ($IN,$OUT) = Term::ReadLine->findConsole();
-      # Old Term::ReadLine did not have a workaround for a bug in Win devdriver
-      $IN = 'CONIN$' if $^O eq 'MSWin32' and "\U$IN" eq 'CON';
-      open(my $in_fh,
-	   # A workaround for another bug in Win device driver
-	   (($IN eq 'CONIN$' and $^O eq 'MSWin32') ? "+< $IN" : "< $IN"))
-	  or croak "Cannot open $IN for read";
-      open(my $out_fh, ">$OUT") || croak "Cannot open $OUT for write: $!";
-      $Term::ReadLine::Perl5::readline::term_IN  = $in_fh;
-      $Term::ReadLine::Perl5::readline::term_OUT = $out_fh;
-    }
-  } else {
-    if (defined $term and ($term->IN ne $_[0] or $term->OUT ne $_[1]) ) {
-      croak "Request for a second readline interface with different terminal";
-    }
-    $Term::ReadLine::Perl5::readline::term_IN = shift;
-    $Term::ReadLine::readline::term_OUT = shift
-  }
-  # The following is here since it is mostly used for perl input:
-  # $readline::rl_basic_word_break_characters .= '-:+/*,[])}';
-  $term = bless [$readline::term_IN,$readline::term_OUT];
-  unless ($ENV{PERL_RL} and $ENV{PERL_RL} =~ /\bo\w*=0/) {
-    local $Term::ReadLine::termcap_nowarn = 1; # With newer Perls
-    local $SIG{__WARN__} = sub {}; # With older Perls
-    $term->ornaments(1);
-  }
-  $rl_history_length = $rl_max_input_history = 0;
+    # The following is here since it is mostly used for perl input:
+    # $readline::rl_basic_word_break_characters .= '-:+/*,[])}';
+    $term = bless [$readline::term_IN,$readline::term_OUT];
+    my $self = {
+	'IN'  => $readline::term_IN,
+	'OUT' => $readline::term_OUT,
+    };
+    bless $self, $class;
 
-  # FIXME:
-  # Something in preinit seems to set terminal characteristics that wasn't
-  # done initially but now can be done.
-  Term::ReadLine::Perl5::readline::preinit();
+    unless ($ENV{PERL_RL} and $ENV{PERL_RL} =~ /\bo\w*=0/) {
+	local $Term::ReadLine::termcap_nowarn = 1; # With newer Perls
+	local $SIG{__WARN__} = sub {}; # With older Perls
+	$term->ornaments(1);
+    }
 
-  return $term;
+    # FIXME: something rl_term_set in here causes terminal attributes
+    # like bold and underline to work.
+    Term::ReadLine::Perl5::readline::rl_term_set();
+
+    return $self;
 }
 
 =head3 newTTY
@@ -214,8 +232,8 @@ Switches to use these filehandles.
 =cut
 sub newTTY($$$) {
   my ($self, $in, $out) = @_;
-  $Term::ReadLine::Perl5::readline::term_IN   = $self->[0] = $in;
-  $Term::ReadLine::Perl5::readline::term_OUT  = $self->[1] = $out;
+  $Term::ReadLine::Perl5::readline::term_IN   = $self->{'IN'}  = $in;
+  $Term::ReadLine::Perl5::readline::term_OUT  = $self->{'OUT'} = $out;
   my $sel = select($out);
   $| = 1;				# for DB::OUT
   select($sel);
@@ -240,7 +258,7 @@ sub MinLine($;$) {
 
 =head3 add_history
 
-B<add_history>(I<$line1>, I<$line2>, ...)
+#B<add_history>(I<$line1>, I<$line2>, ...)
 
 adds the lines, I<$line1>, etc. to the input history list.
 
@@ -250,23 +268,31 @@ I<AddHistory> is an alias for this function.
 
 # GNU ReadLine names
 *add_history            = \&Term::ReadLine::Perl5::History::add_history;
+*remove_history         = \&Term::ReadLine::Perl5::History::remove_history;
+*replace_history_entry  = \&Term::ReadLine::Perl5::History::replace_history_entry;
+
 *clear_history          = \&Term::ReadLine::Perl5::History::clear_history;
-*history_list           = \&Term::ReadLine::Perl5::History::history_list;
+
 *history_is_stifled     = \&Term::ReadLine::Perl5::History::history_is_stifled;
 *read_history           = \&Term::ReadLine::Perl5::History::read_history;
-*replace_history_entry  = \&Term::ReadLine::Perl5::History::replace_history_entry;
 *unstifle_history       = \&Term::ReadLine::Perl5::History::unstifle_history;
 *write_history          = \&Term::ReadLine::Perl5::History::write_history;
 
+# Not sure about the difference between history_list and GetHistory.
+*history_list           = \&Term::ReadLine::Perl5::OO::GetHistory;
+
+*rl_History            = *Term::ReadLine::Perl5::rl_History;
+
+
 # Some Term::ReadLine::Gnu names
-*AddHistory             = \&Term::ReadLine::Perl5::History::AddHistory;
+*AddHistory             = \&add_history;
 *GetHistory             = \&Term::ReadLine::Perl5::History::GetHistory;
-*ReadHistory            = \&Term::ReadLine::Perl5::History::ReadHistory;
 *SetHistory             = \&Term::ReadLine::Perl5::History::SetHistory;
+*ReadHistory            = \&Term::ReadLine::Perl5::History::ReadHistory;
 *WriteHistory           = \&Term::ReadLine::Perl5::History::WriteHistory;
 
 # Backward compatibility:
-*addhistory = \&Term::ReadLine::Perl5::add_history;
+*addhistory = \&add_history;
 *StifleHistory = \&stifle_history;
 
 =head3 stifle_history
@@ -282,42 +308,16 @@ I<StifleHistory> is an alias for this function.
 ### FIXME: stifle_history is still here because it updates $attribs.
 ## Pass a reference?
 sub stifle_history($$) {
-  shift;
-  my $max = shift;
-  $max = 0 if !defined($max) || $max < 0;
+    my ($self, $max) = @_;
+    $max = 0 if !defined($max) || $max < 0;
 
-  if (scalar @rl_History > $max) {
-      splice @rl_History, $max;
-      $attribs{history_length} = scalar @rl_History;
-  }
+    if (scalar @rl_History > $max) {
+	splice @rl_History, $max;
+	$attribs{history_length} = scalar @rl_History;
+    }
 
-  $history_stifled = 1;
-  $rl_max_input_history = $max;
-}
-
-=head3 remove_history
-
-   $removed = $term->remove_history($which)
-
-Remove history element C<$which> from the history. The removed
-element is returned.
-
-I<RemoveHistory> is an alias for this function.
-=cut
-
-sub remove_history($$) {
-  shift;
-  my $which = $_[0];
-  return undef if
-    $which < 0 || $which >= $rl_history_length ||
-      $attribs{history_length} ==  0;
-  my $removed = splice @rl_History, $which, 1;
-  $rl_history_length--;
-  $rl_HistoryIndex =
-      $rl_history_length if
-    $rl_history_length <
-    $rl_HistoryIndex;
-  return $removed;
+    $Term::ReadLine::Perl5::History::history_stifled = 1;
+    $attribs{max_input_history} = $self->{rl_max_input_history} = $max;
 }
 
 =head3 Features

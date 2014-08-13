@@ -82,26 +82,27 @@ my @list_set;
 show_indices;
 
 $t->SetHistory(@list_set);
-is_deeply(\@list_set, [$t->GetHistory],
-	  "GetHistory gives what SetHistory initially[ set");
+is_deeply([$t->GetHistory], \@list_set,
+	  "GetHistory gives what SetHistory initially set");
 show_indices;
 
 $t->add_history('four');
 push(@list_set, 'four');
-is_deeply(\@list_set, [$t->GetHistory],
+is_deeply([$t->GetHistory], \@list_set,
 	  "add_history() can push an item");
 show_indices;
 
 $t->remove_history(2);
 splice(@list_set, 2, 1);
-is_deeply(\@list_set, [$t->GetHistory],
+is_deeply([$t->GetHistory], \@list_set,
 	  "remove_history() can remove an item");
 show_indices;
 
+# use Enbugger 'trepan'; Enbugger->stop();
 $t->replace_history_entry(3, 'daarn');
 splice(@list_set, 3, 1, 'daarn');
-is_deeply(\@list_set, [$t->GetHistory],
-	  'replace_history can replace an item');
+is_deeply([$t->GetHistory], \@list_set,
+	  'replace_history_entry can replace an item');
 show_indices;
 
 # stifle_history
@@ -117,6 +118,7 @@ is($attribs->{max_input_history}, 3,
    "max_input_history value should be 3");
 show_indices;
 
+# use Enbugger 'trepan'; Enbugger->stop;
 $t->add_history('five');
 is($t->history_is_stifled, 1,
    "history is still stifled");
@@ -134,13 +136,6 @@ show_indices;
 # history_is_stifled()
 $t->addhistory('six');  # Use older compatible form of addhistory
 is($t->history_is_stifled, 0);
-is($attribs->{history_length}, 4,
-   "unstifling history add adding increases history length");
-show_indices;
-
-$t->clear_history;
-is($attribs->{history_length}, 0,
-    "clear_history() clears history");
 show_indices;
 
 ########################################################################
@@ -280,7 +275,7 @@ $t->SetHistory();		# clear history list
 ok(!$t->GetHistory );
 
 $t->ReadHistory($hfile) || warn "error at read_history: $!\n";
-is_deeply(\@list_write, [$t->GetHistory]);
+is_deeply([$t->GetHistory], \@list_write, 'ReadHistory alias');
 
 @list_write = qw(0 1 2 3 4);
 $t->SetHistory(@list_write);

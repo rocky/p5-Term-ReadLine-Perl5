@@ -36,6 +36,7 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $rl_completer_word_break_characters $rl_special_prefixes
           $rl_max_numeric_arg $rl_OperateCount
           $rl_completion_suppress_append
+          $history_stifled
           $KillBuffer $dumb_term $stdin_not_tty $InsertMode
           $mode $winsz $force_redraw
           $have_getpwent
@@ -57,6 +58,7 @@ use File::Spec;
 use Term::ReadKey;
 
 use rlib '.';
+use Term::ReadLine::Perl5::Common;
 use Term::ReadLine::Perl5::Dumb;
 use Term::ReadLine::Perl5::History;
 use Term::ReadLine::Perl5::Keymap
@@ -76,6 +78,7 @@ BEGIN {                 # Some old systems have ioctl "unsupported"
 
 $rl_getc = \&rl_getc;
 $minlength = 1;
+$history_stifled = 0;
 
 &preinit;
 &init;
@@ -403,7 +406,14 @@ sub preinit
     1; # Returning a glob causes a bug in db5.001m
 }
 
-sub init
+# FIXME: something in here causes terminal attributes like bold and
+# underline to work.
+sub rl_term_set()
+{
+    $rl_term_set = \@Term::ReadLine::TermCap::rl_term_set;
+}
+
+sub init()
 {
     if ($ENV{'TERM'} and ($ENV{'TERM'} eq 'emacs' || $ENV{'TERM'} eq 'dumb')) {
         $dumb_term = 1;
@@ -535,9 +545,9 @@ sub RL_func ($) {
   }
 }
 
-=head2 actually_do_binding
+=head2 bind_parsed_keyseq
 
-B<actually_do_binding>(I<$function1>, I<@sequence1>, ...)
+B<bind_parsed_keyseq>(I<$function1>, I<@sequence1>, ...)
 
 Actually inserts the binding for I<@sequence> to I<$function> into the
 current map. I<@sequence> is an array of character ordinals.
@@ -551,7 +561,7 @@ I<$Function> will have an implicit I<F_> prepended to it.
 
 =cut
 
-sub actually_do_binding
+sub bind_parsed_keyseq
 {
     my $bad = 0;
     while (@_) {
@@ -570,7 +580,7 @@ sub actually_do_binding
 	    InitKeymap(*$map, '', $map) if !(%$map);
 	    *KeyMap = *$map;
 	    $key = shift @keys;
-	    #&actually_do_binding($func, \@keys);
+	    #&bind_parsed_keyseq($func, \@keys);
 	}
 
 	my $name = $KeyMap{'name'};
@@ -663,16 +673,7 @@ arrow keys:
 sub rl_bind_keyseq($$)
 {
     my ($key, $func) = @_;
-    unless ($func =~ /^[\"\']/) {
-	$func = "\u$func";
-	$func =~ s/-(.)/\u$1/g;
-
-	# Temporary disabled
-	if (!$autoload_broken and !defined($ {'readline::'}{"F_$func"})) {
-            warn "Warning$InputLocMsg: bad bind function [$func]\n" if $^W;
-            next;
-	}
-    }
+    $func = canonic_command_function($func);
 
     ## print "sequence [$key] func [$func]\n"; ##DEBUG
 
@@ -698,13 +699,13 @@ sub rl_bind_keyseq($$)
 	    warn "Warning$InputLocMsg: strange binding [$orig]\n" if $^W;
 	}
 	$key = ord($key);
-	$key = &ctrl($key) if $isctrl;
+	$key = ctrl($key) if $isctrl;
 	push(@keys, $key);
     }
 
     # Now do the mapping of the sequence represented in @keys
     printf "rl_bind(%s, %s)\n", $func, join(', ', @keys) if $DEBUG;
-    &actually_do_binding($func, \@keys);
+    &bind_parsed_keyseq($func, \@keys);
 }
 
 =head3 rl_bind
@@ -1413,7 +1414,7 @@ sub F_TransposeChars
     } elsif ($D >= 1) {
         substr($line,$D-1,2) = substr($line,$D,1)  .substr($line,$D-1,1);
     } else {
-        &F_Ding;
+        F_Ding();
     }
 }
 
@@ -1534,7 +1535,7 @@ Kill line from cursor to beginning of line.
 
 sub F_UnixLineDiscard
 {
-    return &F_Ding if $D == 0;
+    return F_Ding() if $D == 0;
     kill_text(0, $D, 1);
 }
 
@@ -1578,7 +1579,7 @@ Kill to previous whitespace.
 
 sub F_UnixWordRubout
 {
-    return &F_Ding if $D == 0;
+    return F_Ding() if $D == 0;
     (my $oldD, local $rl_basic_word_break_characters) = ($D, "\t ");
                              # JP:  Fixed a bug here - both were 'my'
     F_BackwardWord(1);
@@ -1592,7 +1593,7 @@ unbound.
 
 =cut
 sub F_KillRegion {
-    return F_Ding unless $line_rl_mark == $rl_HistoryIndex;
+    return F_Ding() unless $line_rl_mark == $rl_HistoryIndex;
     $rl_mark = length $line if $rl_mark > length $line;
     kill_text($rl_mark, $D, 1);
     $line_rl_mark = -1;         # Disable mark
@@ -1604,7 +1605,7 @@ Copy the text in the region to the kill buffer, so it can be yanked right away. 
 
 =cut
 sub F_CopyRegionAsKill {
-    return F_Ding unless $line_rl_mark == $rl_HistoryIndex;
+    return F_Ding() unless $line_rl_mark == $rl_HistoryIndex;
     $rl_mark = length $line if $rl_mark > length $line;
     my ($s, $e) = ($rl_mark, $D);
     ($s, $e) = ($e, $s) if $s > $e;
@@ -1793,7 +1794,7 @@ Abort the current editing command and ring the terminal's bell
 =cut
 sub F_Abort
 {
-    &F_Ding;
+    F_Ding();
 }
 
 
@@ -1809,7 +1810,7 @@ sub F_Undo
     if (@undo) {
         &getstate(pop(@undo));
     } else {
-        &F_Ding;
+        F_Ding();
     }
 }
 
@@ -1869,12 +1870,12 @@ sub F_TildeExpand {
 
     my @matches = tilde_complete($text);
     if (@matches == 0) {
-        return &F_Ding;
+        return F_Ding();
     }
     my $replacement = shift(@matches);
     $replacement .= $rl_completer_terminator_character
 	if @matches == 1 && !$rl_completion_suppress_append;
-    &F_Ding if @matches != 1;
+    F_Ding() if @matches != 1;
     if ($var_TcshCompleteMode) {
 	@tcsh_complete_selections = (@matches, $text);
 	$tcsh_complete_start = $point;
@@ -2082,12 +2083,10 @@ sub F_Suspend
 
 Ring the bell.
 
-Should do something with I<$var_PreferVisibleBel>l here, but what?
+Should do something with I<$var_PreferVisibleBel> here, but what?
 =cut
 sub F_Ding {
-    local $\ = '';
-    print $term_OUT "\007";
-    return;    # Undefined return value
+    Term::ReadLine::Perl5::Common::F_Ding($term_OUT)
 }
 
 =head2 vi Routines
@@ -2109,7 +2108,7 @@ Repeat the most recent one of these vi commands:
 =cut
 sub F_ViRepeatLastCommand {
     my($count) = @_;
-    return &F_Ding if !$Last_vi_command;
+    return F_Ding() if !$Last_vi_command;
 
     my @lastcmd = @$Last_vi_command;
 
@@ -2133,7 +2132,7 @@ sub F_ViMoveCursor
     my($count, $ord) = @_;
 
     my $new_cursor = &get_position($count, $ord, undef, $Vi_move_patterns);
-    return &F_Ding if !defined $new_cursor;
+    return F_Ding() if !defined $new_cursor;
 
     $D = $new_cursor;
 }
@@ -3125,7 +3124,7 @@ sub readline($;$)
         my $cmd = get_command($var_EditingMode, ord($input));
         if ( $rl_first_char && $cmd =~ /^F_(SelfInsert$|Yank)/
              && length $line && $rl_default_selected ) {
-          # (Backward)?DeleteChar specialcased in the code
+	    # (Backward)?DeleteChar special-cased in the code.
             $line = '';
             $D = 0;
             $cmd = 'F_BackwardDeleteChar' if $cmd eq 'F_DeleteChar';
@@ -3157,23 +3156,6 @@ sub readline($;$)
     #print STDOUT "|al=`$AcceptLine'";
     $AcceptLine; ## return the line accepted.
 }
-
-=head3 ctrl
-
-C<ctrl($ord)>
-
-Returns the ordinal number for the corresponding control code.
-
-For example I<ctrl(ord('a'))> returns the ordinal for I<Ctrl-A>
-or 1. I<ctrl(ord('A'))> does the same thing.
-
-=cut
-
-sub ctrl {
-    $_[0] ^ (($_[0]>=ord('a') && $_[0]<=ord('z')) ? 0x60 : 0x40);
-}
-
-
 
 sub SetTTY {
     return if $dumb_term || $stdin_not_tty;
@@ -4443,16 +4425,18 @@ sub read_an_init_file($;$)
 {
     my $file = shift;
     my $include_depth = shift or 0;
-    local *RC;
+    my $rc;
 
     $file = File::Spec->catfile($HOME, $file) unless -f $file;
-    return 0 unless open RC, "< $file";
+    return 0 unless open $rc, "< $file";
     local (@action) = ('exec'); ## exec, skip, ignore (until appropriate endnif)
     local (@level) = ();        ## if, else
 
     local $/ = "\n";
-    parse_and_bind($_, $file, $include_depth) while <RC>;
-    close(RC);
+    while (my $line = <$rc>) {
+	parse_and_bind($line, $file, $include_depth);
+    }
+    close($rc);
     return 1;
 }
 
