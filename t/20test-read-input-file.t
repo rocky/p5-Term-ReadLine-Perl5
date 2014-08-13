@@ -35,8 +35,8 @@ Term::ReadLine::Perl5::readline::rl_read_init_file($input_file);
 # Some tests! (Just when you thought we'd never get around to it.)
 for my $i (1..8) {
     no warnings 'once';
-    is($Term::ReadLine::Perl5::readline::emacs_keymap[$i], 'F_Undo',
-       "emacs_keymap[$i] reassigned")
+    is($Term::ReadLine::Perl5::readline::KeyMap[$i], 'F_Undo',
+       "KeyMap[$i] reassigned")
 }
 
 done_testing();
