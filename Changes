@@ -1,3 +1,8 @@
+1.39: 2014-08-13
+
+- Start to integrate OO Caroline when we need more than one
+  terminal. Nested keymaps here need more work.
+
 1.38: 2014-06-01 Marilyn
 
 - Break out Term::ReadLine::Dumb and Term::ReadLine::Keymap into

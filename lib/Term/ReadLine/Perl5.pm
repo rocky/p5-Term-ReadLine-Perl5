@@ -37,7 +37,7 @@ use warnings; use strict;
 use Term::ReadLine::Perl5::readline;
 no warnings 'once';
 
-our $VERSION = '1.38';
+our $VERSION = '1.39';
 
 use Carp;
 use rlib '.';
