@@ -25,7 +25,7 @@ use File::Glob ':glob';
 
 # no critic
 # Version can be below the version given in Term::ReadLine::Perl5
-our $VERSION = '1.39';
+our $VERSION = '1.39_01';
 
 #
 # Separation into my and vars needs more work.

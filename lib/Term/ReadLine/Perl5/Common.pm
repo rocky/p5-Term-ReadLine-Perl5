@@ -8,7 +8,7 @@ Term::ReadLine::Perl5::Common
 
 =head1 DESCRIPTION
 
-A non-OO package which contains commmon routines for the OO (L<LTerm::ReadLine::Perl5::OO> and non-OO L<Term::ReadLine::Perl5::readline> routines of
+A non-OO package which contains commmon routines for the OO (L<Term::ReadLine::Perl5::OO> and non-OO L<Term::ReadLine::Perl5::readline> routines of
 L<Term::ReadLine::Common>
 
 =cut
@@ -20,7 +20,7 @@ use vars qw(@EXPORT @ISA);
 
 =head1 SUBROUTINES
 
-=head2 KeyBinding functions
+=head2 Key-Binding Functions
 
 =head3 F_Ding
 
@@ -37,7 +37,7 @@ sub F_Ding($) {
     return;    # Undefined return value
 }
 
-=head2 Internal function
+=head2 Internal Functions
 
 =head3 ctrl
 
@@ -54,7 +54,7 @@ sub ctrl {
     $_[0] ^ (($_[0]>=ord('a') && $_[0]<=ord('z')) ? 0x60 : 0x40);
 }
 
-=head2 unescape
+=head3 unescape
 
     unescape($string) -> List of keys
 
