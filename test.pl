@@ -5,7 +5,7 @@
 
 use warnings; use strict;
 use Test::More;
-use rlib './lib';
+use lib './lib';
 
 { package Term::ReadLine::Stub; }
 
