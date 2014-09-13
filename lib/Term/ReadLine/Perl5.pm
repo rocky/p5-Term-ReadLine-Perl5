@@ -37,7 +37,7 @@ use warnings; use strict;
 use Term::ReadLine::Perl5::readline;
 no warnings 'once';
 
-our $VERSION = '1.41';
+our $VERSION = '1.41_01';
 
 use Carp;
 eval "use rlib '.' ";  # rlib is now optional
@@ -402,7 +402,7 @@ non-OO portion of L<Term::ReadLine::Perl5>
 =item * L<Term::ReadLine::Perl5::History> describes the history
 mechanism
 
-item *
+=item *
 
 L<Term::ReadLine> is a generic package which can be used to
 select this among other compatible GNU Readline packages.

@@ -14,8 +14,8 @@ my $min_perl_version         = '5.008005';
 
 my $lib = File::Spec->catfile(dirname(__FILE__), 'lib');
 unshift @INC, $lib;
-# my $release_status = 'testing';
-my $release_status = 'stable';
+my $release_status = 'testing';
+## my $release_status = 'stable';
 my $builder = Module::Build->new(
     module_name         => 'Term::ReadLine::Perl5',
     add_to_cleanup      => ['Term-ReadLine-Perl5*', 'tmp*', '.history.text',

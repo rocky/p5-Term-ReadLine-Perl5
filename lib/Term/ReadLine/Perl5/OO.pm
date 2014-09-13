@@ -957,7 +957,7 @@ Read history data from history file.
 =head1 Multi byte character support
 
 If you want to support multi byte characters, you need to set binmode to STDIN.
-You can add the following code before call Caroline.
+You can add the following code before call I<Term::ReadLine::Perl5::OO>
 
     use Term::Encoding qw(term_encoding);
     my $encoding = term_encoding();
@@ -965,7 +965,9 @@ You can add the following code before call Caroline.
 
 =head1 About east Asian ambiguous width characters
 
-Caroline detects east Asian ambiguous character width from environment variable using L<Unicode::EastAsianWidth::Detect>.
+I<Term::ReadLine::Perl5::OO> detects east Asian ambiguous character
+width from environment variable using
+L<Unicode::EastAsianWidth::Detect>.
 
 User need to set locale correctly. For more details, please read L<Unicode::EastAsianWidth::Detect>.
 
@@ -980,7 +982,18 @@ it under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
-L<https://github.com/antirez/linenoise/blob/master/linenoise.c>
+=over
+
+=item *
+
+L<Caroline>, the Perl package from which this is dervied
+
+=item *
+
+L<https://github.com/antirez/linenoise/blob/master/linenoise.c>, the C
+code from which L<Caroline> is derived
+
+=back
 
 =head1 AUTHOR
 
