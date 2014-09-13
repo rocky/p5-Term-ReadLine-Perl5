@@ -938,7 +938,9 @@ Read line with C<$prompt>.
 
 Trailing newline is removed. Returns undef on EOF.
 
-=item C< $term->history() >
+=head2 history
+
+   $term->history()
 
 Get the current history data in C< ArrayRef[Str] >.
 
