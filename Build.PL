@@ -14,7 +14,7 @@ my $min_perl_version         = '5.008005';
 
 my $lib = File::Spec->catfile(dirname(__FILE__), 'lib');
 unshift @INC, $lib;
-#my $release_status = 'testing';
+# my $release_status = 'testing';
 my $release_status = 'stable';
 my $builder = Module::Build->new(
     module_name         => 'Term::ReadLine::Perl5',
@@ -54,7 +54,6 @@ my $builder = Module::Build->new(
     },
     requires => {
         'perl'                    => $min_perl_version,
-        'rlib'                    => '0.02',
         'version'                 => 0,
         'File::HomeDir'           => $min_file_homedir_version,
 	'File::Spec'              => 0,

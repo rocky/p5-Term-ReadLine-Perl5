@@ -1,5 +1,3 @@
-{ package Term::ReadLine::Stub; }
-
 package Term::ReadLine::Perl5::OO;
 use 5.008005;
 use strict; use warnings;

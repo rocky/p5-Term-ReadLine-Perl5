@@ -429,6 +429,9 @@ details as this is embedded along with the code
 =item *
 
 L<Term::ReadLine::Perl5> is the OO package most programmers should use.
-Also there is a the newer but unfinished L<Term::ReadLine::Perl5::OO>
+
+=item *
+
+L<Term::ReadLine::Perl5::OO> is the newer but unfinished fully OO version.
 
 =back

@@ -2,7 +2,7 @@
 package Term::ReadLine::Perl5;
 =encoding utf8
 
-=head1 NAME
+=head1 Name
 
 Term::ReadLine::Perl5 - A Perl5 implementation GNU Readline
 
@@ -24,7 +24,7 @@ Another package, L<Term::ReadLine::Perl5::Demo> is available to let
 you run I<Term::ReadLine::Perl5> to experiment with its capabilities
 and show how to use the API.
 
-=head1 SYNOPSIS
+=head1 Synopsis
 
   use Term::ReadLine::Perl5;
   $term = new Term::ReadLine::Perl5 'ProgramName';
@@ -37,7 +37,7 @@ use warnings; use strict;
 use Term::ReadLine::Perl5::readline;
 no warnings 'once';
 
-our $VERSION = '1.40';
+our $VERSION = '1.41';
 
 use Carp;
 eval "use rlib '.' ";  # rlib is now optional
@@ -47,7 +47,9 @@ use Term::ReadLine::Perl5::OO::History;
 use Term::ReadLine::Perl5::Tie;
 use Term::ReadLine::Perl5::readline;
 
-our @ISA = qw(Term::ReadLine::Stub);
+if (require Term::ReadLine) {
+    our @ISA = qw(Term::ReadLine::Stub);
+}
 my (%attribs, $term);
 
 =head2 Variables
@@ -96,7 +98,7 @@ sub Attribs {
   \%attribs;
 }
 
-=head1 SUBROUTINES
+=head1 Subroutine
 
 =head2 Standard Term::ReadLine Methods
 
@@ -154,9 +156,10 @@ support more than one readline instance.
 =cut
 sub new {
     my $class = shift;
-    require Term::ReadLine;
-    $features{tkRunning} = Term::ReadLine::Stub->Features->{'tkRunning'};
-    $features{ornaments} = Term::ReadLine::Stub->Features->{'ornaments'};
+    if (require Term::ReadLine) {
+	$features{tkRunning} = Term::ReadLine::Stub->Features->{'tkRunning'};
+	$features{ornaments} = Term::ReadLine::Stub->Features->{'ornaments'};
+    }
     if (defined $term) {
 	my $stderr = $Term::ReadLine::Perl5::readline::term_OUT;
 	print $stderr "Cannot create second readline interface\n";
@@ -378,11 +381,33 @@ I<writeHistory()> method
 
 sub Features { \%features; }
 
-=head1 SEE ALSO
+=head1 See also
 
-L<Term::ReadLine::Perl5::OO>,
-L<Term::ReadLine::Perl5::readline>, L<Term::ReadLine::Perl5::readline-guide>,
-and L<Term::ReadLine::Perl5::History>, and L<Term::ReadLine>.
+=over
+
+=item *
+
+L<Term::ReadLine::Perl5::OO> is the newer but unfinished fully OO version.
+
+=item *
+
+L<Term::ReadLine::Perl5> is the first try at the OO package that most
+programmers will use.
+
+=item *
+
+L<Term::ReadLine::Perl5::readline-guide> is guide to the guts of the
+non-OO portion of L<Term::ReadLine::Perl5>
+
+=item * L<Term::ReadLine::Perl5::History> describes the history
+mechanism
+
+item *
+
+L<Term::ReadLine> is a generic package which can be used to
+select this among other compatible GNU Readline packages.
+
+=back
 
 =cut
 1;
