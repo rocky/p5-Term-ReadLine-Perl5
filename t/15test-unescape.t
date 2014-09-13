@@ -1,9 +1,8 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
+use strict; use warnings;
 
 use Test::More;
-use rlib '../lib';
+use lib '../lib' ;
 
 BEGIN {
   $ENV{PERL_RL} = 'Perl5';	# force to use Term::ReadLine::Perl5

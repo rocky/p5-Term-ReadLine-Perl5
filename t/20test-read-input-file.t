@@ -5,13 +5,12 @@
 # fails, we probably expect this one to as well.
 
 # Lots of boilerplate here... Put in a helper file?
-use strict;
-use warnings;
+use strict; use warnings;
 use Test::More;
 use File::Basename qw(dirname);
 use File::Spec;
 
-use rlib '../lib';
+use lib '../lib' ;
 
 $ENV{PERL_RL} = 'Perl5';	# force to use Term::ReadLine::Perl5
 $ENV{LANG} = 'C';

@@ -37,10 +37,10 @@ use warnings; use strict;
 use Term::ReadLine::Perl5::readline;
 no warnings 'once';
 
-our $VERSION = '1.39_01';
+our $VERSION = '1.40';
 
 use Carp;
-use rlib '.';
+eval "use rlib '.' ";  # rlib is now optional
 use Term::ReadLine::Perl5::History;
 use Term::ReadLine::Perl5::OO;
 use Term::ReadLine::Perl5::OO::History;
@@ -258,7 +258,7 @@ sub MinLine($;$) {
 
 =head3 add_history
 
-#B<add_history>(I<$line1>, I<$line2>, ...)
+   $term->add_history>($line1, $line2, ...)
 
 adds the lines, I<$line1>, etc. to the input history list.
 
@@ -380,6 +380,7 @@ sub Features { \%features; }
 
 =head1 SEE ALSO
 
+L<Term::ReadLine::Perl5::OO>,
 L<Term::ReadLine::Perl5::readline>, L<Term::ReadLine::Perl5::readline-guide>,
 and L<Term::ReadLine::Perl5::History>, and L<Term::ReadLine>.
 

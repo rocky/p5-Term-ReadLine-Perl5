@@ -35,8 +35,11 @@ my $builder = Module::Build->new(
 	}
     },
 
+    recommends => {
+	'rlib' => '0.02',
+    },
+
     build_requires => {
-        'rlib'                    => '0.02',
         'File::HomeDir'           => $min_file_homedir_version,
 	'File::Spec'              => 0,
 	'Term::ReadKey'           => '2.3',

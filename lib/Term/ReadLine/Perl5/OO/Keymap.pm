@@ -1,6 +1,6 @@
 package Term::ReadLine::Perl5::OO::Keymap;
 use strict; use warnings;
-use rlib '.';
+eval "use rlib '.' ";  # rlib is now optional
 use Term::ReadLine::Perl5::Common;
 
 # For extra debug messages
@@ -54,9 +54,13 @@ sub bind_parsed_keyseq($$;$)
     # make sure $key is set to an int if undefined.
     my $key = shift(@keys) || 0;
     my $func_tuple = $self->{function}[$key];
+    # use Data::Printer;
+    # p $func_tuple;
+    # p $key;
+    # p $function;
     if (@keys) {
 	my $next_keymap;
-	if (defined($func_tuple) && $func_tuple->[0] eq 'F_PrefixMeta') {
+	if (defined($func_tuple) && $func_tuple->[0] eq 'PrefixMeta') {
 	    # Good - extending an existing meta map.
 	    $next_keymap = $func_tuple->[1];
 	} else {
@@ -67,9 +71,8 @@ sub bind_parsed_keyseq($$;$)
 			    $loc_str, $key, $func_tuple->[1], $self->{name});
 		    warn $mess;
 	    }
-	    $next_keymap = __PACKAGE__->new($self->{name} . '-' . $key);
-	    $self->{function}[$key] = ['F_PrefixMeta', $next_keymap];
 	}
+	$self->{function}[$key] = ['F_PrefixMeta', $next_keymap];
 	return $next_keymap->bind_parsed_keyseq(\@keys, $function, $loc_str);
     }
 
@@ -84,8 +87,14 @@ sub bind_parsed_keyseq($$;$)
 	}
     }
 
-    # FIXME 2nd arg really should be code ref
-    $self->{function}[$key] = [$function, $function];
+    # FIXME 2nd arg really should be code ref when it is not
+    # a keymap. And do better than =~.
+    my $function_name =
+	($function =~ /Term::ReadLine::Perl5::OO::Keymap/) ?
+	'PrefixMeta' : $function;
+
+    $self->{function}[$key] = [$function_name, $function];
+    # p $self->{function}[$key];
     return $bad;
 }
 
@@ -245,35 +254,44 @@ sub inspect($) {
 	push @results, sprintf("%s%s\t%s\n", $prefix,
 			       classify($i),
 			       gnu_command_function($command_name));
-	push @continue, $i if $command_name eq 'F_PrefixMeta';
+	push @continue, $i if $command_name eq 'PrefixMeta';
     }
     return (\@results, \@continue);
+}
+
+# GNU Emacs Meta Key bindings
+sub EmacsMetaKeymap() {
+    my $keymap = __PACKAGE__->new('EmacsMeta', undef);
+    $keymap->bind_keys(
+	'k', 'unix-line-rubout',
+	);
+    return $keymap
 }
 
 # GNU Emacs Key binding
 sub EmacsKeymap() {
     my $keymap = __PACKAGE__->new('Emacs', 'self-insert');
     $keymap->bind_keys(
-	'C-a',  'beginning-of-line',
-	'C-b',  'backward-char',
-	'C-c',  'interrupt',
-	'C-d',  'delete-char',
-	'C-e',  'end-of-line',
-	'C-f',  'forward-char',
-	'C-h',  'backward-delete-char',
-	'C-j',  'accept-line',
-	'C-k',  'kill-line',
-	'C-l',  'clear-screen',
-	'C-m',  'accept-line',
-	'C-n',  'next-history',
-	'C-p',  'previous-history',
-	'C-r',  'reverse-search-history',
-	'C-t',  'transpose-chars',
-	'C-u',  'unix-line-discard',
-	'C-w',  'unix-word-rubout',
-	'C-z',  'suspend',
-	#'ESC',  'prefix-meta',
-	'DEL',  'backward-delete-char',
+	# 'C-a',  'beginning-of-line',
+	# 'C-b',  'backward-char',
+	# 'C-c',  'interrupt',
+	# 'C-d',  'delete-char',
+	# 'C-e',  'end-of-line',
+	# 'C-f',  'forward-char',
+	# 'C-h',  'backward-delete-char',
+	# 'C-j',  'accept-line',
+	# 'C-k',  'kill-line',
+	# 'C-l',  'clear-screen',
+	# 'C-m',  'accept-line',
+	# 'C-n',  'next-history',
+	# 'C-p',  'previous-history',
+	# 'C-r',  'reverse-search-history',
+	# 'C-t',  'transpose-chars',
+	# 'C-u',  'unix-line-discard',
+	# 'C-w',  'unix-word-rubout',
+	# 'C-z',  'suspend',
+	'ESC',  EmacsMetaKeymap,
+#	'DEL',  'backward-delete-char',
 	# 'ESC-b', 'backward-char',
 
 	);
@@ -298,7 +316,8 @@ sub ViKeymap() {
 };
 
 unless (caller) {
-    foreach my $keymap (EmacsKeymap(), ViKeymap()) {
+    # foreach my $keymap (EmacsKeymap(), EmacsMetaKeymap(), ViKeymap()) {
+    foreach my $keymap (EmacsKeymap()) {
 	my ($results, $continue) = $keymap->inspect('');
 	foreach my $line (@{$results}) {
 	    print $line;

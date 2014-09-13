@@ -10,7 +10,7 @@
 use strict; use warnings;
 
 # Note: we don't use Helper here. Should we?
-use rlib '../lib';
+use lib '../lib' ;
 use Test::More;
 
 BEGIN {

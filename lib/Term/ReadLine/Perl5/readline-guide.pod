@@ -2,21 +2,13 @@
 
 =head1 Term::ReadLine::Perl5::readline-guide
 
-A non-OO package similar to GNU's readline. The preferred OO Package
-is L<Term::ReadLine::Perl5>. But that uses this internally.
+I<Term::ReadLine::Perl5::readline>, described here, is non-OO package
+similar to GNU's readline. The preferred OO Package is
+L<Term::ReadLine::Perl5>. But that uses this internally. Also see the
+newer but unfinished L<Term::ReadLine::Perl5::OO>.
 
-There is some support for EUC-encoded Japanese text. This should be
-rewritten for Perl Unicode though.
-
-Originally author: Jeffrey Friedl, Omron Corporation
-(jfriedl@omron.co.jp)
-
-Comments, corrections welcome. Someone please volunteer to rewrite
-this!
-
-Thanks to the people at FSF for readline (and the code referenced
-while writing this), and for Roland Schemers whose line_edit.pl I used
-as an early basis for this.
+Some support is available for EUC-encoded Japanese text. But this
+should be rewritten for Perl Unicode.
 
 =head2 Synopsis
 
@@ -411,6 +403,20 @@ A real completion function would be more robust.
 
 =cut
 
+=head1 Author
+
+Originally written by Jeffrey Friedl, Omron Corporation
+(jfriedl@omron.co.jp)
+
+Comments, corrections welcome. Someone please volunteer to rewrite
+this!
+
+=head1 Thanks
+
+Thanks to the people at FSF for readline (and the code referenced
+while writing this), and for Roland Schemers whose line_edit.pl Jefrey
+used as an early basis for this.
+
 =head1 See also
 
 =over
@@ -423,5 +429,6 @@ details as this is embedded along with the code
 =item *
 
 L<Term::ReadLine::Perl5> is the OO package most programmers should use.
+Also there is a the newer but unfinished L<Term::ReadLine::Perl5::OO>
 
 =back

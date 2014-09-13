@@ -1,6 +1,6 @@
 #  Copyright (C) 2014 Rocky Bernstein <rocky@cpan.org>
 package Term::ReadLine::Perl5::History;
-use rlib '.';
+eval "use rlib '.' ";  # rlib is now optional
 use Term::ReadLine::Perl5::OO::History;
 =pod
 

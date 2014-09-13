@@ -1,3 +1,11 @@
+1.40: 2014-09-12
+
+- Remove required use of rlib until we can get clarification on its
+  license
+
+- Go over docs. More exploratory work on nested keymaps. Not done yet
+  though.
+
 1.39: 2014-08-13
 
 - Start to integrate OO Caroline when we need more than one

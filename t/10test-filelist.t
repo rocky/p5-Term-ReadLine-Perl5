@@ -3,7 +3,6 @@
 use strict; use warnings;
 
 # Note: we don't use Helper here. Should we?
-use rlib '../lib';
 use Test::More;
 use English;
 

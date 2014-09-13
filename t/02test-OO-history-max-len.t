@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 use strict; use warnings;
-use rlib '../lib';
+use lib '../lib' ;
 use utf8;
 use Test::More;
 use Term::ReadLine::Perl5::OO;

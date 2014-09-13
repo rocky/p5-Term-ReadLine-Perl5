@@ -54,6 +54,28 @@ sub ctrl {
     $_[0] ^ (($_[0]>=ord('a') && $_[0]<=ord('z')) ? 0x60 : 0x40);
 }
 
+=head3 rl_tilde_expand
+
+    rl_tilde_expand($prefix) => list of usernames
+
+Returns a list of completions that begin with the given prefix,
+I<$prefix>.  This only works if we have I<getpwent()> available.
+
+=cut
+
+sub rl_tilde_expand($) {
+    my $prefix = shift;
+    my @matches = ();
+    setpwent();
+    while (my @fields = (getpwent)[0]) {
+	push @matches, $fields[0]
+	    if ( $prefix eq ''
+		 || $prefix eq substr($fields[0], 0, length($prefix)) );
+    }
+    setpwent();
+    @matches;
+}
+
 =head3 unescape
 
     unescape($string) -> List of keys
@@ -132,6 +154,7 @@ sub unescape($) {
 #   beginning-of-line => BeginningOfLine
 sub canonic_command_function($) {
     my $function_name = shift;
+    return undef unless defined($function_name);
     $function_name = "\u$function_name";
     $function_name =~ s/-(.)/\u$1/g;
     $function_name;

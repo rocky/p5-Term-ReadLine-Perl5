@@ -11,9 +11,8 @@
 
 # Before `make install' is performed this script should be runnable with
 # `make test'. After `make install' it should work as `perl t/history.t'
-use strict;
-use warnings;
-use rlib '../lib';
+use strict; use warnings;
+use lib '../lib' ;
 
 use Test::More;
 

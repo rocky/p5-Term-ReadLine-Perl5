@@ -11,7 +11,7 @@ use Term::ReadKey qw(GetTerminalSize ReadLine ReadKey ReadMode);
 use IO::Handle;
 use English;
 
-use rlib '.';
+eval "use rlib '.' ";  # rlib is now optional
 use Term::ReadLine::Perl5::OO::History;
 use Term::ReadLine::Perl5::OO::Keymap;
 use Term::ReadLine::Perl5::OO::State;
@@ -19,7 +19,7 @@ use Term::ReadLine::Perl5::Common;
 use Term::ReadLine::Perl5::readline;
 use Term::ReadLine::Perl5::TermCap;
 
-our $VERSION = "0.21";
+our $VERSION = "0.40";
 
 use constant HISTORY_NEXT => +1;
 use constant HISTORY_PREV => -1;
@@ -669,23 +669,29 @@ sub edit {
 
 	$self->{char} = $c;
 	my $tuple = $self->lookup_key($cc);
-	# use Data::Printer;
-	# p $tuple;
 	if ($tuple && $tuple->[0] ) {
 	    my $fn = sprintf "F_%s()", $tuple->[0];
 	    my($done, $retval);
+	    ###### DEBUG ######
+	    # if ($fn eq 'F_PrefixMeta()') {
+	    # 	print "+++ Switching keymap\n";
+	    # 	$self->{current_keymap} = $tuple->[1];
+	    # 	next;
+	    # }
 	    my $cmd = "(\$done, \$retval) = \$self->$fn";
+	    # use Data::Printer;
+	    # print "+++ cmd:\n$cmd\n";
+	    # p $tuple;
 	    eval($cmd);
 	    return $retval if $done;
-	    $self->{current_keymap} = $self->{toplevel_keymap} unless
-		$fn eq 'F_PrefixMeta';
-	    # p $self->{current_keymap};
-	    next;
+	} else {
+	    # print "+++ Back to top\n";
+	    $self->{current_keymap} = $self->{toplevel_keymap}
 	}
 
 	# FIXME: When doing keymap lookup, I need a way to note that
 	# we want a return rather than to continue editing.
-        if ($cc == 27) { # escape sequence
+        if ($cc == ESC) { # escape sequence
             # Read the next two bytes representing the escape sequence
             my $buf = $self->readkey or return undef;
             $buf .= $self->readkey or return undef;
@@ -886,11 +892,13 @@ This module
 
 =back
 
+Nested keymap is not fully supported yet.
+
 =head1 METHODS
 
-=over 4
+=head2 new
 
-=item my $term = Term::ReadLine::Perl5::OO->new();
+   my $term = Term::ReadLine::Perl5::OO->new();
 
 Create new Term::ReadLine::Perl5::OO instance.
 
@@ -922,25 +930,29 @@ You can write completion callback function like this:
 
 =back
 
-=item C<< my $line = $term->read($prompt); >>
+=head2 read
+
+   my $line = $term->read($prompt);
 
 Read line with C<$prompt>.
 
 Trailing newline is removed. Returns undef on EOF.
 
-=item C<< $term->history() >>
+=item C< $term->history() >
 
 Get the current history data in C< ArrayRef[Str] >.
 
-=item C<< $term->write_history($filename) >>
+=head2 write_history
+
+   $term->write_history($filename)
 
 Write history data to the file.
 
-=item C<< $term->read_history($filename) >>
+=head2 read_history
+
+   $term->read_history($filename)
 
 Read history data from history file.
-
-=back
 
 =head1 Multi byte character support
 

@@ -14,7 +14,7 @@ when more than one interface is created, we fallback to this code.
 
 =cut
 
-use rlib '.';
+eval "use rlib '.' ";  # rlib is now optional
 use Term::ReadLine::Perl5::History;
 
 sub get_line($) {
