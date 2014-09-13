@@ -1,3 +1,10 @@
+1.41: 2014-09-13
+
+- I said, Remove required use of rlib until we can get clarification on its
+  license.
+
+- More small doc formatting changes.
+
 1.40: 2014-09-12
 
 - Remove required use of rlib until we can get clarification on its
