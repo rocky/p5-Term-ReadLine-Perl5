@@ -79,7 +79,7 @@ our @EmacsKeymap = ();
 
 =head3 new
 
-B<new>(I<%options>]])
+B<new>([I<%options>])
 
 returns the handle for subsequent calls to following functions.
 Argument is the name of the application.
@@ -115,7 +115,7 @@ sub debug {
     return unless $self->{debug};
 
 #   require JSON::PP;
-    open my $fh, '>>:utf8', 'caroline.debug.log';
+    open my $fh, '>>:utf8', 'readline-oo.debug.log';
     print $fh $stuff;
 #   print $fh JSON::PP->new->allow_nonref(1)->encode($stuff) . "\n";
     close $fh;
