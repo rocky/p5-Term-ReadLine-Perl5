@@ -47,7 +47,7 @@ sub show_indices {
 ########################################################################
 # Use "new" method to get $t used below
 
-eval { $t  = new Term::ReadLine::Perl5 'ReadLineTest'; };
+eval { $t  = Term::ReadLine::Perl5->new('ReadLineTest'); };
 plan skip_all => "Need access to tty" unless $t;
 ok($t, "new method, new's");
 

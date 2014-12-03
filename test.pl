@@ -41,17 +41,17 @@ if ($non_interactive) {
 
 my ($term, $no_print);
 if (!@ARGV) {
-  $term = new Term::ReadLine::Perl5 'Simple Perl calc';
+  $term = Term::ReadLine::Perl5->new('Simple Perl calc');
 } elsif (@ARGV == 2) {
   open(IN,"<$ARGV[0]");
   open(OUT,">$ARGV[1]");
-  $term = new Term::ReadLine::Perl5 'Simple Perl calc', \*IN, \*OUT;
+  $term = Term::ReadLine::Perl5->new('Simple Perl calc', \*IN, \*OUT);
 } elsif ($ARGV[0] =~ m|^/dev|) {
   open(IN,"<$ARGV[0]");
   open(OUT,">$ARGV[0]");
-  $term = new Term::ReadLine::Perl5 'Simple Perl calc', \*IN, \*OUT;
+  $term = Term::ReadLine::Perl5->new('Simple Perl calc', \*IN, \*OUT);
 } else {
-  $term = new Term::ReadLine::Perl5 'Simple Perl calc', \*STDIN, \*STDOUT;
+  $term = Term::ReadLine::Perl5->new('Simple Perl calc', \*STDIN, \*STDOUT);
   $no_print = $ARGV[0] eq '--no-print';
 }
 
