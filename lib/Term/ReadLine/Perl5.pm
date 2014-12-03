@@ -27,7 +27,7 @@ and show how to use the API.
 =head1 Synopsis
 
   use Term::ReadLine::Perl5;
-  $term = new Term::ReadLine::Perl5 'ProgramName';
+  $term = Term::ReadLine::Perl5->new('ProgramName');
   while ( defined ($_ = $term->readline('prompt>')) ) {
     ...
   }
@@ -62,7 +62,7 @@ conventions with the leading C<rl_> stripped.
 
 Example:
 
-    $term = new Term::ReadLine::Perl5 'ReadLineTest'
+    $term = Term::ReadLine::Perl5->new('ReadLineTest');
     $attribs = $term->Attribs;
     $v = $attribs->{history_base};	# history_base
 
@@ -107,7 +107,7 @@ L<Term::ReadLine>.
 
 =head3 C<ReadLine>
 
-    Readline() -> 'Term::ReadLine::Perl5
+    Readline() -> 'Term::ReadLine::Perl5'
 
 returns the actual package that executes the commands. If this package
 is used, the value is C<Term::ReadLine::Perl5>.
@@ -399,7 +399,9 @@ programmers will use.
 L<Term::ReadLine::Perl5::readline-guide> is guide to the guts of the
 non-OO portion of L<Term::ReadLine::Perl5>
 
-=item * L<Term::ReadLine::Perl5::History> describes the history
+=item *
+
+L<Term::ReadLine::Perl5::History> describes the history
 mechanism
 
 =item *
