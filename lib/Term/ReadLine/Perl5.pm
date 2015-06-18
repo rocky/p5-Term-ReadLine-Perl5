@@ -37,7 +37,7 @@ use warnings; use strict;
 use Term::ReadLine::Perl5::readline;
 no warnings 'once';
 
-our $VERSION = '1.41_01';
+our $VERSION = '1.42';
 
 use Carp;
 eval "use rlib '.' ";  # rlib is now optional

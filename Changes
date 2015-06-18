@@ -1,5 +1,10 @@
 Release history for Perl module Term::ReadLine::Perl5
 
+1.42 2015-06-18
+
+- Remove prototype on add_line_to_history to make Term::ShellUI happy
+- Update Change to comply with CPAN::Changes::Spec
+
 1.41 2014-09-13
 
 - I said, Remove required use of rlib until we can get clarification on its
