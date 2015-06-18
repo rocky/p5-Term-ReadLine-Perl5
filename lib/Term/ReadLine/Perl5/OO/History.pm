@@ -40,7 +40,7 @@ not same as last entry
 use File::HomeDir; use File::Spec;
 my $HOME = File::HomeDir->my_home;
 
-sub add_line_to_history($$$)
+sub add_line_to_history
 {
     my ($self, $line, $minlength) = @_;
     my @rl_History = @{$self->{rl_History}};

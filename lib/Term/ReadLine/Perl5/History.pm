@@ -77,7 +77,7 @@ sub _fake_self() {
 
 
 # FIXME: DRY this adding a common routine to fake $self.
-sub add_line_to_history($$)
+sub add_line_to_history
 {
     my ($line, $minlength) = @_;
 
