@@ -1,8 +1,14 @@
 Release history for Perl module Term::ReadLine::Perl5
 
+1.43 2015-06-19
+
+- Add IN and OUT methods as part of the Term::ReadLine spec, and
+  that Term::ShellUI uses.
+
 1.42 2015-06-18
 
-- Remove prototype on add_line_to_history to make Term::ShellUI happy
+- Remove prototype on add_line_to_history to match lack of prototypes
+  in other packages that use Term::ReadLine
 - Update Change to comply with CPAN::Changes::Spec
 
 1.41 2014-09-13

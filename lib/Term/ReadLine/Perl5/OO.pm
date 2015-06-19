@@ -17,7 +17,7 @@ use Term::ReadLine::Perl5::Common;
 use Term::ReadLine::Perl5::readline;
 use Term::ReadLine::Perl5::TermCap;
 
-our $VERSION = "0.40";
+our $VERSION = "0.43";
 
 use constant HISTORY_NEXT => +1;
 use constant HISTORY_PREV => -1;

@@ -37,7 +37,7 @@ use warnings; use strict;
 use Term::ReadLine::Perl5::readline;
 no warnings 'once';
 
-our $VERSION = '1.42';
+our $VERSION = '1.43';
 
 use Carp;
 eval "use rlib '.' ";  # rlib is now optional
@@ -48,9 +48,12 @@ use Term::ReadLine::Perl5::Tie;
 use Term::ReadLine::Perl5::readline;
 
 if (require Term::ReadLine) {
-    our @ISA = qw(Term::ReadLine::Stub);
+    our @ISA = qw(Term::ReadLine::Stub Exporter);
 }
 my (%attribs, $term);
+
+our @EXPORT  = qw(IN OUT);
+
 
 =head2 Variables
 
@@ -225,6 +228,29 @@ sub new {
 
     return $self;
 }
+
+=head3 IN
+
+B<Term::ReadLine::Perl5-E<gt>IN>
+
+Returns the input filehandle
+=cut
+sub IN {
+    my ($self) = @_;
+    $self->{IN};
+}
+
+=head3 OUT
+
+B<Term::ReadLine::Perl5-E<gt>OUT>
+
+Returns the output filehandle
+=cut
+sub OUT {
+    my ($self) = @_;
+    $self->{OUT};
+}
+
 
 =head3 newTTY
 

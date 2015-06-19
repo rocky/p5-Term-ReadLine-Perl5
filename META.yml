@@ -21,7 +21,7 @@ name: Term-ReadLine-Perl5
 provides:
   Term::ReadLine::Perl5:
     file: lib/Term/ReadLine/Perl5.pm
-    version: '1.41'
+    version: '1.42'
   Term::ReadLine::Perl5::Common:
     file: lib/Term/ReadLine/Perl5/Common.pm
   Term::ReadLine::Perl5::Dumb:
@@ -43,10 +43,10 @@ provides:
     file: lib/Term/ReadLine/Perl5/TermCap.pm
   Term::ReadLine::Perl5::Tie:
     file: lib/Term/ReadLine/Perl5/Tie.pm
-    version: '1.41'
+    version: '1.42'
   Term::ReadLine::Perl5::readline:
     file: lib/Term/ReadLine/Perl5/readline.pm
-    version: '1.41'
+    version: '1.42'
 recommends:
   rlib: '0.02'
 requires:
@@ -64,4 +64,4 @@ resources:
   bugtracker: https://github.com/rocky/p5-Term-ReadLine-Perl5/issues
   license: http://dev.perl.org/licenses/
   repository: http://github.com/rocky/p5-Term-ReadLine-Perl5
-version: '1.41'
+version: '1.42'
