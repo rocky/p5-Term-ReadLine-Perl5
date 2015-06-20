@@ -231,10 +231,12 @@ sub new {
 
 =head3 IN
 
-B<Term::ReadLine::Perl5-E<gt>IN>
+    $term->IN
 
-Returns the input filehandle
+Returns the input filehandle or C<undef>.
+
 =cut
+
 sub IN {
     my ($self) = @_;
     $self->{IN};
@@ -242,10 +244,12 @@ sub IN {
 
 =head3 OUT
 
-B<Term::ReadLine::Perl5-E<gt>OUT>
+        $term->OUT
 
-Returns the output filehandle
+Returns the output filehandle or C<undef>.
+
 =cut
+
 sub OUT {
     my ($self) = @_;
     $self->{OUT};
