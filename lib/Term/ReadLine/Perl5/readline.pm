@@ -39,10 +39,9 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $history_stifled
           $KillBuffer $dumb_term $stdin_not_tty $InsertMode
           $mode $winsz $force_redraw
-          $have_getpwent
-          $minlength $rl_readline_name
-          @winchhooks
-          $rl_NoInitFromFile
+          $have_getpwent $minlength $rl_readline_name
+          @winchhooks $rl_NoInitFromFile
+          $editingMode $Vi_mode
           $DEBUG;
           );
 
@@ -83,34 +82,10 @@ $history_stifled = 0;
 &preinit;
 &init;
 
-#
-# my ($InputLocMsg, $term_OUT, $term_IN);
-# my ($winsz_t, $TIOCGWINSZ, $winsz, $rl_margin);
-# my ($hook, %var_HorizontalScrollMode, %var_EditingMode, %var_OutputMeta);
-# my ($var_HorizontalScrollMode, $var_EditingMode, $var_OutputMeta);
-# my (%var_ConvertMeta, $var_ConvertMeta, %var_MarkModifiedLines, $var_MarkModifiedLines);
 my $inDOS;
-# my (%var_PreferVisibleBell, $var_PreferVisibleBell);
-# my (%var_TcshCompleteMode, $var_TcshCompleteMode);
-# my (%var_CompleteAddsuffix, $var_CompleteAddsuffix);
-# my ($BRKINT, $ECHO, $FIONREAD, $ICANON, $ICRNL, $IGNBRK, $IGNCR, $INLCR,
-#     $ISIG, $ISTRIP, $NCCS, $OPOST, $RAW, $TCGETS, $TCOON, $TCSETS, $TCXONC,
-#     $TERMIOS_CFLAG, $TERMIOS_IFLAG, $TERMIOS_LFLAG, $TERMIOS_NORMAL_IOFF,
-#     $TERMIOS_NORMAL_ION, $TERMIOS_NORMAL_LOFF, $TERMIOS_NORMAL_LON,
-#     $TERMIOS_NORMAL_OOFF, $TERMIOS_NORMAL_OON, $TERMIOS_OFLAG,
-#     $TERMIOS_READLINE_IOFF, $TERMIOS_READLINE_ION, $TERMIOS_READLINE_LOFF,
-#     $TERMIOS_READLINE_LON, $TERMIOS_READLINE_OOFF, $TERMIOS_READLINE_OON,
-#     $TERMIOS_VMIN, $TERMIOS_VTIME, $TIOCGETP, $TIOCGWINSZ, $TIOCSETP,
-#     $fion, $fionread_t, $mode, $sgttyb_t,
-#     $termios, $termios_t, $winsz, $winsz_t);
-# my ($line, $initialized);
-#
-# Global variables added for vi mode (I'm leaving them all commented
-# out, like the declarations above, until SelfLoader issues
-#     are resolved).
 
 # True when we're in one of the vi modes.
-my $Vi_mode;
+$Vi_mode = 0;
 
 # Array refs: saves keystrokes for '.' command.  Undefined when we're
 #     not doing a '.'-able command.
@@ -402,7 +377,12 @@ sub preinit
         ord('E')  =>  q{.\s*\S*(?=\S)|.?\s*(?=\s$)},
     };
 
-    *KeyMap = $var_EditingMode = $var_EditingMode{'emacs'};
+    my @shell_settings = `$ENV{'SHELL'} -c 'set -o'`;
+    my $use_vi = grep /vi\ton\n/, @shell_settings;
+    $editMode = $use_vi ? 'vi' : 'emacs';
+    $Term::ReadLine::Perl5::editMode = $editMode;
+
+    *KeyMap = $var_EditingMode = $var_EditingMode{$editMode};
     1; # Returning a glob causes a bug in db5.001m
 }
 

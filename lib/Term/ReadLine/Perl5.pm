@@ -46,9 +46,12 @@ use Term::ReadLine::Perl5::OO;
 use Term::ReadLine::Perl5::OO::History;
 use Term::ReadLine::Perl5::Tie;
 use Term::ReadLine::Perl5::readline;
+use vars qw($editMode);
 
 our @ISA = qw(Term::ReadLine::Stub);
 my (%attribs, $term);
+
+our @EXPORT  = qw(IN OUT);
 
 =head2 Variables
 
@@ -133,6 +136,14 @@ sub readline {
   &Term::ReadLine::Perl5::readline::readline(@_);
 }
 
+sub editModeFromShell() {
+    my @shell_settings = `$ENV{'SHELL'} -c 'set -o'`;
+    my $use_vi = grep /vi\ton\n/, @shell_settings;
+    return $use_vi ? 'vi' : 'emacs';
+}
+
+$editMode = editModeFromShell;
+
 =head3 new
 
 B<new>(I<$name>,[I<IN>[,I<OUT>]])
@@ -157,6 +168,7 @@ sub new {
     require Term::ReadLine;
     $features{tkRunning} = Term::ReadLine::Stub->Features->{'tkRunning'};
     $features{ornaments} = Term::ReadLine::Stub->Features->{'ornaments'};
+    my $edit_mode = editModeFromShell;
     if (defined $term) {
 	my $stderr = $Term::ReadLine::Perl5::readline::term_OUT;
 	print $stderr "Cannot create second readline interface\n";
@@ -166,6 +178,7 @@ sub new {
 	    name => $name,
 	    in   => $in,
 	    out  => $out,
+	    keymap_vi => $edit_mode == 'vi',
 	};
 	return Term::ReadLine::Perl5::OO->new($opts);
     }
