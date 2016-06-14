@@ -88,11 +88,19 @@ Argument is the name of the application.
 sub new {
     my $class = shift;
     my %args = @_==1? %{$_[0]} : @_;
-    my $self = bless {
+    my ($keymap, $editMode);
+    if ($args{'kemymap_vi'}) {
+	$keymap = Term::ReadLine::Perl5::OO::Keymap::ViKeymap();
+	$editMode = 'vi';
+    } else {
+	$keymap = Term::ReadLine::Perl5::OO::Keymap::EmacsKeymap();
+	$editMode = 'emacs';
+    }
 
+    my $self = bless {
 	char                 => undef, # last character
-	current_keymap       => Term::ReadLine::Perl5::OO::Keymap::EmacsKeymap(),
-	toplevel_keymap      => Term::ReadLine::Perl5::OO::Keymap::EmacsKeymap(),
+	current_keymap       => $keymap,
+	toplevel_keymap      => $keymap,
 	debug                => !!$ENV{CAROLINE_DEBUG},
 	history_base         => 0,
 	history_stifled      => 0,
@@ -105,6 +113,7 @@ sub new {
 	state                => undef, # line buffer and its state
         rl_History           => [],
 	rl_term_set          => \@Term::ReadLine::TermCap::rl_term_set,
+	editMode             => $editMode,
         %args
     }, $class;
     return $self;

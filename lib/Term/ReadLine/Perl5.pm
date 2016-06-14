@@ -47,6 +47,8 @@ use Term::ReadLine::Perl5::OO::History;
 use Term::ReadLine::Perl5::Tie;
 use Term::ReadLine::Perl5::readline;
 
+use vars qw($editMode);
+
 if (require Term::ReadLine) {
     our @ISA = qw(Term::ReadLine::Stub Exporter);
 }
@@ -138,6 +140,14 @@ sub readline {
   &Term::ReadLine::Perl5::readline::readline(@_);
 }
 
+sub editModeFromShell() {
+    my @shell_settings = `$ENV{'SHELL'} -c 'set -o'`;
+    my $use_vi = grep /vi\ton\n/, @shell_settings;
+    return $use_vi ? 'vi' : 'emacs';
+}
+
+$editMode = editModeFromShell;
+
 =head3 new
 
 B<new>(I<$name>,[I<IN>[,I<OUT>]])
@@ -172,6 +182,7 @@ sub new {
 	    name => $name,
 	    in   => $in,
 	    out  => $out,
+	    keymap_vi => $editMode == 'vi',
 	};
 	return Term::ReadLine::Perl5::OO->new($opts);
     }
