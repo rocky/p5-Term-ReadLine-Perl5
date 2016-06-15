@@ -41,7 +41,7 @@ use vars qw(@KeyMap %KeyMap $rl_screen_width $rl_start_default_at_beginning
           $mode $winsz $force_redraw
           $have_getpwent $minlength $rl_readline_name
           @winchhooks $rl_NoInitFromFile
-          $editingMode $Vi_mode
+          $editingMode $Vi_mode &rl_editMode
           $DEBUG;
           );
 
@@ -117,7 +117,7 @@ my $Vi_search_reverse;  # True for '?' search, false for '/'
 # lower case before hash lookup.
 sub preinit
 {
-    my $editMode = scalar(@_) > 0 ? $_[0] : 'emacs';
+    my $editMode = scalar(@_) > 0 ? $_[0] : 'vicmd';
     $DEBUG = 0;
 
     ## Set up the input and output handles
@@ -692,6 +692,41 @@ and maps the associated bindings to the current KeyMap.
 
 sub rl_bind
 {
+    while (defined($key = shift(@_)) && defined($func = shift(@_)))
+    {
+	rl_bind_keyseq($key, $func);
+    }
+}
+
+=head3 rl_editMode
+
+Changes editmode to $1 which shoujld either be 'emacs', 'vi',
+'viopos', 'vicmd', 'visearch'
+
+=cut
+
+sub rl_editMode($)
+{
+    $keymap_name = shift;
+    if ($keymap_name eq 'emacs') {
+	F_EmacsEditingMode();
+	@KeyMap = emacs_keymap;
+	$KeyMap{'name'} = 'emacs';
+    } elsif ($keymap_name eq 'vi') {
+	@KeyMap = vi_keymap;
+	$KeyMap{'name'} = 'vi';
+    } elsif ($keymap_name eq 'vicmd') {
+	F_ViCommandMode();
+	@KeyMap = vicmd_keymap;
+	$KeyMap{'name'} = 'vicmd';
+    } elsif ($keymap_name eq 'vipos') {
+	@KeyMap = vipos_keymap;
+	$KeyMap{'name'} = 'vipos';
+    } elsif ($keymap_name eq 'visearch') {
+	@KeyMap = visearch_keymap;
+	$KeyMap{'name'} = 'visearch';
+    }
+
     while (defined($key = shift(@_)) && defined($func = shift(@_)))
     {
 	rl_bind_keyseq($key, $func);

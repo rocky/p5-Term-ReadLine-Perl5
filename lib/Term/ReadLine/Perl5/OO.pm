@@ -88,13 +88,12 @@ Argument is the name of the application.
 sub new {
     my $class = shift;
     my %args = @_==1? %{$_[0]} : @_;
-    my ($keymap, $editMode);
-    if ($args{'kemymap_vi'}) {
+    my $keymap;
+    my $editMode = $args{'editMode'} || 'emacs';
+    if ($editMode eq 'vicmd') {
 	$keymap = Term::ReadLine::Perl5::OO::Keymap::ViKeymap();
-	$editMode = 'vi';
     } else {
 	$keymap = Term::ReadLine::Perl5::OO::Keymap::EmacsKeymap();
-	$editMode = 'emacs';
     }
 
     my $self = bless {

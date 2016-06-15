@@ -143,10 +143,11 @@ sub readline {
 sub editModeFromShell() {
     my @shell_settings = `$ENV{'SHELL'} -c 'set -o'`;
     my $use_vi = grep /vi\ton\n/, @shell_settings;
-    return $use_vi ? 'vi' : 'emacs';
+    return $use_vi ? 'vicmd' : 'emacs';
 }
 
-$editMode = editModeFromShell;
+$editMode = 'emacs';
+eval {$editMode = editModeFromShell};
 
 =head3 new
 
@@ -182,10 +183,14 @@ sub new {
 	    name => $name,
 	    in   => $in,
 	    out  => $out,
-	    keymap_vi => $editMode == 'vi',
+	    editMode => $editMode,
 	};
 	return Term::ReadLine::Perl5::OO->new($opts);
     }
+    Term::ReadLine::Perl5::readline::preinit($editMode);
+    Term::ReadLine::Perl5::readline::init();
+
+
     shift; # Package name
     if (@_) {
 	if ($term) {
