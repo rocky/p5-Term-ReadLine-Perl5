@@ -423,7 +423,7 @@ used as an early basis for this.
 
 =item *
 
-L<Term::ReadLine::Perl5:readline> documents more of the nitty gritty
+L<Term::ReadLine::Perl5::readline> documents more of the nitty gritty
 details as this is embedded along with the code
 
 =item *
