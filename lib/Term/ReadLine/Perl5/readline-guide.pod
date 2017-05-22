@@ -237,7 +237,7 @@ If defined when package is require'd, F<~/.inputrc> will not be read.
 
 =item C<@rl_History>
 array of previous lines input.
-n
+
 =item C<$rl_HistoryIndex>
 
 history pointer (for moving about history array)
