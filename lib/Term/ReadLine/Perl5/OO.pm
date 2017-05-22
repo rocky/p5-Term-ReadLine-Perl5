@@ -85,6 +85,7 @@ returns the handle for subsequent calls to following functions.
 Argument is the name of the application.
 
 =cut
+
 sub new {
     my $class = shift;
     my %args = @_==1? %{$_[0]} : @_;

@@ -244,6 +244,7 @@ I<read_history()> and I<write_history()> follow GNU Readline's C
 convention of returning 0 for success and 1 for failure.
 
 =cut
+
 sub write_history($$) {
     my ($self, $filename) = @_;
     open(my $fh, '>:encoding(utf-8)', $filename ) or return $!;

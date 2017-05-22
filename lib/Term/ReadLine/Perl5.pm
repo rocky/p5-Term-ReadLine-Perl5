@@ -33,6 +33,7 @@ and show how to use the API.
   }
 
 =cut
+
 use warnings; use strict;
 use Term::ReadLine::Perl5::readline;
 no warnings 'once';
@@ -118,6 +119,7 @@ returns the actual package that executes the commands. If this package
 is used, the value is C<Term::ReadLine::Perl5>.
 
 =cut
+
 sub ReadLine {'Term::ReadLine::Perl5'}
 
 
@@ -168,6 +170,7 @@ At present, because this code has lots of global state, we currently don't
 support more than one readline instance.
 
 =cut
+
 sub new {
     my $class = shift;
     if (require Term::ReadLine) {
@@ -278,7 +281,9 @@ B<Term::ReadLine::Perl5-E<gt>newTTY>(I<IN>, I<OUT>)
 
 takes two arguments which are input filehandle and output filehandle.
 Switches to use these filehandles.
+
 =cut
+
 sub newTTY($$$) {
   my ($self, $in, $out) = @_;
   $Term::ReadLine::Perl5::readline::term_IN   = $self->{'IN'}  = $in;
@@ -296,7 +301,9 @@ If B<$minlength> is given, set C<$readline::minlength> the minimum
 length a $line for it to go into the readline history.
 
 The previous value is returned.
+
 =cut
+
 sub MinLine($;$) {
     my $old = $minlength;
     $minlength = $_[1] if @_ == 2;
@@ -354,6 +361,7 @@ number of lines.
 I<StifleHistory> is an alias for this function.
 
 =cut
+
 ### FIXME: stifle_history is still here because it updates $attribs.
 ## Pass a reference?
 sub stifle_history($$) {
@@ -458,4 +466,5 @@ select this among other compatible GNU Readline packages.
 =back
 
 =cut
+
 1;

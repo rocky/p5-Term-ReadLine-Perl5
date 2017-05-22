@@ -17,6 +17,7 @@ attributes.
 L<Term::ReadLine::Perl5>
 
 =cut
+
 package Term::ReadLine::Perl5::Tie;
 
 # version might not be below other places in this routine
