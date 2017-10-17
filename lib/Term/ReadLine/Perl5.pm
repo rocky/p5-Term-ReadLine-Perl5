@@ -226,6 +226,10 @@ sub new {
 	$Term::ReadLine::Perl5::readline::term_IN = shift;
 	$Term::ReadLine::readline::term_OUT = shift
     }
+    # FIXME? In https://github.com/rocky/p5-Term-ReadLine-Perl5/pull/12
+    # aferreira notes that the below should probably be something like
+    # $term = bless [$Term::ReadLine::readline::term_IN,
+    #                $Term::ReadLine::readline::term_OUT];
     # The following is here since it is mostly used for perl input:
     # $readline::rl_basic_word_break_characters .= '-:+/*,[])}';
     $term = bless [$readline::term_IN,$readline::term_OUT];
