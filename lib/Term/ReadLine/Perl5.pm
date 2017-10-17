@@ -230,8 +230,8 @@ sub new {
     # $readline::rl_basic_word_break_characters .= '-:+/*,[])}';
     $term = bless [$readline::term_IN,$readline::term_OUT];
     my $self = {
-	'IN'  => $readline::term_IN,
-	'OUT' => $readline::term_OUT,
+	'IN'  => $Term::ReadLine::Perl5::readline::term_IN,
+	'OUT' => $Term::ReadLine::Perl5::readline::term_OUT,
     };
     bless $self, $class;
 
