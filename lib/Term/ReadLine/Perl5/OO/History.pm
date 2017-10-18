@@ -43,19 +43,18 @@ my $HOME = File::HomeDir->my_home;
 sub add_line_to_history
 {
     my ($self, $line, $minlength) = @_;
-    my @rl_History = @{$self->{rl_History}};
+    my $rl_History = $self->{rl_History};
     my $rl_MaxHistorySize = $self->{rl_MaxHistorySize};
     if (length($line) >= $minlength
-        && (!@rl_History || $rl_History[$#rl_History] ne $line)
+        && (!@$rl_History || $rl_History->[$#$rl_History] ne $line)
        ) {
         ## if the history list is full, shift out an old one first....
-        while (@rl_History >= $self->{rl_MaxHistorySize}) {
-            shift(@rl_History);
+        while (@$rl_History >= $self->{rl_MaxHistorySize}) {
+            shift(@$rl_History);
             $self->{rl_HistoryIndex}--;
         }
 
-        push(@rl_History, $line); ## tack new one on the end
-	$self->{rl_History} = \@rl_History;
+        push(@$rl_History, $line); ## tack new one on the end
     }
 }
 
