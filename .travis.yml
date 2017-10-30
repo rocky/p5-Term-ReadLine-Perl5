@@ -8,7 +8,7 @@ after_failure:
 
 install:
   # Prerequisites
-  - cpanm -v $PREREQS --installdeps --notest .
+  - cpanm -v $PREREQS --notest .
 
 perl:
   - "5.26"
