@@ -46,7 +46,7 @@ my $builder = Module::Build->new(
 	'Term::Cap'               => 0,
     },
     configure_requires => {
-	'Module::Build'           => '0.4004',  # Min "test_requires"
+	'Module::Build'           => '0.4003',  # Min "test_requires"
 	'perl'                    => $min_perl_version,
     },
     test_requires => {
