@@ -9,7 +9,7 @@ build_requires:
   Term::ReadKey: '2.3'
   Test::More: '0.98'
 configure_requires:
-  Module::Build: '0.4004'
+  Module::Build: '0.4003'
   perl: '5.008005'
 dynamic_config: 1
 generated_by: 'Module::Build version 0.4224, CPAN::Meta::Converter version 2.150010'

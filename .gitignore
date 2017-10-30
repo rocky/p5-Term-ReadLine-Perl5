@@ -1,6 +1,8 @@
 *.tar
-*.tar.gz
 *~
+/*.tar.bz2
+/*.tar.gz
+/*.tar.gz.sig
 /.history_test
 /Build
 /ChangeLog

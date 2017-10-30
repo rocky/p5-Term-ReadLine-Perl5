@@ -11,8 +11,10 @@ circle\.yml$
 # Perl Critic
 perlcritic\.rc
 
-# Perl Critic
+# Git
 git2cl$
+
+\bChangeLog.0$
 
 # Avoid Makemaker generated and utility files.
 \bMANIFEST\.bak
