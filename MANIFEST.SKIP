@@ -6,13 +6,13 @@
 
 # Continous integration files
 \B\.travis\.yml$
-\B\circle\.yml$
+circle\.yml$
 
 # Perl Critic
 perlcritic\.rc
 
 # Perl Critic
-\Bgit2cl\b
+git2cl$
 
 # Avoid Makemaker generated and utility files.
 \bMANIFEST\.bak
