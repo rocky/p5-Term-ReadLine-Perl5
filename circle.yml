@@ -1,14 +1,10 @@
-environment:
-    AUTOMATED_TESTING: 1
-    PREREQS: "Class::Accessor::Lite File::HomeDir File::Spec Term::ReadKey Module::Build Text::VisualWidth::PP Unicode::EastAsianWidth::Detect"
-
 checkout:
   post:
     - sudo apt-get -y install cpanminus
-    - sudo cpanm $PREREQS
+    - sudo cpanm "Class::Accessor::Lite File::HomeDir File::Spec Term::ReadKey Module::Build Text::VisualWidth::PP Unicode::EastAsianWidth::Detect"
 
 test:
   override:
     - perl ./Build.PL
     - perl ./Build installdeps
-    - GIT2CL=./git2cl make check ChangeLog distmeta distcheck
+    - AUTOMATED_TESTING=1 GIT2CL=./git2cl make check ChangeLog distmeta distcheck
