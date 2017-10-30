@@ -4,11 +4,15 @@
 \B\.git\b
 \B\.gitignore\b
 
-# Continous integration file via travis
+# Continous integration files
 \B\.travis\.yml$
+\B\circle\.yml$
 
 # Perl Critic
 perlcritic\.rc
+
+# Perl Critic
+\Bgit2cl\b
 
 # Avoid Makemaker generated and utility files.
 \bMANIFEST\.bak
