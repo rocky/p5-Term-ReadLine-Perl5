@@ -1,7 +1,6 @@
 checkout:
   post:
-    - sudo apt-get -y install cpanminus
-    - sudo cpanm "Class::Accessor::Lite File::HomeDir File::Spec Term::ReadKey Module::Build Text::VisualWidth::PP Unicode::EastAsianWidth::Detect"
+    - sudo cpan Class::Accessor::Lite File::HomeDir File::Spec Term::ReadKey Module::Build Text::VisualWidth::PP Unicode::EastAsianWidth::Detect
 
 test:
   override:
