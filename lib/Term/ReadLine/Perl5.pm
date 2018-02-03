@@ -20,7 +20,7 @@ Eval, Print, Loop).
 
 =head2 Demo program
 
-Another package, L<Term::ReadLine::Perl5::Demo> is available to let
+Another package, L<Term::ReadLine::Perl5::Demo|https://metacpan.org/release/ROCKY/Term-ReadLine-Perl5-Demo-0.1> is available to let
 you run I<Term::ReadLine::Perl5> to experiment with its capabilities
 and show how to use the API.
 
