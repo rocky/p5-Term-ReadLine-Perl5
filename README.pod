@@ -8,7 +8,7 @@
 
 =head1 NAME
 
-Term::ReadLine::Perl5 - A Perl5 implementation GNU Readline
+Term::ReadLine::Perl5 - A Perl5 implementation of GNU Readline
 
 =head1 SYNOPSIS
 
@@ -26,10 +26,10 @@ This is a implementation of the GNU Readline/History Library written
 in Perl5.
 
 GNU Readline reads lines from an interactive terminal with I<emacs> or
-I<vi> editing capabilities. It provides as mechanism for saving
-history of previous input.
+I<vi> editing capabilities. It provides as mechanism for saving the
+history of previous inputs.
 
-This package typically used in command-line interfaces and REPLs (Read,
+This package is typically used in command-line interfaces and REPLs (Read,
 Eval, Print, Loop).
 
 See L<Term::ReadLine::Perl5> for details on the API.
@@ -37,7 +37,7 @@ See L<Term::ReadLine::Perl5> for details on the API.
 =head2 Demo program
 
 Another package, L<Term::ReadLine::Perl5::Demo> is available to let
-you run I<Term::ReadLine::Perl5> to experiment with its capabilities
+you run I<Term::ReadLine::Perl5> and experiment with its capabilities
 and show how to use the API.
 
 =head1 INSTALL
