@@ -36,4 +36,4 @@ t/15test-unescape.t
 t/20test-read-input-file.t
 t/Helper.pm
 t/data/undo.inputrc
-t/000-test.t					# Old-style test program
+test.pl					# Old-style test program
