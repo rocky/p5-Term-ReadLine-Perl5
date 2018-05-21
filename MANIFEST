@@ -1,12 +1,10 @@
 Build.PL
 ChangeLog
 Changes
-GNUmakefile
 LICENSE
 MANIFEST
 META.json
 META.yml
-Makefile.PL
 README.pod			     # General overview
 lib/Term/ReadLine/Perl5.pm
 lib/Term/ReadLine/Perl5/CHANGES	     # What's up?
