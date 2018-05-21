@@ -76,6 +76,8 @@ git2cl$
 ^Common\.pm$
 ^Tk\.pm$
 
+# Avoid including a file that confuses cpanp in some configs
+^GNUmakefile$
 
 # Avoid archives of this distribution
 \bDevel-Trepan-[\d\.\_]+
