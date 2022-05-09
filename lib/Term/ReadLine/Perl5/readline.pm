@@ -817,9 +817,9 @@ This function corresponds to the L<Term::ReadLine::GNU> function
 I<rl_filename_list)>. But that doesn't handle tilde expansion while
 this does. Also, directories returned will have the '/' suffix
 appended as is the case returned by GNU Readline, but not
-I<Term::ReadLine::GNU>. Adding the '/' suffix is useful in completion
-because it forces the next completion to complete inside that
-directory.
+I<Term::ReadLine::GNU>. Adding the '/' suffix (and B<NOT> the
+trailing space) is useful in completion because it forces the next
+completion to complete inside that directory.
 
 GNU Readline also will complete partial I<~> names; for example
 I<~roo> maybe expanded to C</root> for the root user. When
@@ -4089,8 +4089,12 @@ sub complete_internal
         return &F_Ding;
     } elsif ($what_to_do eq "\t") {
         my $replacement = shift(@matches);
+
+	### Note: We don't want to append a space after tab-expanding a directory;
+	### we'd rather be able to continue completion farther down the hierarchy.
 	$replacement .= $rl_completer_terminator_character
-	    if @matches == 1 && !$rl_completion_suppress_append;
+	    if @matches == 1 && !$rl_completion_suppress_append
+	       && !( $rl_completion_function eq 'rl_filename_list' && $replacement =~ m,/$, );
         &F_Ding if @matches != 1;
         if ($var_TcshCompleteMode) {
             @tcsh_complete_selections = (@matches, $text);
