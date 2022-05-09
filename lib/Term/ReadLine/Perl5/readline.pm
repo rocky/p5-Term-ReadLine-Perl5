@@ -825,6 +825,10 @@ GNU Readline also will complete partial I<~> names; for example
 I<~roo> maybe expanded to C</root> for the root user. When
 getpwent/setpwent is available we provide that.
 
+Also, like I<Term::ReadLine::GNU>, if there are multiple potential
+matches, only the trailing path element (i.e., C<basename(3)>) will be
+displayed.
+
 The user of this package can set I<$rl_completion_function> to
 'rl_filename_list' to restore the default of filename matching if
 they'd changed it earlier, either directly or via &rl_basic_commands.
@@ -4107,6 +4111,9 @@ sub complete_internal
         }
     } elsif ($what_to_do eq '?') {
         shift(@matches); ## remove prepended common prefix
+
+        ### Strip off any "path/prefix/" when we pretty print our match list.
+        @matches = map { /.*\/(.+)$/ ? $1 : $_ } @matches;
         local $\ = '';
         print $term_OUT "\n\r";
         # print "@matches\n\r";

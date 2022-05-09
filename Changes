@@ -3,6 +3,7 @@ Release history for Perl module Term::ReadLine::Perl5
 {{ NEXT }}
 
 - Make `/path/to/dir[TAB]` *NOT* append trailing space
+- Make `/path/to/dir/[TAB]` *ONLY* show "basename" of matches
 
 1.45 2017-10-18
 
