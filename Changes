@@ -1,5 +1,10 @@
 Release history for Perl module Term::ReadLine::Perl5
 
+{{ NEXT }}
+
+- Make hitting "Ctrl-C" `die()`
+  (Application code can then handle it in an `eval {}` block, etc.)
+
 1.45 2017-10-18
 
 - Fixes from Adriano Ferreira
