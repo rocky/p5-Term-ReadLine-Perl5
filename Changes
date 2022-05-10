@@ -1,7 +1,9 @@
 Release history for Perl module Term::ReadLine::Perl5
 
-{{ NEXT }}
+1.46 
 
+- Make hitting "Ctrl-C" `die()`
+  (Application code can then handle it in an `eval {}` block, etc.)
 - Make `/path/to/dir[TAB]` *NOT* append trailing space
 - Make `/path/to/dir/[TAB]` *ONLY* show "basename" of matches
 

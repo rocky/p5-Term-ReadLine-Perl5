@@ -2044,6 +2044,11 @@ sub F_EmacsEditingMode
 
 (Attempt to) interrupt the current program via I<kill('INT')>
 
+NOTE: This will also cause C<readline()> to I<die()>, which is useful
+if the application has trapped C<SIGINT>, for example; it will still
+abort the current C<readline()> operation and return control to the
+user.
+
 =cut
 
 sub F_Interrupt
@@ -3170,6 +3175,9 @@ sub readline($;$)
 	# Execute input
         eval { &$cmd(1, ord($input)); };
 
+        ### Make hitting "Ctrl-C" `die()`
+        ### (Application code can then handle it in an `eval {}` block, etc.)
+        die $@ if $@ and $cmd eq 'F_Interrupt';
         $rl_first_char = 0;
         $lastcommand = $cmd;
         *KeyMap = $var_EditingMode;           # JP: added
