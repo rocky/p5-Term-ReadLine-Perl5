@@ -6,6 +6,7 @@ Release history for Perl module Term::ReadLine::Perl5
   (Application code can then handle it in an `eval {}` block, etc.)
 - Make `/path/to/dir[TAB]` *NOT* append trailing space
 - Make `/path/to/dir/[TAB]` *ONLY* show "basename" of matches
+- Fix `local $_` leakage ("Spooky Action At A Distance")
 
 1.45 2017-10-18
 
