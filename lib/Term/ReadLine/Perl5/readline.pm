@@ -889,7 +889,7 @@ sub rl_filename_list_deprecated
 # local-bound arrays I<@action> and I<@level>.
 sub parse_and_bind($$$)
 {
-    $_ = shift;
+    local $_ = shift;
     my $file = shift;
     my $include_depth = shift;
     s/^\s+//;
